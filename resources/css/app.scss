@@ -1,0 +1,37 @@
+@use "./fonts.scss";
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg: #0c0e14;
+    --panel: rgba(18, 21, 28, 0.78);
+    --panel-2: #161922;
+    --border: #272b36;
+    --text: #e8e8ec;
+    --text-dim: #8a8f9c;
+    --text-mute: #6c7280;
+    --accent: #e8a656;
+    --accent-deep: #c8853a;
+    --accent-soft: rgba(232, 166, 86, 0.1);
+    --border-2: rgba(255, 255, 255, 0.06);
+    --danger: #e87b6d;
+    --font: "Inter", system-ui, sans-serif;
+    --font-serif: "Fraunces", serif;
+}
+
+body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    position: relative;
+}

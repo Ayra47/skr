@@ -1,0 +1,62 @@
+<meta name="vapid-public-key" content="{{ config('app.vapid_public_key') }}">
+<nav class="app-nav">
+    <div class="app-nav-inner">
+        <a href="{{ route('chats.index') }}" class="app-brand">
+            <span class="app-brand-mark">s</span>
+            <span style="color:#e8e8ec;font-size:14px;font-weight:500;letter-spacing:.02em;">skr</span>
+        </a>
+        <div class="app-links">
+            <a href="#">
+                <svg width=" 14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12L12 4l9 8" />
+                    <path d="M5 10v10h14V10" />
+                </svg>
+                Лента
+            </a>
+            <a href="{{ route('chats.index') }}" class="{{ request()->routeIs('chats.*') ? 'active' : '' }}">
+                <svg width=" 14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                        d="M21 11.5a8.4 8.4 0 0 1-7.6 8.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 8-8h.5a8.5 8.5 0 0 1 8 8z" />
+                </svg>
+                Чаты
+            </a>
+            <a href="{{ route('friends.index') }}" class="{{ request()->routeIs('friends.*') ? 'active' : '' }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.9" />
+                    <path d="M16 3.1a4 4 0 0 1 0 7.8" />
+                </svg>
+                Друзья
+            </a>
+            <a href="{{ route('settings.index') }}" class="{{ request()->routeIs('settings.*') ? 'active' : '' }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3" />
+                    <path
+                        d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z" />
+                </svg>
+                Настройки
+            </a>
+        </div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+            <span
+                style="display:flex;align-items:center;gap:6px;font-size:11px;color:#6dd49a;padding:4px 10px;border-radius:999px;background:rgba(109,212,154,.08);border:1px solid rgba(109,212,154,.20);">
+                <span
+                    style="width:6px;height:6px;border-radius:50%;background:#6dd49a;box-shadow:0 0 6px rgba(109,212,154,.6);"></span>
+                e2e
+            </span>
+            @php $navUser = auth()->user(); @endphp
+            <a href="{{ route('settings.index') }}" style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,oklch(.32 .04 60),oklch(.22 .03 30));border:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;color:#e8e8ec;font-size:13px;font-weight:500;overflow:hidden;flex-shrink:0;text-decoration:none;">
+                @if($navUser->avatar)
+                    <img src="/storage/{{ $navUser->avatar }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+                @else
+                    {{ mb_strtoupper(mb_substr($navUser->login, 0, 1)) }}
+                @endif
+            </a>
+        </div>
+    </div>
+</nav>

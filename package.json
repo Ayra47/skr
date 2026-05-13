@@ -1,0 +1,32 @@
+{
+    "$schema": "https://www.schemastore.org/package.json",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite",
+        "agent": "node --experimental-strip-types agent/index.ts",
+        "typecheck:agent": "tsc --noEmit --project tsconfig.agent.json"
+    },
+    "devDependencies": {
+        "@anthropic-ai/claude-agent-sdk": "^0.2.131",
+        "@tailwindcss/vite": "^4.0.0",
+        "@types/node": "^25.6.0",
+        "axios": "^1.11.0",
+        "concurrently": "^9.0.1",
+        "laravel-vite-plugin": "^3.0.0",
+        "sass": "^1.99.0",
+        "tailwindcss": "^4.0.0",
+        "typescript": "^6.0.3",
+        "vite": "^8.0.0"
+    },
+    "dependencies": {
+        "@emoji-mart/data": "^1.2.1",
+        "@types/leaflet": "^1.9.21",
+        "emoji-mart": "^5.6.0",
+        "laravel-echo": "^2.3.4",
+        "leaflet": "^1.9.4",
+        "pusher": "^5.3.3",
+        "toastify-js": "^1.12.0"
+    }
+}

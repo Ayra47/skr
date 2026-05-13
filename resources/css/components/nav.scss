@@ -1,0 +1,73 @@
+.app-nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(14px);
+    background: rgba(12, 14, 20, 0.78);
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 1.25rem;
+}
+
+.app-nav-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+}
+
+.app-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: var(--text);
+    text-decoration: none;
+}
+
+.app-brand-mark {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #1a1206;
+    font-weight: 700;
+    background: linear-gradient(135deg, #e8a656, #c8853a);
+    font-family: var(--font-serif);
+}
+
+.app-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+}
+
+.app-links a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 13px;
+    color: var(--text-muted);
+    border: 1px solid transparent;
+    transition:
+        background 0.15s,
+        color 0.15s;
+}
+
+.app-links a:hover {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.app-links a.active {
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-color: rgba(232, 166, 86, 0.25);
+}

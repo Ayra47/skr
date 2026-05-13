@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 28 28">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e8a656"/>
+      <stop offset="100%" stop-color="#c8853a"/>
+    </linearGradient>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700&amp;display=swap');
+    </style>
+  </defs>
+  <rect width="28" height="28" rx="7" ry="7" fill="url(#bg)"/>
+  <text
+    x="14"
+    y="20"
+    text-anchor="middle"
+    font-family="Fraunces, Georgia, serif"
+    font-weight="700"
+    font-size="17"
+    fill="#1a1206"
+  >s</text>
+</svg>
