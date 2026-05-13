@@ -9,6 +9,7 @@ import {
 import {
     appendMessage,
     applyMessageEdit,
+    applyPinUpdate,
     removeMessageFromDom,
     markVisibleMessagesRead,
     updateConvPreview,
@@ -130,6 +131,14 @@ export function initWebSocket(): void {
             if (e.conversation_id === state.currentConvId) {
                 await applyMessageEdit(e.id, e.encrypted_payload, e.edited_at);
             }
+        })
+        .listen(".chat.message.pinned", async (e: {
+            id: number;
+            conversation_id: number;
+            encrypted_payload: string;
+            pinned: boolean;
+        }) => {
+            await applyPinUpdate(e.id, e.conversation_id, e.encrypted_payload, e.pinned);
         })
         .listen(".chat.typing", (e: { conversation_id: number }) => {
             if (e.conversation_id !== state.currentConvId) {

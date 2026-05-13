@@ -11,6 +11,7 @@
     <script>
         window.Laravel = {
             userId: @json(Auth::id()),
+            pseudonym: @json(Auth::user()->pseudonym),
             hasPublicKey: {{ $hasPublicKey ? 'true' : 'false' }},
             hasKeyBackup: {{ $hasKeyBackup ? 'true' : 'false' }},
             avatars: @json(
@@ -135,6 +136,7 @@
                     <span id="keyChangeWarnText"></span>
                 </div>
             </div>
+            <div class="pin-bar" id="pinBar" style="display:none"></div>
             <div class="typing-indicator" id="typingIndicator"></div>
             <div class="messages-area" id="messagesArea">
                 <div class="no-chat-selected" id="noChatSelected">

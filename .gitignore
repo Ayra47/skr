@@ -8,6 +8,8 @@ tsconfig.agent.json
 CLAUDE.md
 AGENTS.md
 .claude
+.agents
+.codex
 .cursor
 .mcp.json
 .env.backup

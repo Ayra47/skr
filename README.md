@@ -87,7 +87,7 @@ Laravel 13 gives exactly what this project needs: a solid HTTP layer, first-clas
 
 ## Built with AI Assistance
 
-This project was built with the help of **Claude (Anthropic)** (future maybe Codex) as a coding collaborator. AI was used to accelerate implementation, explore architectural options, and catch edge cases — but every design decision, architectural choice, and line of production code was reviewed, understood, and owned by me.
+This project was built with the help of **Claude (Anthropic)** and **OpenAI Codex** as coding collaborators. AI was used to accelerate implementation, explore architectural options, and catch edge cases — but every design decision, architectural choice, and line of production code was reviewed, understood, and owned by me.
 
 This is what modern engineering looks like: a skilled developer who understands their tools deeply, uses AI to move faster, and takes full responsibility for the output. The AI doesn't replace understanding — it amplifies it.
 

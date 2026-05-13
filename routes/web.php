@@ -93,6 +93,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('/chat/{conversationId}/messages/{messageId}', [ChatController::class, 'update'])->name('chat.messages.update');
     Route::delete('/chat/{conversationId}/messages/{messageId}', [ChatController::class, 'destroy'])->name('chat.messages.destroy');
     Route::get('/chat/{conversationId}/messages/{messageId}/edits', [ChatController::class, 'messageEdits'])->name('chat.messages.edits');
+    Route::get('/chat/{conversationId}/pins', [ChatController::class, 'pins'])->name('chat.pins.index');
+    Route::post('/chat/{conversationId}/messages/{messageId}/pin', [ChatController::class, 'pinMessage'])->name('chat.messages.pin');
+    Route::delete('/chat/{conversationId}/messages/{messageId}/pin', [ChatController::class, 'unpinMessage'])->name('chat.messages.unpin');
     Route::post('/chat/messages/delivered', [ChatController::class, 'markDelivered'])->name('chat.messages.delivered');
     Route::post('/chat/messages/read', [ChatController::class, 'markRead'])->name('chat.messages.read');
     Route::post('/chat/typing', [ChatController::class, 'typing'])->name('chat.typing');

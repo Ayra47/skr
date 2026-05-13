@@ -2,7 +2,7 @@ import { AUTH_USER_ID } from "./constants";
 import { state } from "./state";
 import { IDB } from "./idb";
 import { Crypto } from "./crypto";
-import { fetchJson, post, patch, delWithBody } from "./api";
+import { fetchJson, post, patch, del, delWithBody } from "./api";
 import { openContextMenu } from "./context-menu";
 import {
     showNotification,
@@ -17,6 +17,19 @@ import { renderFileBubble, renderPhotoBubble, type FilePayload } from "./file-di
 import { renderLocationMapBubble, freezeSession } from "./location-map";
 import { clearLiveSession, stopSessionByUuid } from "./location";
 import type { Message } from "./types";
+
+interface ReplyTo {
+    id: number;
+    snippet: string;
+    sender_alias: string;
+}
+
+interface TextMessageContent {
+    type: "text";
+    text: string;
+    reply_to?: ReplyTo;
+    forwarded_from?: string;
+}
 
 interface FileMessageContent {
     type: "file";
@@ -50,6 +63,11 @@ interface LocationLiveMessageContent {
     expires_at: string;
 }
 
+let replyingTo: { msgId: number; snippet: string; senderAlias: string } | null = null;
+let pinnedMsgIds = new Set<number>();
+let isSelectMode = false;
+let selectedIds = new Set<number>();
+
 interface MessagesResponse {
     success: boolean;
     data: Message[];
@@ -72,6 +90,9 @@ export async function openConversation(
     partnerId: number,
     partnerLogin: string,
 ): Promise<void> {
+    cancelReply();
+    clearPinBar();
+    resetSelectMode();
     state.currentConvId = convId;
     window.currentConvId = convId;
     state.currentPartnerId = partnerId;
@@ -103,6 +124,7 @@ export async function openConversation(
         '<div class="no-chat-selected" style="flex:1"><p class="empty-title">загрузка…</p></div>';
 
     loadMessages();
+    loadPinBar().catch(() => {});
     (document.getElementById("messageInput") as HTMLTextAreaElement).focus();
 
     getPartnerPublicKey(partnerId)
@@ -178,9 +200,16 @@ export async function appendMessage(
     let parsedPhoto: PhotoMessageContent | null = null;
     let parsedLocation: LocationMessageContent | null = null;
     let parsedLocationLive: LocationLiveMessageContent | null = null;
+    let parsedReplyTo: ReplyTo | null = null;
+    let parsedForwardedFrom: string | null = null;
     try {
-        const candidate = JSON.parse(text) as FileMessageContent | PhotoMessageContent | LocationMessageContent | LocationLiveMessageContent;
-        if (candidate?.type === "file" && (candidate as FileMessageContent).file?.id) {
+        const candidate = JSON.parse(text) as TextMessageContent | FileMessageContent | PhotoMessageContent | LocationMessageContent | LocationLiveMessageContent;
+        if (candidate?.type === "text") {
+            const tc = candidate as TextMessageContent;
+            text = tc.text;
+            parsedReplyTo = tc.reply_to ?? null;
+            parsedForwardedFrom = tc.forwarded_from ?? null;
+        } else if (candidate?.type === "file" && (candidate as FileMessageContent).file?.id) {
             parsedFile = candidate as FileMessageContent;
         } else if (candidate?.type === "photo" && (candidate as PhotoMessageContent).preview?.id) {
             parsedPhoto = candidate as PhotoMessageContent;
@@ -199,6 +228,11 @@ export async function appendMessage(
         : parsedFile ? "file"
         : "text";
 
+    const snippet = msgType === "file" ? "📎 " + (parsedFile?.file?.name ?? "Файл")
+        : msgType === "photo" ? "🖼 Фото"
+        : msgType === "location" || msgType === "location_live" ? "📍 Геолокация"
+        : text.slice(0, 80);
+
     const bubble = parsedLocationLive
         ? createLocationLiveBubble(msg.id, isOwn, parsedLocationLive, msg.created_at, msg.delivered_at, msg.read_at, isFromHistory)
         : parsedLocation
@@ -207,10 +241,11 @@ export async function appendMessage(
                 ? createPhotoBubble(msg.id, isOwn, parsedPhoto, msg.created_at, msg.delivered_at, msg.read_at)
                 : parsedFile
                     ? createFileBubble(msg.id, isOwn, parsedFile, msg.created_at, msg.delivered_at, msg.read_at)
-                    : createBubble(msg.id, isOwn, text, msg.created_at, msg.delivered_at, msg.read_at, msg.encrypted_payload, msg.edited_at ?? null);
+                    : createBubble(msg.id, isOwn, text, msg.created_at, msg.delivered_at, msg.read_at, msg.encrypted_payload, msg.edited_at ?? null, parsedReplyTo, parsedForwardedFrom);
 
     bubble.dataset.type = msgType;
-    bindContextMenu(bubble, msg.id, isOwn, msg.created_at, msgType);
+    bubble.dataset.encryptedPayload = msg.encrypted_payload;
+    bindContextMenu(bubble, msg.id, isOwn, msg.created_at, msgType, snippet);
 
     const area = document.getElementById("messagesArea")!;
     const btn = area.querySelector(".load-more-btn");
@@ -231,6 +266,8 @@ export function createBubble(
     readAt: string | null,
     encryptedPayload = "",
     editedAt: string | null = null,
+    replyTo: ReplyTo | null = null,
+    forwardedFrom: string | null = null,
 ): HTMLElement {
     const div = document.createElement("div");
     div.className = "message-bubble " + (isOwn ? "own" : "other");
@@ -244,6 +281,29 @@ export function createBubble(
         minute: "2-digit",
     });
     const statusIcon = isOwn ? getStatusIcon(deliveredAt, readAt) : "";
+
+    if (forwardedFrom) {
+        const fwd = document.createElement("div");
+        fwd.className = "forwarded-header";
+        fwd.textContent = "➥ " + forwardedFrom;
+        div.appendChild(fwd);
+    }
+
+    if (replyTo) {
+        const quote = document.createElement("div");
+        quote.className = "reply-quote";
+        quote.dataset.replyId = String(replyTo.id);
+        quote.addEventListener("click", () => scrollToMessage(replyTo.id));
+        const aliasEl = document.createElement("span");
+        aliasEl.className = "reply-quote-alias";
+        aliasEl.textContent = replyTo.sender_alias;
+        const snippetEl = document.createElement("span");
+        snippetEl.className = "reply-quote-text";
+        snippetEl.textContent = replyTo.snippet;
+        quote.appendChild(aliasEl);
+        quote.appendChild(snippetEl);
+        div.appendChild(quote);
+    }
 
     const textDiv = document.createElement("div");
     textDiv.className = "bubble-text";
@@ -638,13 +698,21 @@ export async function sendMessage(): Promise<void> {
     try {
         const partnerKey = await getPartnerPublicKey(state.currentPartnerId!);
         const aesKey = await Crypto.deriveAesKey(state.myPrivateKey!, partnerKey);
-        const { iv, ciphertext } = await Crypto.encrypt(aesKey, text);
+
+        const currentReply = replyingTo;
+        const plaintext = currentReply
+            ? JSON.stringify({ type: "text", text, reply_to: { id: currentReply.msgId, snippet: currentReply.snippet, sender_alias: currentReply.senderAlias } })
+            : text;
+
+        const { iv, ciphertext } = await Crypto.encrypt(aesKey, plaintext);
         const payload = JSON.stringify({ iv, ciphertext });
 
-        const data = await post<SendResponse>(`/chat/${state.currentConvId}/messages`, {
-            encrypted_payload: payload,
-        });
+        const body: Record<string, unknown> = { encrypted_payload: payload };
+        if (currentReply) { body.reply_to_id = currentReply.msgId; }
+
+        const data = await post<SendResponse>(`/chat/${state.currentConvId}/messages`, body);
         if (data.success) {
+            cancelReply();
             const msg: Message = {
                 id: data.id,
                 sender_id: AUTH_USER_ID,
@@ -652,6 +720,7 @@ export async function sendMessage(): Promise<void> {
                 created_at: data.created_at,
                 delivered_at: null,
                 read_at: null,
+                reply_to_id: currentReply?.msgId ?? null,
             };
             await appendMessage(msg, "append");
             const area = document.getElementById("messagesArea")!;
@@ -740,15 +809,34 @@ export async function applyMessageEdit(
     void editedAt;
 }
 
+function scrollToMessage(msgId: number): void {
+    const target = document.getElementById("msg-" + msgId);
+    if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        target.classList.add("msg-highlight");
+        setTimeout(() => target.classList.remove("msg-highlight"), 1500);
+    } else {
+        showNotification("сообщение недоступно");
+    }
+}
+
 function bindContextMenu(
     bubble: HTMLElement,
     msgId: number,
     isOwn: boolean,
     createdAt: string,
     type: string,
+    snippet: string,
 ): void {
+    const senderAlias = isOwn ? window.Laravel.pseudonym : (state.currentPartnerLogin ?? "");
+
     const show = (x: number, y: number): void => {
         const items: Array<{ label: string; action: () => void; danger?: boolean }> = [];
+
+        items.push({
+            label: "Ответить",
+            action: () => startReply(msgId, snippet, senderAlias),
+        });
 
         if (type === "text") {
             items.push({
@@ -769,14 +857,33 @@ function bindContextMenu(
             }
         }
 
+        items.push({
+            label: pinnedMsgIds.has(msgId) ? "Открепить" : "Закрепить",
+            action: () => togglePin(msgId),
+        });
+
+        items.push({ label: "Переслать", action: () => forwardMessages([msgId]) });
+
+        items.push({ label: "Выбрать", action: () => enterSelectMode(msgId) });
+
         items.push({ label: "Удалить...", action: () => showDeleteModal(msgId, isOwn), danger: true });
 
         openContextMenu(x, y, items);
     };
 
+    bubble.addEventListener("click", (e) => {
+        if (!isSelectMode) { return; }
+        e.stopPropagation();
+        toggleSelectMsg(parseInt(bubble.dataset.id ?? "0", 10));
+    });
+
     bubble.addEventListener("contextmenu", (e) => {
         e.preventDefault();
         e.stopPropagation();
+        if (isSelectMode) {
+            toggleSelectMsg(msgId);
+            return;
+        }
         show(e.clientX, e.clientY);
     });
 
@@ -799,6 +906,192 @@ function bindContextMenu(
     bubble.addEventListener("touchend", () => {
         if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
     }, { passive: true });
+}
+
+function startReply(msgId: number, snippet: string, senderAlias: string): void {
+    replyingTo = { msgId, snippet, senderAlias };
+    showReplyPreviewBar();
+    (document.getElementById("messageInput") as HTMLTextAreaElement | null)?.focus();
+}
+
+export function cancelReply(): void {
+    replyingTo = null;
+    document.getElementById("replyPreviewBar")?.remove();
+}
+
+function showReplyPreviewBar(): void {
+    document.getElementById("replyPreviewBar")?.remove();
+    if (!replyingTo) { return; }
+
+    const bar = document.createElement("div");
+    bar.id = "replyPreviewBar";
+    bar.className = "reply-preview-bar";
+
+    const content = document.createElement("div");
+    content.className = "reply-preview-content";
+
+    const aliasEl = document.createElement("span");
+    aliasEl.className = "reply-preview-alias";
+    aliasEl.textContent = replyingTo.senderAlias;
+
+    const snippetEl = document.createElement("span");
+    snippetEl.className = "reply-preview-snippet";
+    snippetEl.textContent = replyingTo.snippet;
+
+    content.appendChild(aliasEl);
+    content.appendChild(snippetEl);
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "reply-preview-cancel";
+    cancelBtn.textContent = "×";
+    cancelBtn.setAttribute("aria-label", "Отменить ответ");
+    cancelBtn.addEventListener("click", cancelReply);
+
+    bar.appendChild(content);
+    bar.appendChild(cancelBtn);
+
+    const inputArea = document.getElementById("inputArea");
+    if (inputArea) {
+        inputArea.prepend(bar);
+    }
+}
+
+let pinBarPins: Array<{ msgId: number; snippet: string }> = [];
+let pinBarIndex = 0;
+
+function clearPinBar(): void {
+    pinnedMsgIds.clear();
+    pinBarPins = [];
+    pinBarIndex = 0;
+    const bar = document.getElementById("pinBar");
+    if (bar) { bar.innerHTML = ""; bar.style.display = "none"; }
+}
+
+async function loadPinBar(): Promise<void> {
+    if (!state.currentConvId || !state.myPrivateKey || !state.currentPartnerId) { return; }
+
+    const data = await fetchJson<{ success: boolean; data: Array<{ message_id: number; encrypted_payload: string }> }>(
+        `/chat/${state.currentConvId}/pins`,
+    );
+    if (!data.success) { return; }
+
+    for (const pin of data.data) {
+        pinnedMsgIds.add(pin.message_id);
+        const snippet = await decryptPinSnippet(pin.encrypted_payload);
+        pinBarPins.push({ msgId: pin.message_id, snippet });
+    }
+    renderPinBar();
+}
+
+async function addPinToBar(msgId: number, encryptedPayload: string): Promise<void> {
+    if (!state.myPrivateKey || !state.currentPartnerId) { return; }
+    if (pinBarPins.some((p) => p.msgId === msgId)) { return; }
+
+    const snippet = await decryptPinSnippet(encryptedPayload);
+    pinBarPins.push({ msgId, snippet });
+    renderPinBar();
+}
+
+function removePinFromBar(msgId: number): void {
+    pinnedMsgIds.delete(msgId);
+    const idx = pinBarPins.findIndex((p) => p.msgId === msgId);
+    if (idx === -1) { return; }
+    pinBarPins.splice(idx, 1);
+    if (pinBarIndex >= pinBarPins.length && pinBarIndex > 0) { pinBarIndex = pinBarPins.length - 1; }
+    renderPinBar();
+}
+
+function renderPinBar(): void {
+    const bar = document.getElementById("pinBar");
+    if (!bar) { return; }
+
+    if (!pinBarPins.length) {
+        bar.innerHTML = "";
+        bar.style.display = "none";
+        bar.onclick = null;
+        return;
+    }
+
+    const current = pinBarPins[pinBarIndex];
+    bar.innerHTML = "";
+    bar.style.display = "flex";
+
+    const icon = document.createElement("span");
+    icon.className = "pin-bar-icon";
+    icon.textContent = "📌";
+
+    const body = document.createElement("div");
+    body.className = "pin-bar-body";
+
+    const titleRow = document.createElement("div");
+    titleRow.className = "pin-bar-title";
+    titleRow.textContent = "Закреплённое сообщение";
+
+    if (pinBarPins.length > 1) {
+        const counter = document.createElement("span");
+        counter.className = "pin-bar-counter";
+        counter.textContent = `${pinBarIndex + 1}/${pinBarPins.length}`;
+        titleRow.appendChild(counter);
+    }
+
+    const snippetEl = document.createElement("div");
+    snippetEl.className = "pin-bar-text";
+    snippetEl.textContent = current.snippet;
+
+    body.appendChild(titleRow);
+    body.appendChild(snippetEl);
+    bar.appendChild(icon);
+    bar.appendChild(body);
+
+    bar.onclick = () => {
+        scrollToMessage(current.msgId);
+        pinBarIndex = (pinBarIndex + 1) % pinBarPins.length;
+        renderPinBar();
+    };
+}
+
+async function decryptPinSnippet(encryptedPayload: string): Promise<string> {
+    let snippet = "сообщение";
+    if (!state.myPrivateKey || !state.currentPartnerId) { return snippet; }
+    try {
+        const partnerKey = await getPartnerPublicKey(state.currentPartnerId);
+        const aesKey = await Crypto.deriveAesKey(state.myPrivateKey, partnerKey);
+        const payload = JSON.parse(encryptedPayload) as { iv: string; ciphertext: string };
+        const text = await Crypto.decrypt(aesKey, payload.iv, payload.ciphertext);
+        try {
+            const parsed = JSON.parse(text) as { type: string; text?: string; file?: { name: string } };
+            if (parsed.type === "text" && parsed.text) { snippet = parsed.text.slice(0, 60); }
+            else if (parsed.type === "file") { snippet = "📎 " + (parsed.file?.name ?? "Файл"); }
+            else if (parsed.type === "photo") { snippet = "🖼 Фото"; }
+            else if (parsed.type === "location" || parsed.type === "location_live") { snippet = "📍 Геолокация"; }
+            else { snippet = text.slice(0, 60); }
+        } catch { snippet = text.slice(0, 60); }
+    } catch { }
+    return snippet;
+}
+
+async function togglePin(msgId: number): Promise<void> {
+    if (!state.currentConvId) { return; }
+    if (pinnedMsgIds.has(msgId)) {
+        await del(`/chat/${state.currentConvId}/messages/${msgId}/pin`);
+        removePinFromBar(msgId);
+    } else {
+        await post(`/chat/${state.currentConvId}/messages/${msgId}/pin`, {});
+        pinnedMsgIds.add(msgId);
+        const bubble = document.getElementById("msg-" + msgId);
+        const enc = bubble?.dataset.encryptedPayload ?? "";
+        if (enc) { await addPinToBar(msgId, enc); }
+    }
+}
+
+export async function applyPinUpdate(msgId: number, convId: number, encryptedPayload: string, pinned: boolean): Promise<void> {
+    if (convId !== state.currentConvId) { return; }
+    if (pinned) {
+        pinnedMsgIds.add(msgId);
+        await addPinToBar(msgId, encryptedPayload);
+    } else {
+        removePinFromBar(msgId);
+    }
 }
 
 function startInlineEdit(bubble: HTMLElement, msgId: number): void {
@@ -972,6 +1265,7 @@ function showEditHistoryModal(items: Array<{ text: string; created_at: string }>
 
 export function removeMessageFromDom(msgId: number): void {
     document.getElementById("msg-" + msgId)?.remove();
+    removePinFromBar(msgId);
 }
 
 function showDeleteModal(msgId: number, isOwn: boolean): void {
@@ -1020,6 +1314,353 @@ function showDeleteModal(msgId: number, isOwn: boolean): void {
     btns.appendChild(cancelBtn);
     modal.appendChild(title);
     modal.appendChild(btns);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+}
+
+function resetSelectMode(): void {
+    isSelectMode = false;
+    selectedIds.clear();
+    document.querySelectorAll(".msg-selected").forEach((el) => el.classList.remove("msg-selected"));
+    document.getElementById("selectToolbar")?.remove();
+}
+
+function exitSelectMode(): void {
+    resetSelectMode();
+    if (state.currentConvId) {
+        (document.getElementById("inputArea") as HTMLElement).style.display = "block";
+    }
+}
+
+function toggleSelectMsg(msgId: number): void {
+    if (!msgId) { return; }
+    const el = document.getElementById("msg-" + msgId);
+    if (selectedIds.has(msgId)) {
+        selectedIds.delete(msgId);
+        el?.classList.remove("msg-selected");
+    } else {
+        selectedIds.add(msgId);
+        el?.classList.add("msg-selected");
+    }
+    updateSelectToolbar();
+}
+
+function enterSelectMode(initialMsgId: number): void {
+    isSelectMode = true;
+    selectedIds.clear();
+    selectedIds.add(initialMsgId);
+    document.getElementById("msg-" + initialMsgId)?.classList.add("msg-selected");
+    (document.getElementById("inputArea") as HTMLElement).style.display = "none";
+    showSelectToolbar();
+}
+
+function showSelectToolbar(): void {
+    document.getElementById("selectToolbar")?.remove();
+
+    const toolbar = document.createElement("div");
+    toolbar.id = "selectToolbar";
+    toolbar.className = "select-toolbar";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "select-toolbar-btn";
+    cancelBtn.textContent = "✕";
+    cancelBtn.title = "Отмена";
+    cancelBtn.addEventListener("click", exitSelectMode);
+
+    const countEl = document.createElement("span");
+    countEl.className = "select-toolbar-count";
+    countEl.id = "selectCount";
+    countEl.textContent = selectedCount();
+
+    const replyBtn = document.createElement("button");
+    replyBtn.className = "select-toolbar-btn";
+    replyBtn.id = "selectReplyBtn";
+    replyBtn.textContent = "Ответить";
+    replyBtn.style.display = selectedIds.size === 1 ? "" : "none";
+    replyBtn.addEventListener("click", () => {
+        if (selectedIds.size !== 1) { return; }
+        const msgId = [...selectedIds][0];
+        const bubble = document.getElementById("msg-" + msgId);
+        const snip = bubble?.querySelector<HTMLElement>(".bubble-text")?.textContent?.slice(0, 60) ?? "";
+        const isOwn = bubble?.dataset.own === "1";
+        const alias = isOwn ? window.Laravel.pseudonym : (state.currentPartnerLogin ?? "");
+        exitSelectMode();
+        startReply(msgId, snip, alias);
+    });
+
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "select-toolbar-btn";
+    copyBtn.id = "selectCopyBtn";
+    copyBtn.textContent = "Копировать";
+    copyBtn.style.display = allSelectedAreText() ? "" : "none";
+    copyBtn.addEventListener("click", () => {
+        const sorted = [...selectedIds]
+            .map((id) => document.getElementById("msg-" + id))
+            .filter((el): el is HTMLElement => el !== null)
+            .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
+
+        const lines = sorted.map((bubble) => {
+            const isOwn = bubble.dataset.own === "1";
+            const author = isOwn ? window.Laravel.pseudonym : (state.currentPartnerLogin ?? "");
+            const time = bubble.querySelector<HTMLElement>(".message-meta span")?.textContent ?? "";
+            const text = bubble.querySelector<HTMLElement>(".bubble-text")?.textContent ?? "";
+            return `>${author} (${time}):\n${text}`;
+        });
+
+        navigator.clipboard.writeText(lines.join("\n\n")).catch(() => {});
+        exitSelectMode();
+    });
+
+    const forwardBtn = document.createElement("button");
+    forwardBtn.className = "select-toolbar-btn";
+    forwardBtn.textContent = "Переслать";
+    forwardBtn.addEventListener("click", () => forwardMessages([...selectedIds]));
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "select-toolbar-btn select-toolbar-btn--danger";
+    deleteBtn.textContent = "Удалить";
+    deleteBtn.addEventListener("click", () => showMultiDeleteModal([...selectedIds]));
+
+    toolbar.appendChild(cancelBtn);
+    toolbar.appendChild(countEl);
+    toolbar.appendChild(replyBtn);
+    toolbar.appendChild(copyBtn);
+    toolbar.appendChild(forwardBtn);
+    toolbar.appendChild(deleteBtn);
+
+    document.getElementById("chatPane")?.appendChild(toolbar);
+}
+
+function updateSelectToolbar(): void {
+    const countEl = document.getElementById("selectCount");
+    if (countEl) { countEl.textContent = selectedCount(); }
+
+    const replyBtn = document.getElementById("selectReplyBtn") as HTMLButtonElement | null;
+    if (replyBtn) { replyBtn.style.display = selectedIds.size === 1 ? "" : "none"; }
+
+    const copyBtn = document.getElementById("selectCopyBtn") as HTMLButtonElement | null;
+    if (copyBtn) { copyBtn.style.display = allSelectedAreText() ? "" : "none"; }
+}
+
+function selectedCount(): string {
+    return selectedIds.size === 0 ? "Выберите сообщения" : `${selectedIds.size} выбрано`;
+}
+
+function allSelectedAreText(): boolean {
+    return selectedIds.size > 0 && [...selectedIds].every(
+        (id) => document.getElementById("msg-" + id)?.dataset.type === "text",
+    );
+}
+
+function showMultiDeleteModal(msgIds: number[]): void {
+    document.querySelector(".delete-msg-overlay")?.remove();
+
+    const overlay = document.createElement("div");
+    overlay.className = "delete-msg-overlay";
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) { overlay.remove(); } });
+
+    const modal = document.createElement("div");
+    modal.className = "delete-msg-modal";
+
+    const title = document.createElement("p");
+    title.className = "delete-msg-title";
+    title.textContent = `Удалить ${msgIds.length} сообщ.?`;
+
+    const btns = document.createElement("div");
+    btns.className = "delete-msg-btns";
+
+    const doDelete = async (scope: "all" | "me"): Promise<void> => {
+        overlay.remove();
+        if (!state.currentConvId) { return; }
+        for (const id of msgIds) {
+            try {
+                await delWithBody(`/chat/${state.currentConvId}/messages/${id}`, { scope });
+                removeMessageFromDom(id);
+            } catch { }
+        }
+        exitSelectMode();
+    };
+
+    const forAllBtn = document.createElement("button");
+    forAllBtn.className = "delete-msg-btn delete-msg-btn--all";
+    forAllBtn.textContent = "Удалить у всех";
+    forAllBtn.addEventListener("click", () => doDelete("all"));
+
+    const forMeBtn = document.createElement("button");
+    forMeBtn.className = "delete-msg-btn delete-msg-btn--me";
+    forMeBtn.textContent = "Удалить у себя";
+    forMeBtn.addEventListener("click", () => doDelete("me"));
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "delete-msg-btn delete-msg-btn--cancel";
+    cancelBtn.textContent = "Отмена";
+    cancelBtn.addEventListener("click", () => overlay.remove());
+
+    btns.appendChild(forAllBtn);
+    btns.appendChild(forMeBtn);
+    btns.appendChild(cancelBtn);
+    modal.appendChild(title);
+    modal.appendChild(btns);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+}
+
+async function forwardMessages(msgIds: number[]): Promise<void> {
+    const items = msgIds
+        .map((id) => {
+            const bubble = document.getElementById("msg-" + id);
+            if (!bubble) { return null; }
+            return {
+                encryptedPayload: bubble.dataset.encryptedPayload ?? "",
+                isOwn: bubble.dataset.own === "1",
+            };
+        })
+        .filter((item): item is { encryptedPayload: string; isOwn: boolean } =>
+            item !== null && item.encryptedPayload !== "",
+        );
+
+    if (!items.length || !state.myPrivateKey || !state.currentPartnerId) { return; }
+
+    const conversations = [...document.querySelectorAll<HTMLElement>(".conversation-item")]
+        .map((el) => ({
+            convId: parseInt(el.dataset.convId ?? "0", 10),
+            partnerId: parseInt(el.dataset.partnerId ?? "0", 10),
+            partnerLogin: el.dataset.partnerLogin ?? "",
+        }))
+        .filter((c) => c.convId && c.partnerId);
+
+    if (!conversations.length) {
+        showNotification("Нет доступных чатов для пересылки");
+        return;
+    }
+
+    showForwardModal(items, conversations);
+}
+
+function showForwardModal(
+    items: Array<{ encryptedPayload: string; isOwn: boolean }>,
+    conversations: Array<{ convId: number; partnerId: number; partnerLogin: string }>,
+): void {
+    document.querySelector(".forward-overlay")?.remove();
+
+    const overlay = document.createElement("div");
+    overlay.className = "forward-overlay";
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) { overlay.remove(); } });
+
+    const modal = document.createElement("div");
+    modal.className = "forward-modal";
+
+    const header = document.createElement("div");
+    header.className = "forward-modal-header";
+    const title = document.createElement("span");
+    title.textContent = "Переслать в…";
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "forward-modal-close";
+    closeBtn.textContent = "×";
+    closeBtn.addEventListener("click", () => overlay.remove());
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+
+    const list = document.createElement("div");
+    list.className = "forward-conv-list";
+
+    const checkedIds = new Set<number>();
+
+    conversations.forEach((conv) => {
+        const item = document.createElement("label");
+        item.className = "forward-conv-item";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.addEventListener("change", () => {
+            if (checkbox.checked) { checkedIds.add(conv.convId); }
+            else { checkedIds.delete(conv.convId); }
+            sendBtn.textContent = checkedIds.size
+                ? `Переслать (${checkedIds.size})`
+                : "Переслать";
+            sendBtn.disabled = checkedIds.size === 0;
+        });
+
+        const nameEl = document.createElement("span");
+        nameEl.className = "forward-conv-name";
+        nameEl.textContent = conv.partnerLogin;
+
+        item.appendChild(checkbox);
+        item.appendChild(nameEl);
+        list.appendChild(item);
+    });
+
+    const footer = document.createElement("div");
+    footer.className = "forward-modal-footer";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "forward-btn forward-btn--cancel";
+    cancelBtn.textContent = "Отмена";
+    cancelBtn.addEventListener("click", () => overlay.remove());
+
+    const sendBtn = document.createElement("button");
+    sendBtn.className = "forward-btn forward-btn--send";
+    sendBtn.textContent = "Переслать";
+    sendBtn.disabled = true;
+    sendBtn.addEventListener("click", async () => {
+        if (!checkedIds.size || !state.myPrivateKey || !state.currentPartnerId) { return; }
+        sendBtn.disabled = true;
+        sendBtn.textContent = "Отправка…";
+
+        // Decrypt all messages once with current conversation key
+        const srcPartnerKey = await getPartnerPublicKey(state.currentPartnerId);
+        const decryptKey = await Crypto.deriveAesKey(state.myPrivateKey, srcPartnerKey);
+
+        const decrypted: Array<{ text: string; alias: string }> = [];
+        for (const item of items) {
+            let textToForward = "";
+            const alias = item.isOwn
+                ? window.Laravel.pseudonym
+                : (state.currentPartnerLogin ?? "");
+            try {
+                const p = JSON.parse(item.encryptedPayload) as { iv: string; ciphertext: string };
+                const raw = await Crypto.decrypt(decryptKey, p.iv, p.ciphertext);
+                try {
+                    const parsed = JSON.parse(raw) as { type: string; text?: string; file?: { name: string } };
+                    if (parsed.type === "text") { textToForward = parsed.text ?? ""; }
+                    else if (parsed.type === "file") { textToForward = "📎 " + (parsed.file?.name ?? "Файл"); }
+                    else if (parsed.type === "photo") { textToForward = "🖼 Фото"; }
+                    else if (parsed.type === "location" || parsed.type === "location_live") { textToForward = "📍 Геолокация"; }
+                    else { textToForward = raw; }
+                } catch { textToForward = raw; }
+            } catch { continue; }
+            decrypted.push({ text: textToForward, alias });
+        }
+
+        // Re-encrypt and send to each target
+        for (const convId of checkedIds) {
+            const conv = conversations.find((c) => c.convId === convId);
+            if (!conv) { continue; }
+            try {
+                const targetKey = await getPartnerPublicKey(conv.partnerId);
+                const encryptKey = await Crypto.deriveAesKey(state.myPrivateKey!, targetKey);
+                for (const { text, alias } of decrypted) {
+                    const content = JSON.stringify({ type: "text", text, forwarded_from: alias });
+                    const { iv, ciphertext } = await Crypto.encrypt(encryptKey, content);
+                    await post(`/chat/${convId}/messages`, {
+                        encrypted_payload: JSON.stringify({ iv, ciphertext }),
+                    });
+                }
+            } catch { }
+        }
+
+        overlay.remove();
+        if (isSelectMode) { exitSelectMode(); }
+        showNotification(
+            checkedIds.size === 1 ? "Сообщение переслано" : `Переслано в ${checkedIds.size} чата`,
+        );
+    });
+
+    footer.appendChild(cancelBtn);
+    footer.appendChild(sendBtn);
+    modal.appendChild(header);
+    modal.appendChild(list);
+    modal.appendChild(footer);
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 }

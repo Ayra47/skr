@@ -1,6 +1,7 @@
 {
     "agents": [
         "claude_code",
+        "codex",
         "cursor"
     ],
     "cloud": false,
@@ -9,6 +10,8 @@
     "nightwatch": false,
     "sail": false,
     "skills": [
-        "laravel-best-practices"
+        "laravel-best-practices",
+        "echo-development",
+        "tailwindcss-development"
     ]
 }

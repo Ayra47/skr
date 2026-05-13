@@ -6,11 +6,13 @@ export interface Message {
     delivered_at: string | null;
     read_at: string | null;
     edited_at?: string | null;
+    reply_to_id?: number | null;
     conversation_id?: number;
 }
 
 export interface LaravelData {
     userId: number;
+    pseudonym: string;
     hasPublicKey: boolean;
     hasKeyBackup: boolean;
     avatars: Record<number, string | null>;

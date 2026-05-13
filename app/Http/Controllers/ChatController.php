@@ -6,6 +6,7 @@ use App\Events\ChatMessageEvent;
 use App\Events\MessageDeletedEvent;
 use App\Events\MessageDeliveredEvent;
 use App\Events\MessageEditedEvent;
+use App\Events\MessagePinnedEvent;
 use App\Events\MessageReadEvent;
 use App\Events\TypingEvent;
 use App\Jobs\SendNewMessageEmailJob;
@@ -14,6 +15,7 @@ use App\Models\Conversation;
 use App\Models\LoginHistory;
 use App\Models\Message;
 use App\Models\MessageEdit;
+use App\Models\PinnedMessage;
 use App\Models\User;
 use App\Models\UserKey;
 use Illuminate\Http\JsonResponse;
@@ -160,6 +162,7 @@ class ChatController extends Controller
                 'read_at' => $m->read_at?->toIso8601String(),
                 'created_at' => $m->created_at->toIso8601String(),
                 'edited_at' => $m->edited_at?->toIso8601String(),
+                'reply_to_id' => $m->reply_to_id,
             ]),
             'has_more' => $messages->count() === 50,
         ]);
@@ -185,6 +188,7 @@ class ChatController extends Controller
 
         $request->validate([
             'encrypted_payload' => 'required|string|max:65536',
+            'reply_to_id' => 'nullable|integer|exists:messages,id',
         ]);
 
         $payload = json_decode($request->encrypted_payload, true);
@@ -199,9 +203,21 @@ class ChatController extends Controller
             return response()->json(['success' => false, 'message' => 'Неверный формат сообщения'], 422);
         }
 
+        $replyToId = null;
+        if ($request->filled('reply_to_id')) {
+            $replyExists = Message::where('id', $request->reply_to_id)
+                ->where('conversation_id', $conversationId)
+                ->whereNull('deleted_at')
+                ->exists();
+            if ($replyExists) {
+                $replyToId = (int) $request->reply_to_id;
+            }
+        }
+
         $message = Message::create([
             'conversation_id' => $conversationId,
             'sender_id' => $user->id,
+            'reply_to_id' => $replyToId,
             'encrypted_payload' => $request->encrypted_payload,
             'expires_at' => now()->addMonths(3),
         ]);
@@ -444,6 +460,85 @@ class ChatController extends Controller
         $conversation = Conversation::findOrCreateBetween($user->id, $partnerId);
 
         return response()->json(['success' => true, 'conversation_id' => $conversation->id]);
+    }
+
+    public function pins(int $conversationId): JsonResponse
+    {
+        $user = Auth::user();
+        $conversation = Conversation::findOrFail($conversationId);
+
+        if (! $conversation->hasParticipant($user->id)) {
+            return response()->json(['success' => false, 'message' => 'Нет доступа'], 403);
+        }
+
+        $pins = PinnedMessage::where('conversation_id', $conversationId)
+            ->with('message')
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->filter(fn ($p) => $p->message && ! $p->message->deleted_at)
+            ->map(fn ($p) => [
+                'message_id' => $p->message_id,
+                'encrypted_payload' => $p->message->encrypted_payload,
+            ])
+            ->values();
+
+        return response()->json(['success' => true, 'data' => $pins]);
+    }
+
+    public function pinMessage(int $conversationId, int $messageId): JsonResponse
+    {
+        $user = Auth::user();
+        $conversation = Conversation::findOrFail($conversationId);
+
+        if (! $conversation->hasParticipant($user->id)) {
+            return response()->json(['success' => false, 'message' => 'Нет доступа'], 403);
+        }
+
+        $message = Message::where('id', $messageId)
+            ->where('conversation_id', $conversationId)
+            ->whereNull('deleted_at')
+            ->firstOrFail();
+
+        PinnedMessage::firstOrCreate([
+            'conversation_id' => $conversationId,
+            'message_id' => $messageId,
+        ], [
+            'pinned_by_id' => $user->id,
+        ]);
+
+        $recipientId = $conversation->user_a_id === $user->id
+            ? $conversation->user_b_id
+            : $conversation->user_a_id;
+
+        broadcast(new MessagePinnedEvent($messageId, $conversationId, $message->encrypted_payload, true, $recipientId));
+
+        return response()->json(['success' => true]);
+    }
+
+    public function unpinMessage(int $conversationId, int $messageId): JsonResponse
+    {
+        $user = Auth::user();
+        $conversation = Conversation::findOrFail($conversationId);
+
+        if (! $conversation->hasParticipant($user->id)) {
+            return response()->json(['success' => false, 'message' => 'Нет доступа'], 403);
+        }
+
+        $message = Message::where('id', $messageId)
+            ->where('conversation_id', $conversationId)
+            ->firstOrFail();
+
+        PinnedMessage::where('conversation_id', $conversationId)
+            ->where('message_id', $messageId)
+            ->delete();
+
+        $recipientId = $conversation->user_a_id === $user->id
+            ? $conversation->user_b_id
+            : $conversation->user_a_id;
+
+        broadcast(new MessagePinnedEvent($messageId, $conversationId, $message->encrypted_payload, false, $recipientId));
+
+        return response()->json(['success' => true]);
     }
 
     private function markMessageStatus(Request $request, string $column, string $eventClass): JsonResponse
