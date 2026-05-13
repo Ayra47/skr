@@ -218,6 +218,10 @@ export async function uploadPublicKey(source: string | null = "fresh"): Promise<
 }
 
 export async function getPartnerPublicKey(partnerId: number): Promise<CryptoKey> {
+    if (partnerId === AUTH_USER_ID && state.myPublicKeyJwk) {
+        return Crypto.importPublicJwk(state.myPublicKeyJwk);
+    }
+
     if (state.partnerPublicKeyCache[partnerId]) {
         return state.partnerPublicKeyCache[partnerId];
     }

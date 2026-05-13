@@ -28,12 +28,14 @@ class ChatFileController extends Controller
             return response()->json(['success' => false, 'message' => 'Нет доступа'], 403);
         }
 
-        $recipientId = $conversation->user_a_id === $user->id
-            ? $conversation->user_b_id
-            : $conversation->user_a_id;
+        if (! $conversation->isGroup()) {
+            $recipientId = $conversation->user_a_id === $user->id
+                ? $conversation->user_b_id
+                : $conversation->user_a_id;
 
-        if (! $user->isFriendWith($recipientId)) {
-            return response()->json(['success' => false, 'message' => 'Вы больше не друзья'], 403);
+            if (! $user->isFriendWith($recipientId)) {
+                return response()->json(['success' => false, 'message' => 'Вы больше не друзья'], 403);
+            }
         }
 
         $request->validate([
@@ -121,12 +123,14 @@ class ChatFileController extends Controller
             return response()->json(['success' => false, 'message' => 'Нет доступа'], 403);
         }
 
-        $recipientId = $chatFile->conversation->user_a_id === $user->id
-            ? $chatFile->conversation->user_b_id
-            : $chatFile->conversation->user_a_id;
+        if (! $chatFile->conversation->isGroup()) {
+            $recipientId = $chatFile->conversation->user_a_id === $user->id
+                ? $chatFile->conversation->user_b_id
+                : $chatFile->conversation->user_a_id;
 
-        if (! $user->isFriendWith($recipientId)) {
-            return response()->json(['success' => false, 'message' => 'Нет доступа'], 403);
+            if (! $user->isFriendWith($recipientId)) {
+                return response()->json(['success' => false, 'message' => 'Нет доступа'], 403);
+            }
         }
 
         if ($chatFile->isExpired()) {

@@ -16,7 +16,7 @@ import { getPartnerPublicKey, updateKeyChangeWarn } from "./keys";
 import { renderFileBubble, renderPhotoBubble, type FilePayload } from "./file-display";
 import { renderLocationMapBubble, freezeSession } from "./location-map";
 import { clearLiveSession, stopSessionByUuid } from "./location";
-import type { Message } from "./types";
+import type { ChatParticipant, Message } from "./types";
 
 interface ReplyTo {
     id: number;
@@ -85,18 +85,38 @@ interface ConversationResponse {
     conversation_id: number;
 }
 
+interface ParticipantsResponse {
+    success: boolean;
+    conversation: {
+        id: number;
+        type: "direct" | "group";
+        title: string;
+        avatar_url: string | null;
+        role?: "owner" | "admin" | "member";
+        can_manage: boolean;
+        is_owner: boolean;
+    };
+    participants: ChatParticipant[];
+    friends: { id: number; login: string; avatar: string | null }[];
+    invites: { id: number; type: string; url: string; expires_at: string | null; used_at: string | null }[];
+}
+
 export async function openConversation(
     convId: number,
     partnerId: number,
     partnerLogin: string,
+    conversationType: "direct" | "group" = "direct",
 ): Promise<void> {
     cancelReply();
     clearPinBar();
     resetSelectMode();
     state.currentConvId = convId;
     window.currentConvId = convId;
-    state.currentPartnerId = partnerId;
+    state.currentConversationType = conversationType;
+    state.currentPartnerId = conversationType === "group" ? null : partnerId;
     state.currentPartnerLogin = partnerLogin;
+    state.currentUserRole = null;
+    state.currentParticipants = [];
     state.oldestMessageId = null;
 
     document
@@ -111,14 +131,24 @@ export async function openConversation(
     (document.getElementById("inputArea") as HTMLElement).style.display = "block";
     await window.emojiPanelOnChatOpen?.();
 
-    setAvatarEl(
-        document.getElementById("chatAvatar")!,
-        partnerLogin,
-        window.Laravel.avatars?.[partnerId] ?? null,
-    );
+    if (conversationType === "group") {
+        const participantsData = await loadConversationParticipants(convId);
+        setAvatarEl(
+            document.getElementById("chatAvatar")!,
+            partnerLogin,
+            participantsData?.conversation.avatar_url ?? document.querySelector<HTMLElement>(`[data-conv-id="${convId}"]`)?.dataset.avatarUrl ?? null,
+        );
+    } else {
+        setAvatarEl(
+            document.getElementById("chatAvatar")!,
+            partnerLogin,
+            window.Laravel.avatars?.[partnerId] ?? null,
+        );
+    }
     document.getElementById("chatPartnerName")!.textContent = partnerLogin;
-    updateChatHeaderStatus(state.onlineUsers.has(partnerId));
+    updateChatHeaderStatus(conversationType === "group" ? false : state.onlineUsers.has(partnerId));
     (document.getElementById("keyChangeWarn") as HTMLElement).style.display = "none";
+    updateGroupActions();
 
     document.getElementById("messagesArea")!.innerHTML =
         '<div class="no-chat-selected" style="flex:1"><p class="empty-title">загрузка…</p></div>';
@@ -127,9 +157,123 @@ export async function openConversation(
     loadPinBar().catch(() => {});
     (document.getElementById("messageInput") as HTMLTextAreaElement).focus();
 
-    getPartnerPublicKey(partnerId)
-        .then(() => updateKeyChangeWarn(partnerId))
-        .catch(() => {});
+    if (conversationType === "direct") {
+        getPartnerPublicKey(partnerId)
+            .then(() => updateKeyChangeWarn(partnerId))
+            .catch(() => {});
+    }
+}
+
+export async function loadConversationParticipants(convId: number): Promise<ParticipantsResponse | null> {
+    const data = await fetchJson<ParticipantsResponse>(`/chat/${convId}/participants`);
+    if (!data.success) {
+        return null;
+    }
+
+    state.currentParticipants = data.participants;
+    state.currentUserRole = data.conversation.role ?? null;
+
+    for (const participant of data.participants) {
+        if (participant.public_key_jwk) {
+            try {
+                state.partnerPublicKeyCache[participant.id] = await Crypto.importPublicJwk(
+                    JSON.parse(participant.public_key_jwk) as JsonWebKey,
+                );
+            } catch {
+                // Ignore invalid keys; sending will surface a useful error.
+            }
+        }
+        if (participant.avatar) {
+            window.Laravel.avatars[participant.id] = participant.avatar;
+        }
+    }
+
+    renderGroupPanel(data);
+
+    return data;
+}
+
+export async function refreshCurrentGroupPanel(): Promise<void> {
+    if (state.currentConversationType === "group" && state.currentConvId) {
+        await loadConversationParticipants(state.currentConvId);
+    }
+}
+
+function updateGroupActions(): void {
+    const btn = document.getElementById("groupManageBtn") as HTMLButtonElement | null;
+    if (!btn) {
+        return;
+    }
+
+    btn.style.display = state.currentConversationType === "group" ? "inline-flex" : "none";
+}
+
+function renderGroupPanel(data: ParticipantsResponse): void {
+    const panel = document.getElementById("groupPanel");
+    if (!panel) {
+        return;
+    }
+
+    const canManage = data.conversation.can_manage;
+    const isOwner = data.conversation.is_owner;
+    const friendsOptions = data.friends
+        .map((friend) => `<option value="${friend.id}">${escapeHtml(friend.login)}</option>`)
+        .join("");
+    const members = data.participants
+        .map((member) => {
+            const canRemove = canManage && member.role !== "owner" && member.id !== AUTH_USER_ID;
+            const canPromote = isOwner && member.role === "member";
+            const canDemote = isOwner && member.role === "admin";
+            const avatar = member.avatar
+                ? `<img src="${escapeHtml(member.avatar)}" alt="" class="avatar-img">`
+                : escapeHtml(member.login.charAt(0).toUpperCase());
+            return `
+                <div class="group-member-row" data-user-id="${member.id}">
+                    <div class="group-member-avatar">${avatar}</div>
+                    <span>${escapeHtml(member.login)}</span>
+                    <small>${member.role}</small>
+                    ${canPromote ? '<button type="button" data-action="promote">admin</button>' : ""}
+                    ${canDemote ? '<button type="button" data-action="demote">member</button>' : ""}
+                    ${canRemove ? '<button type="button" data-action="remove">удалить</button>' : ""}
+                </div>`;
+        })
+        .join("");
+    const invites = data.invites
+        .map((invite) => `
+            <div class="group-invite-row" data-invite-id="${invite.id}">
+                <input readonly value="${escapeHtml(invite.url)}">
+                <small>${invite.type === "permanent" ? "постоянная" : "24ч одноразовая"}</small>
+                <button type="button" data-action="copy-invite">копировать</button>
+                ${canManage ? '<button type="button" data-action="revoke-invite">отозвать</button>' : ""}
+            </div>`)
+        .join("");
+    panel.innerHTML = `
+        <div class="group-panel-head">
+            <strong>${escapeHtml(data.conversation.title)}</strong>
+            <button type="button" id="groupPanelClose">×</button>
+        </div>
+        ${canManage ? `
+            <div class="group-panel-section group-title-edit">
+                <input id="groupTitleInput" value="${escapeHtml(data.conversation.title)}" maxlength="60">
+                <button type="button" id="groupRenameBtn">переименовать</button>
+            </div>
+            <div class="group-panel-section">
+                <input id="groupAvatarInput" type="file" accept="image/*" hidden>
+                <button type="button" id="groupAvatarBtn">фото группы</button>
+            </div>` : ""}
+        <div class="group-panel-section">${members}</div>
+        ${canManage ? `
+            <div class="group-panel-section">
+                <select id="groupFriendSelect">${friendsOptions}</select>
+                <button type="button" id="groupAddFriendBtn" ${friendsOptions ? "" : "disabled"}>пригласить</button>
+            </div>
+            <div class="group-panel-section group-invites">${invites}</div>
+            <div class="group-panel-section">
+                <button type="button" data-invite-type="permanent">постоянная ссылка</button>
+                <button type="button" data-invite-type="single_use">одноразовая 24ч</button>
+            </div>` : ""}
+        <button type="button" class="group-leave-btn" id="groupLeaveBtn">выйти</button>
+    `;
 }
 
 export async function loadMessages(before: number | null = null): Promise<void> {
@@ -175,17 +319,69 @@ export async function loadMessages(before: number | null = null): Promise<void> 
     }
 }
 
+async function encryptForCurrentConversation(plaintext: string): Promise<{
+    body: Record<string, unknown>;
+    localPayload: string;
+}> {
+    if (state.currentConversationType === "group") {
+        if (!state.currentParticipants.length) {
+            await loadConversationParticipants(state.currentConvId!);
+        }
+
+        const encryptedPayloads: Record<number, string> = {};
+
+        for (const participant of state.currentParticipants) {
+            if (!participant.public_key_jwk && !state.partnerPublicKeyCache[participant.id]) {
+                throw new Error(`${participant.login}: ключ не найден`);
+            }
+
+            const participantKey = await getPartnerPublicKey(participant.id);
+            const aesKey = await Crypto.deriveAesKey(state.myPrivateKey!, participantKey);
+            const { iv, ciphertext } = await Crypto.encrypt(aesKey, plaintext);
+            encryptedPayloads[participant.id] = JSON.stringify({ iv, ciphertext });
+        }
+
+        return {
+            body: { encrypted_payloads: encryptedPayloads },
+            localPayload: encryptedPayloads[AUTH_USER_ID],
+        };
+    }
+
+    const partnerKey = await getPartnerPublicKey(state.currentPartnerId!);
+    const aesKey = await Crypto.deriveAesKey(state.myPrivateKey!, partnerKey);
+    const { iv, ciphertext } = await Crypto.encrypt(aesKey, plaintext);
+    const payload = JSON.stringify({ iv, ciphertext });
+
+    return {
+        body: { encrypted_payload: payload },
+        localPayload: payload,
+    };
+}
+
 export async function appendMessage(
     msg: Message,
     mode: "append" | "prepend-before-btn" = "append",
     isFromHistory = false,
 ): Promise<void> {
+    if (msg.type === "system") {
+        const systemNode = createSystemMessageNode(msg);
+        const area = document.getElementById("messagesArea")!;
+        const btn = area.querySelector(".load-more-btn");
+        if (mode === "prepend-before-btn" && btn) {
+            btn.insertAdjacentElement("afterend", systemNode);
+        } else {
+            area.appendChild(systemNode);
+        }
+        return;
+    }
+
     const isOwn = msg.sender_id === AUTH_USER_ID;
     let text = "…";
     try {
-        const partnerKey = await getPartnerPublicKey(
-            isOwn ? state.currentPartnerId! : msg.sender_id,
-        );
+        const peerId = state.currentConversationType === "group"
+            ? (isOwn ? AUTH_USER_ID : msg.sender_id)
+            : (isOwn ? state.currentPartnerId! : msg.sender_id);
+        const partnerKey = await getPartnerPublicKey(peerId);
         const aesKey = await Crypto.deriveAesKey(state.myPrivateKey!, partnerKey);
         const payload = JSON.parse(msg.encrypted_payload) as {
             iv: string;
@@ -244,17 +440,114 @@ export async function appendMessage(
                     : createBubble(msg.id, isOwn, text, msg.created_at, msg.delivered_at, msg.read_at, msg.encrypted_payload, msg.edited_at ?? null, parsedReplyTo, parsedForwardedFrom);
 
     bubble.dataset.type = msgType;
+    bubble.dataset.senderId = String(msg.sender_id);
     bubble.dataset.encryptedPayload = msg.encrypted_payload;
+    decorateGroupIncomingBubble(bubble, msg.sender_id);
     bindContextMenu(bubble, msg.id, isOwn, msg.created_at, msgType, snippet);
 
     const area = document.getElementById("messagesArea")!;
     const btn = area.querySelector(".load-more-btn");
+    const messageNode = wrapGroupIncomingBubble(bubble, msg.sender_id);
 
     if (mode === "prepend-before-btn" && btn) {
-        btn.insertAdjacentElement("afterend", bubble);
+        btn.insertAdjacentElement("afterend", messageNode);
     } else {
-        area.appendChild(bubble);
+        area.appendChild(messageNode);
     }
+}
+
+function createSystemMessageNode(msg: Message): HTMLElement {
+    const payload = msg.system_payload ?? {};
+    const actor = payload.actor ?? "Участник";
+    const target = payload.target ?? "участника";
+    const text = payload.event === "member_removed"
+        ? `${actor} кикнул(а) ${target}`
+        : payload.event === "member_joined"
+            ? `${actor} присоединился(ась) к группе`
+            : `${actor} покинул(а) группу`;
+
+    const div = document.createElement("div");
+    div.className = "system-message";
+    div.id = "msg-" + msg.id;
+    div.dataset.id = String(msg.id);
+    div.textContent = text;
+
+    return div;
+}
+
+function decorateGroupIncomingBubble(bubble: HTMLElement, senderId: number): void {
+    if (state.currentConversationType !== "group" || senderId === AUTH_USER_ID) {
+        return;
+    }
+
+    if (bubble.querySelector(".group-message-sender")) {
+        return;
+    }
+
+    const sender = state.currentParticipants.find((participant) => participant.id === senderId);
+    const senderName = sender?.login ?? "участник";
+    const header = document.createElement("div");
+    header.className = "group-message-sender";
+    header.textContent = senderName;
+    bubble.insertBefore(header, bubble.firstChild);
+}
+
+function wrapGroupIncomingBubble(bubble: HTMLElement, senderId: number): HTMLElement {
+    if (state.currentConversationType !== "group" || senderId === AUTH_USER_ID) {
+        return bubble;
+    }
+
+    const sender = state.currentParticipants.find((participant) => participant.id === senderId);
+    const row = document.createElement("div");
+    row.className = "group-message-row";
+
+    const avatar = document.createElement("div");
+    avatar.className = "group-message-avatar";
+    setAvatarEl(avatar, sender?.login ?? "?", sender?.avatar ?? window.Laravel.avatars?.[senderId] ?? null);
+
+    row.appendChild(avatar);
+    row.appendChild(bubble);
+
+    return row;
+}
+
+function peerIdForBubble(bubble: HTMLElement): number {
+    const senderId = parseInt(bubble.dataset.senderId ?? String(AUTH_USER_ID));
+
+    if (state.currentConversationType === "group") {
+        return senderId === AUTH_USER_ID ? AUTH_USER_ID : senderId;
+    }
+
+    return senderId === AUTH_USER_ID ? state.currentPartnerId! : senderId;
+}
+
+async function decryptCurrentPayload(
+    encryptedPayload: string,
+    preferredPeerId: number | null = null,
+): Promise<string> {
+    const payload = JSON.parse(encryptedPayload) as { iv: string; ciphertext: string };
+    const peerIds = state.currentConversationType === "group"
+        ? [
+            ...(preferredPeerId ? [preferredPeerId] : []),
+            ...state.currentParticipants.map((participant) => participant.id),
+            AUTH_USER_ID,
+        ]
+        : [preferredPeerId ?? state.currentPartnerId!];
+
+    const uniquePeerIds = [...new Set(peerIds)];
+    let lastError: unknown = null;
+
+    for (const peerId of uniquePeerIds) {
+        try {
+            const partnerKey = await getPartnerPublicKey(peerId);
+            const aesKey = await Crypto.deriveAesKey(state.myPrivateKey!, partnerKey);
+            return await Crypto.decrypt(aesKey, payload.iv, payload.ciphertext);
+        } catch (error) {
+            lastError = error;
+        }
+    }
+
+    throw lastError instanceof Error ? lastError : new Error("decrypt failed");
 }
 
 export function createBubble(
@@ -469,18 +762,14 @@ function createLocationLiveBubble(
 }
 
 export async function sendLocationMessage(lat: number, lng: number, accuracy: number): Promise<void> {
-    if (!state.currentConvId || !state.currentPartnerId) { return; }
-
-    const partnerKey = await getPartnerPublicKey(state.currentPartnerId);
-    const aesKey = await Crypto.deriveAesKey(state.myPrivateKey!, partnerKey);
+    if (!state.currentConvId) { return; }
 
     const content: LocationMessageContent = { type: "location", lat, lng, accuracy };
-    const { iv, ciphertext } = await Crypto.encrypt(aesKey, JSON.stringify(content));
-    const payload = JSON.stringify({ iv, ciphertext });
+    const { body, localPayload } = await encryptForCurrentConversation(JSON.stringify(content));
 
-    const data = await post<SendResponse>(`/chat/${state.currentConvId}/messages`, { encrypted_payload: payload });
+    const data = await post<SendResponse>(`/chat/${state.currentConvId}/messages`, body);
     if (data.success) {
-        const msg: Message = { id: data.id, sender_id: AUTH_USER_ID, encrypted_payload: payload, created_at: data.created_at, delivered_at: null, read_at: null };
+        const msg: Message = { id: data.id, sender_id: AUTH_USER_ID, encrypted_payload: localPayload, created_at: data.created_at, delivered_at: null, read_at: null };
         await appendMessage(msg, "append");
         document.getElementById("messagesArea")!.scrollTop = document.getElementById("messagesArea")!.scrollHeight;
         const storePref = (document.getElementById("storageSelect") as HTMLSelectElement).value;
@@ -494,18 +783,14 @@ export async function sendLiveLocationMessage(
     sessionId: string, lat: number, lng: number, accuracy: number,
     durationMinutes: number, expiresAt: string,
 ): Promise<void> {
-    if (!state.currentConvId || !state.currentPartnerId) { return; }
-
-    const partnerKey = await getPartnerPublicKey(state.currentPartnerId);
-    const aesKey = await Crypto.deriveAesKey(state.myPrivateKey!, partnerKey);
+    if (!state.currentConvId || state.currentConversationType === "group") { return; }
 
     const content: LocationLiveMessageContent = { type: "location_live", session_id: sessionId, lat, lng, accuracy, duration_minutes: durationMinutes, expires_at: expiresAt };
-    const { iv, ciphertext } = await Crypto.encrypt(aesKey, JSON.stringify(content));
-    const payload = JSON.stringify({ iv, ciphertext });
+    const { body, localPayload } = await encryptForCurrentConversation(JSON.stringify(content));
 
-    const data = await post<SendResponse>(`/chat/${state.currentConvId}/messages`, { encrypted_payload: payload });
+    const data = await post<SendResponse>(`/chat/${state.currentConvId}/messages`, body);
     if (data.success) {
-        const msg: Message = { id: data.id, sender_id: AUTH_USER_ID, encrypted_payload: payload, created_at: data.created_at, delivered_at: null, read_at: null };
+        const msg: Message = { id: data.id, sender_id: AUTH_USER_ID, encrypted_payload: localPayload, created_at: data.created_at, delivered_at: null, read_at: null };
         await appendMessage(msg, "append");
         document.getElementById("messagesArea")!.scrollTop = document.getElementById("messagesArea")!.scrollHeight;
         const storePref = (document.getElementById("storageSelect") as HTMLSelectElement).value;
@@ -555,10 +840,7 @@ export async function sendPhotoMessage(
     originalResult: { fileUuid: string; fileKey: string; name: string; mime: string; size: number; chunks: number; chunkSize: number; expiresAt: string },
     caption: string,
 ): Promise<void> {
-    if (!state.currentConvId || !state.currentPartnerId) { return; }
-
-    const partnerKey = await getPartnerPublicKey(state.currentPartnerId);
-    const aesKey = await Crypto.deriveAesKey(state.myPrivateKey!, partnerKey);
+    if (!state.currentConvId) { return; }
 
     const photoContent: PhotoMessageContent = {
         type: "photo",
@@ -568,12 +850,11 @@ export async function sendPhotoMessage(
     };
     if (caption) { photoContent.text = caption; }
 
-    const { iv, ciphertext } = await Crypto.encrypt(aesKey, JSON.stringify(photoContent));
-    const payload = JSON.stringify({ iv, ciphertext });
+    const { body, localPayload } = await encryptForCurrentConversation(JSON.stringify(photoContent));
 
-    const data = await post<SendResponse>(`/chat/${state.currentConvId}/messages`, { encrypted_payload: payload });
+    const data = await post<SendResponse>(`/chat/${state.currentConvId}/messages`, body);
     if (data.success) {
-        const msg: Message = { id: data.id, sender_id: AUTH_USER_ID, encrypted_payload: payload, created_at: data.created_at, delivered_at: null, read_at: null };
+        const msg: Message = { id: data.id, sender_id: AUTH_USER_ID, encrypted_payload: localPayload, created_at: data.created_at, delivered_at: null, read_at: null };
         await appendMessage(msg, "append");
         const area = document.getElementById("messagesArea")!;
         area.scrollTop = area.scrollHeight;
@@ -596,12 +877,9 @@ export async function sendFileMessage(
     expiresAt: string,
     caption: string,
 ): Promise<void> {
-    if (!state.currentConvId || !state.currentPartnerId) {
+    if (!state.currentConvId) {
         return;
     }
-
-    const partnerKey = await getPartnerPublicKey(state.currentPartnerId);
-    const aesKey = await Crypto.deriveAesKey(state.myPrivateKey!, partnerKey);
 
     const fileContent: FileMessageContent = {
         type: "file",
@@ -620,18 +898,15 @@ export async function sendFileMessage(
         fileContent.text = caption;
     }
 
-    const { iv, ciphertext } = await Crypto.encrypt(aesKey, JSON.stringify(fileContent));
-    const payload = JSON.stringify({ iv, ciphertext });
+    const { body, localPayload } = await encryptForCurrentConversation(JSON.stringify(fileContent));
 
-    const data = await post<SendResponse>(`/chat/${state.currentConvId}/messages`, {
-        encrypted_payload: payload,
-    });
+    const data = await post<SendResponse>(`/chat/${state.currentConvId}/messages`, body);
 
     if (data.success) {
         const msg: Message = {
             id: data.id,
             sender_id: AUTH_USER_ID,
-            encrypted_payload: payload,
+            encrypted_payload: localPayload,
             created_at: data.created_at,
             delivered_at: null,
             read_at: null,
@@ -696,18 +971,12 @@ export async function sendMessage(): Promise<void> {
     updateSendBtn();
 
     try {
-        const partnerKey = await getPartnerPublicKey(state.currentPartnerId!);
-        const aesKey = await Crypto.deriveAesKey(state.myPrivateKey!, partnerKey);
-
         const currentReply = replyingTo;
         const plaintext = currentReply
             ? JSON.stringify({ type: "text", text, reply_to: { id: currentReply.msgId, snippet: currentReply.snippet, sender_alias: currentReply.senderAlias } })
             : text;
 
-        const { iv, ciphertext } = await Crypto.encrypt(aesKey, plaintext);
-        const payload = JSON.stringify({ iv, ciphertext });
-
-        const body: Record<string, unknown> = { encrypted_payload: payload };
+        const { body, localPayload } = await encryptForCurrentConversation(plaintext);
         if (currentReply) { body.reply_to_id = currentReply.msgId; }
 
         const data = await post<SendResponse>(`/chat/${state.currentConvId}/messages`, body);
@@ -716,7 +985,7 @@ export async function sendMessage(): Promise<void> {
             const msg: Message = {
                 id: data.id,
                 sender_id: AUTH_USER_ID,
-                encrypted_payload: payload,
+                encrypted_payload: localPayload,
                 created_at: data.created_at,
                 delivered_at: null,
                 read_at: null,
@@ -775,14 +1044,11 @@ export async function applyMessageEdit(
     editedAt: string,
 ): Promise<void> {
     const bubble = document.getElementById("msg-" + msgId);
-    if (!bubble || !state.myPrivateKey || !state.currentPartnerId) { return; }
+    if (!bubble || !state.myPrivateKey) { return; }
 
     let text = "…";
     try {
-        const partnerKey = await getPartnerPublicKey(state.currentPartnerId);
-        const aesKey = await Crypto.deriveAesKey(state.myPrivateKey, partnerKey);
-        const payload = JSON.parse(encryptedPayload) as { iv: string; ciphertext: string };
-        text = await Crypto.decrypt(aesKey, payload.iv, payload.ciphertext);
+        text = await decryptCurrentPayload(encryptedPayload, peerIdForBubble(bubble));
     } catch {
         text = "[не удалось расшифровать — ключ изменился]";
     }
@@ -968,7 +1234,7 @@ function clearPinBar(): void {
 }
 
 async function loadPinBar(): Promise<void> {
-    if (!state.currentConvId || !state.myPrivateKey || !state.currentPartnerId) { return; }
+    if (!state.currentConvId || !state.myPrivateKey) { return; }
 
     const data = await fetchJson<{ success: boolean; data: Array<{ message_id: number; encrypted_payload: string }> }>(
         `/chat/${state.currentConvId}/pins`,
@@ -984,7 +1250,7 @@ async function loadPinBar(): Promise<void> {
 }
 
 async function addPinToBar(msgId: number, encryptedPayload: string): Promise<void> {
-    if (!state.myPrivateKey || !state.currentPartnerId) { return; }
+    if (!state.myPrivateKey) { return; }
     if (pinBarPins.some((p) => p.msgId === msgId)) { return; }
 
     const snippet = await decryptPinSnippet(encryptedPayload);
@@ -1052,12 +1318,9 @@ function renderPinBar(): void {
 
 async function decryptPinSnippet(encryptedPayload: string): Promise<string> {
     let snippet = "сообщение";
-    if (!state.myPrivateKey || !state.currentPartnerId) { return snippet; }
+    if (!state.myPrivateKey) { return snippet; }
     try {
-        const partnerKey = await getPartnerPublicKey(state.currentPartnerId);
-        const aesKey = await Crypto.deriveAesKey(state.myPrivateKey, partnerKey);
-        const payload = JSON.parse(encryptedPayload) as { iv: string; ciphertext: string };
-        const text = await Crypto.decrypt(aesKey, payload.iv, payload.ciphertext);
+        const text = await decryptCurrentPayload(encryptedPayload);
         try {
             const parsed = JSON.parse(text) as { type: string; text?: string; file?: { name: string } };
             if (parsed.type === "text" && parsed.text) { snippet = parsed.text.slice(0, 60); }
@@ -1147,18 +1410,15 @@ function startInlineEdit(bubble: HTMLElement, msgId: number): void {
 
         saveBtn.disabled = true;
         try {
-            const partnerKey = await getPartnerPublicKey(state.currentPartnerId!);
-            const aesKey = await Crypto.deriveAesKey(state.myPrivateKey, partnerKey);
-            const { iv, ciphertext } = await Crypto.encrypt(aesKey, newText);
-            const payload = JSON.stringify({ iv, ciphertext });
+            const { body, localPayload } = await encryptForCurrentConversation(newText);
 
             const result = await patch<{ success: boolean; edited_at: string }>(
                 `/chat/${state.currentConvId}/messages/${msgId}`,
-                { encrypted_payload: payload },
+                body,
             );
 
             if (result.success) {
-                bubble.dataset.encryptedPayload = payload;
+                bubble.dataset.encryptedPayload = localPayload;
                 const newTextDiv = document.createElement("div");
                 newTextDiv.className = "bubble-text";
                 newTextDiv.textContent = newText;
@@ -1189,7 +1449,7 @@ function startInlineEdit(bubble: HTMLElement, msgId: number): void {
 }
 
 async function openEditHistory(msgId: number): Promise<void> {
-    if (!state.currentConvId || !state.myPrivateKey || !state.currentPartnerId) { return; }
+    if (!state.currentConvId || !state.myPrivateKey) { return; }
 
     try {
         const data = await fetchJson<{
@@ -1199,14 +1459,13 @@ async function openEditHistory(msgId: number): Promise<void> {
 
         if (!data.success || !data.data.length) { return; }
 
-        const partnerKey = await getPartnerPublicKey(state.currentPartnerId);
-        const aesKey = await Crypto.deriveAesKey(state.myPrivateKey, partnerKey);
+        const bubble = document.getElementById("msg-" + msgId);
+        const preferredPeerId = bubble ? peerIdForBubble(bubble) : null;
 
         const items = await Promise.all(
             data.data.map(async (e) => {
                 try {
-                    const p = JSON.parse(e.encrypted_payload) as { iv: string; ciphertext: string };
-                    return { text: await Crypto.decrypt(aesKey, p.iv, p.ciphertext), created_at: e.created_at };
+                    return { text: await decryptCurrentPayload(e.encrypted_payload, preferredPeerId), created_at: e.created_at };
                 } catch {
                     return { text: "[не удалось расшифровать]", created_at: e.created_at };
                 }
@@ -1683,6 +1942,7 @@ export async function startChatWithFriend(
         div.className = "conversation-item";
         div.id = "conv-" + convId;
         div.dataset.convId = String(convId);
+        div.dataset.convType = "direct";
         div.dataset.partnerId = String(partnerId);
         div.dataset.partnerLogin = partnerLogin;
         const avatarUrl = window.Laravel.avatars?.[partnerId] ?? null;

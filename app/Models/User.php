@@ -86,9 +86,24 @@ class User extends Authenticatable
         return $this->hasMany(Conversation::class, 'user_a_id');
     }
 
+    public function groupConversations(): BelongsToMany
+    {
+        return $this->belongsToMany(Conversation::class, 'conversation_members')
+            ->withPivot(['role', 'joined_at'])
+            ->withTimestamps();
+    }
+
     public function isFriendWith(int $userId): bool
     {
         return $this->friends()->where('friend_id', $userId)->exists()
             || $this->friendOf()->where('user_id', $userId)->exists();
+    }
+
+    public function sharesGroupWith(int $userId): bool
+    {
+        return ConversationMember::query()
+            ->where('user_id', $this->id)
+            ->whereHas('conversation.members', fn ($query) => $query->where('user_id', $userId))
+            ->exists();
     }
 }

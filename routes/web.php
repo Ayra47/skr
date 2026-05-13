@@ -82,12 +82,27 @@ Route::middleware('auth')->group(function () {
     // Chat routes
     Route::redirect('/chat', '/')->name('chat.index');
     Route::post('/chat/conversation', [ChatController::class, 'startConversation'])->name('chat.conversation.start');
+    Route::post('/chat/groups', [ChatController::class, 'createGroup'])->name('chat.groups.store');
+    Route::get('/chat/invite/{token}', [ChatController::class, 'joinByInvite'])->name('chat.invites.join');
+    Route::post('/chat/group-requests/{joinRequestId}/accept', [ChatController::class, 'acceptJoinRequest'])->name('chat.group-requests.accept');
+    Route::delete('/chat/group-requests/{joinRequestId}', [ChatController::class, 'declineJoinRequest'])->name('chat.group-requests.decline');
     Route::post('/chat/keys', [ChatController::class, 'storePublicKey'])->name('chat.keys.store');
     Route::get('/chat/keys/backup', [ChatController::class, 'getKeyBackup'])->name('chat.keys.backup.show');
     Route::post('/chat/keys/backup', [ChatController::class, 'storeKeyBackup'])->name('chat.keys.backup.store');
     Route::get('/chat/keys/{userId}', [ChatController::class, 'getPublicKey'])->name('chat.keys.show');
     Route::get('/chat/settings', [ChatController::class, 'getSettings'])->name('chat.settings');
     Route::post('/chat/settings', [ChatController::class, 'storeSettings'])->name('chat.settings.store');
+    Route::get('/chat/{conversationId}/participants', [ChatController::class, 'participants'])->name('chat.participants.index');
+    Route::patch('/chat/{conversationId}/group', [ChatController::class, 'updateGroup'])->name('chat.groups.update');
+    Route::post('/chat/{conversationId}/group/avatar', [ChatController::class, 'updateGroupAvatar'])->name('chat.groups.avatar');
+    Route::post('/chat/{conversationId}/members', [ChatController::class, 'addMembers'])->name('chat.members.store');
+    Route::delete('/chat/{conversationId}/members/me', [ChatController::class, 'leaveGroup'])->name('chat.members.leave');
+    Route::delete('/chat/{conversationId}/members/{userId}', [ChatController::class, 'removeMember'])->name('chat.members.destroy');
+    Route::post('/chat/{conversationId}/members/{userId}/admin', [ChatController::class, 'promoteMember'])->name('chat.members.promote');
+    Route::delete('/chat/{conversationId}/members/{userId}/admin', [ChatController::class, 'demoteMember'])->name('chat.members.demote');
+    Route::post('/chat/{conversationId}/invites', [ChatController::class, 'createInvite'])->name('chat.invites.store');
+    Route::delete('/chat/{conversationId}/invites/{inviteId}', [ChatController::class, 'revokeInvite'])->name('chat.invites.destroy');
+    Route::delete('/chat/{conversationId}/group', [ChatController::class, 'destroyGroup'])->name('chat.groups.destroy');
     Route::get('/chat/{conversationId}/messages', [ChatController::class, 'messages'])->name('chat.messages.index');
     Route::post('/chat/{conversationId}/messages', [ChatController::class, 'store'])->name('chat.messages.store');
     Route::patch('/chat/{conversationId}/messages/{messageId}', [ChatController::class, 'update'])->name('chat.messages.update');

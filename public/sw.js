@@ -1,3 +1,15 @@
+const SW_VERSION = "group-notifications-v2";
+
+self.addEventListener("install", (event) => {
+    console.log("Installing service worker", SW_VERSION);
+    event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener("activate", (event) => {
+    console.log("Activating service worker", SW_VERSION);
+    event.waitUntil(self.clients.claim());
+});
+
 // ─── Crypto (mirrors chat.js) ─────────────────────────────────────────────────
 const Crypto = {
     importPrivateJwk: (jwk) =>
@@ -122,6 +134,11 @@ self.addEventListener("push", (event) => {
             }
 
             let body = data.body;
+            const isGroup = data.conversation_type === "group";
+            const groupLabel = data.conversation_title
+                ? "Группа: " + data.conversation_title
+                : "Группа";
+
             if (data.encrypted_payload && data.sender_id && data.recipient_id) {
                 try {
                     const text = await decryptPushPayload(
@@ -130,15 +147,25 @@ self.addEventListener("push", (event) => {
                         data.recipient_id,
                     );
                     if (text) {
-                        body = data.sender_login + ": " + text;
+                        body = isGroup
+                            ? groupLabel + "\n" + data.sender_login + ": " + text
+                            : data.sender_login + ": " + text;
                     }
                 } catch (e) {
                     console.log("omg err", e);
                 }
             }
 
+            if (isGroup && !String(body ?? "").startsWith("Группа")) {
+                body = groupLabel + "\n" + body;
+            }
+
             try {
-                await self.registration.showNotification("skr", {
+                const title = isGroup && data.conversation_title
+                    ? "Группа: " + data.conversation_title
+                    : (data.title ?? "skr");
+
+                await self.registration.showNotification(title, {
                     body,
                     icon: "/logo.svg",
                     tag: data.tag,

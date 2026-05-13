@@ -22,6 +22,8 @@ import { updateMapMarker, freezeSession, updateFullscreenMarker } from "./locati
 interface IncomingMessage extends Message {
     sender_login?: string;
     conversation_id: number;
+    conversation_type?: "direct" | "group";
+    conversation_title?: string | null;
 }
 
 interface PresenceUser {
@@ -35,8 +37,10 @@ export function initWebSocket(): void {
                 await appendMessage(
                     {
                         id: e.id,
+                        type: e.type,
                         sender_id: e.sender_id,
                         encrypted_payload: e.encrypted_payload,
+                        system_payload: e.system_payload,
                         created_at: e.created_at,
                         delivered_at: null,
                         read_at: null,
@@ -47,7 +51,7 @@ export function initWebSocket(): void {
                 area.scrollTop = area.scrollHeight;
                 markVisibleMessagesRead();
             }
-            if (e.conversation_id !== state.currentConvId && state.myPrivateKey) {
+            if (e.conversation_id !== state.currentConvId && state.myPrivateKey && e.type !== "system") {
                 try {
                     const partnerKey = await getPartnerPublicKey(e.sender_id);
                     const aesKey = await Crypto.deriveAesKey(state.myPrivateKey, partnerKey);
@@ -63,6 +67,8 @@ export function initWebSocket(): void {
                                 senderLogin: e.sender_login ?? "",
                                 senderId: e.sender_id,
                                 conversationId: e.conversation_id,
+                                conversationType: e.conversation_type ?? "direct",
+                                conversationTitle: e.conversation_title ?? null,
                                 text,
                             },
                         }),
@@ -140,12 +146,15 @@ export function initWebSocket(): void {
         }) => {
             await applyPinUpdate(e.id, e.conversation_id, e.encrypted_payload, e.pinned);
         })
-        .listen(".chat.typing", (e: { conversation_id: number }) => {
+        .listen(".chat.typing", (e: { conversation_id: number; sender_id?: number }) => {
             if (e.conversation_id !== state.currentConvId) {
                 return;
             }
             const el = document.getElementById("typingIndicator")!;
-            el.textContent = state.currentPartnerLogin + " печатает…";
+            const sender = state.currentConversationType === "group"
+                ? state.currentParticipants.find((participant) => participant.id === e.sender_id)?.login
+                : state.currentPartnerLogin;
+            el.textContent = (sender ?? "кто-то") + " печатает…";
             clearTimeout(state.typingTimeout ?? undefined);
             state.typingTimeout = setTimeout(() => {
                 el.textContent = "";

@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\Conversation;
 use App\Models\PushSubscription;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -19,6 +20,8 @@ class SendPushNotificationJob implements ShouldQueue
         public readonly int $senderId,
         public readonly int $conversationId,
         public readonly string $encryptedPayload = '',
+        public readonly string $conversationType = 'direct',
+        public readonly ?string $conversationTitle = null,
     ) {}
 
     public function handle(): void
@@ -26,7 +29,8 @@ class SendPushNotificationJob implements ShouldQueue
         $subscriptions = PushSubscription::where('user_id', $this->recipientId)->get();
 
         if ($subscriptions->isEmpty()) {
-            Log::info("EMPTY 1");
+            Log::info('EMPTY 1');
+
             return;
         }
 
@@ -38,12 +42,22 @@ class SendPushNotificationJob implements ShouldQueue
             ],
         ]);
 
+        $conversation = Conversation::find($this->conversationId);
+        $isGroup = $conversation?->isGroup() ?? $this->conversationType === Conversation::TYPE_GROUP;
+        $conversationTitle = $conversation?->title ?? $this->conversationTitle;
+
         $payload = json_encode([
             'title' => 'skr',
-            'body' => 'Новое сообщение от ' . $this->senderLogin,
-            'tag' => 'msg-' . $this->senderId,
-            'url' => '/chats?with=' . $this->senderId . '&login=' . rawurlencode($this->senderLogin),
+            'body' => $isGroup && $conversationTitle
+                ? 'Группа: '.$conversationTitle."\n".$this->senderLogin.': Новое сообщение'
+                : 'Новое сообщение от '.$this->senderLogin,
+            'tag' => 'msg-'.($isGroup ? $this->conversationId : $this->senderId),
+            'url' => $isGroup
+                ? '/chats?conversation='.$this->conversationId
+                : '/chats?with='.$this->senderId.'&login='.rawurlencode($this->senderLogin),
             'conversation_id' => $this->conversationId,
+            'conversation_type' => $isGroup ? Conversation::TYPE_GROUP : Conversation::TYPE_DIRECT,
+            'conversation_title' => $conversationTitle,
             'sender_id' => $this->senderId,
             'sender_login' => $this->senderLogin,
             'recipient_id' => $this->recipientId,
@@ -67,11 +81,11 @@ class SendPushNotificationJob implements ShouldQueue
             $endpoint = $report->getRequest()->getUri()->__toString();
 
             if ($report->isSuccess()) {
-                Log::info("Push success", [
+                Log::info('Push success', [
                     'endpoint' => $endpoint,
                 ]);
             } else {
-                Log::error("Push failed", [
+                Log::error('Push failed', [
                     'endpoint' => $endpoint,
                     'reason' => $report->getReason(),
                 ]);

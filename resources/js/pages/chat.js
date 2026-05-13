@@ -7,7 +7,7 @@ import { bindEvents } from "./chat/events";
 import { setAvatarEl } from "./chat/ui";
 import { loadOrGenerateKeyPair } from "./chat/keys";
 import { loadStoragePreference } from "./chat/storage";
-import { startChatWithFriend } from "./chat/messages";
+import { openConversation, startChatWithFriend } from "./chat/messages";
 import { initWebSocket } from "./chat/websocket";
 
 (async () => {
@@ -38,6 +38,16 @@ import { initWebSocket } from "./chat/websocket";
     setInterval(sendHeartbeat, 30_000);
 
     const params = new URLSearchParams(location.search);
+    const conversationId = parseInt(params.get("conversation") ?? "0");
+    if (conversationId) {
+        const item = document.querySelector(`[data-conv-id="${conversationId}"]`);
+        if (item) {
+            const type = item.dataset.convType ?? "direct";
+            await openConversation(conversationId, parseInt(item.dataset.partnerId ?? "0"), item.dataset.partnerLogin ?? "чат", type);
+        }
+        return;
+    }
+
     const withUserId = parseInt(params.get("with") ?? "0");
     if (withUserId) {
         const el = document.querySelector(`[data-partner-id="${withUserId}"]`);

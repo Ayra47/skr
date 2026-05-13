@@ -172,8 +172,25 @@ document.addEventListener('click', async () => {
 }, { once: true });
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
-function showToast(senderLogin, senderId, text) {
-    const body = text ? senderLogin + ': ' + text : 'Новое сообщение от ' + senderLogin;
+function notificationText(senderLogin, text, conversationType, conversationTitle) {
+    if (conversationType === 'group') {
+        return 'Группа: ' + (conversationTitle || 'группа') + '\n' + senderLogin + ': ' + (text || 'Новое сообщение');
+    }
+
+    return text ? senderLogin + ': ' + text : 'Новое сообщение от ' + senderLogin;
+}
+
+function notificationUrl(senderLogin, senderId, conversationId, conversationType) {
+    if (conversationType === 'group') {
+        return '/chats?conversation=' + conversationId;
+    }
+
+    return '/chats?with=' + senderId + '&login=' + encodeURIComponent(senderLogin);
+}
+
+function showToast(senderLogin, senderId, text, conversationId, conversationType = 'direct', conversationTitle = null) {
+    const body = notificationText(senderLogin, text, conversationType, conversationTitle);
+    const url = notificationUrl(senderLogin, senderId, conversationId, conversationType);
     Toastify({
         text: body,
         duration: 4000,
@@ -182,7 +199,7 @@ function showToast(senderLogin, senderId, text) {
         position: 'right',
         stopOnFocus: true,
         style: { background: 'var(--panel-2)', border: '1px solid var(--border-2)', color: 'var(--text)' },
-        onClick: () => { window.location.href = '/chats?with=' + senderId + '&login=' + encodeURIComponent(senderLogin); },
+        onClick: () => { window.location.href = url; },
     }).showToast();
 }
 
@@ -196,9 +213,9 @@ Promise.all([loadPrefs(), loadPrivateKey()]).then(async () => {
     const toastedIds = new Set();
 
     window.addEventListener('skr:incoming', (ev) => {
-        const { msgId, senderLogin, senderId, text } = ev.detail;
+        const { msgId, senderLogin, senderId, conversationId, conversationType, conversationTitle, text } = ev.detail;
         toastedIds.add(msgId);
-        showToast(senderLogin, senderId, text);
+        showToast(senderLogin, senderId, text, conversationId, conversationType, conversationTitle);
     });
 
     window.Echo.private('chat.' + userId).listen('.chat.message', async (e) => {
@@ -220,6 +237,13 @@ Promise.all([loadPrefs(), loadPrivateKey()]).then(async () => {
 
         toastedIds.add(e.id);
 
-        showToast(e.sender_login ?? 'кто-то', e.sender_id, text);
+        showToast(
+            e.sender_login ?? 'кто-то',
+            e.sender_id,
+            text,
+            e.conversation_id,
+            e.conversation_type ?? 'direct',
+            e.conversation_title ?? null,
+        );
     });
 });

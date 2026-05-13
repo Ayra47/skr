@@ -15,7 +15,7 @@
             hasPublicKey: {{ $hasPublicKey ? 'true' : 'false' }},
             hasKeyBackup: {{ $hasKeyBackup ? 'true' : 'false' }},
             avatars: @json(
-                $conversations->map(fn($c) => $c->otherParticipant(Auth::id()))
+                $conversations->flatMap(fn($c) => $c->isGroup() ? $c->members->map(fn($m) => $m->user) : [$c->otherParticipant(Auth::id())])
                     ->merge($friendsWithoutConv)
                     ->unique('id')
                     ->mapWithKeys(fn($u) => [$u->id => $u->avatar ? '/storage/'.$u->avatar : null])
@@ -52,17 +52,39 @@
                     </svg>
                     <input type="text" placeholder="поиск…">
                 </div>
+                <div class="sidebar-actions">
+                    <button class="export-btn" id="newGroupBtn" type="button">новая группа</button>
+                    @if($pendingJoinRequests->isNotEmpty())
+                        <button class="export-btn" id="groupRequestsBtn" type="button">приглашения ({{ $pendingJoinRequests->count() }})</button>
+                    @endif
+                </div>
             </div>
 
             <div class="conversation-list" id="conversationList">
                 @forelse($conversations as $conv)
-                    @php $partner = $conv->otherParticipant(auth()->id()); @endphp
-                    <div class="conversation-item" data-conv-id="{{ $conv->id }}" data-partner-id="{{ $partner->id }}"
-                        data-partner-login="{{ $partner->pseudonym }}" data-avatar-url="{{ $partner->avatar ? '/storage/'.$partner->avatar : '' }}">
-                        <div class="conv-avatar">{{ mb_strtoupper(mb_substr($partner->pseudonym, 0, 1)) }}<span class="online-dot"></span></div>
+                    @php
+                        $isGroup = $conv->isGroup();
+                        $partner = $isGroup ? null : $conv->otherParticipant(auth()->id());
+                        $title = $isGroup ? $conv->title : $partner->pseudonym;
+                        $role = $isGroup ? $conv->roleFor(auth()->id()) : null;
+                    @endphp
+                    <div class="conversation-item" data-conv-id="{{ $conv->id }}" data-conv-type="{{ $isGroup ? 'group' : 'direct' }}"
+                        @if(!$isGroup) data-partner-id="{{ $partner->id }}" @endif
+                        @if($isGroup) data-user-role="{{ $role }}" @endif
+                        data-partner-login="{{ $title }}" data-avatar-url="{{ !$isGroup && $partner->avatar ? '/storage/'.$partner->avatar : ($isGroup && $conv->avatar ? '/storage/'.$conv->avatar : '') }}">
+                        <div class="conv-avatar">
+                            @if($isGroup && $conv->avatar)
+                                <img src="/storage/{{ $conv->avatar }}" alt="" class="avatar-img">
+                            @elseif(!$isGroup && $partner->avatar)
+                                <img src="/storage/{{ $partner->avatar }}" alt="" class="avatar-img">
+                            @else
+                                {{ mb_strtoupper(mb_substr($title, 0, 1)) }}
+                            @endif
+                            @if(!$isGroup)<span class="online-dot"></span>@endif
+                        </div>
                         <div class="conv-info">
-                            <div class="conv-name">{{ $partner->pseudonym }}</div>
-                            <div class="conv-preview" id="preview-{{ $conv->id }}">зашифровано</div>
+                            <div class="conv-name">{{ $title }}</div>
+                            <div class="conv-preview" id="preview-{{ $conv->id }}">{{ $isGroup ? 'группа' : 'зашифровано' }}</div>
                         </div>
                         <div class="conv-time" id="time-{{ $conv->id }}">
                             @if($conv->latestMessage)
@@ -131,11 +153,13 @@
                     </svg>
                     e2e
                 </div>
+                <button class="group-manage-btn" id="groupManageBtn" type="button" style="display:none">участники</button>
                 <div class="key-change-warn" id="keyChangeWarn" style="display:none;">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.3L2 21h20L13.7 3.3a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                     <span id="keyChangeWarnText"></span>
                 </div>
             </div>
+            <div class="group-panel" id="groupPanel" style="display:none"></div>
             <div class="pin-bar" id="pinBar" style="display:none"></div>
             <div class="typing-indicator" id="typingIndicator"></div>
             <div class="messages-area" id="messagesArea">
@@ -212,6 +236,48 @@
         <!-- EMOJI PANEL (desktop inline column) -->
         <div id="emojiPanel" class="emoji-panel"></div>
     </div>
+    <div id="groupCreateModal" class="modal-overlay" style="display:none">
+        <form class="modal-box" id="groupCreateForm">
+            <div class="modal-title">Новая группа</div>
+            <input type="text" name="title" class="modal-input" maxlength="60" required placeholder="Название">
+            <div class="group-friend-picker">
+                @foreach($allFriends as $friend)
+                    <label>
+                        <input type="checkbox" name="user_ids[]" value="{{ $friend->id }}">
+                        <span>{{ $friend->pseudonym }}</span>
+                    </label>
+                @endforeach
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn-secondary" id="groupCreateCancel" type="button">отмена</button>
+                <button class="modal-btn-primary" type="submit">создать</button>
+            </div>
+        </form>
+    </div>
+    @if($pendingJoinRequests->isNotEmpty())
+        <div id="groupRequestsModal" class="modal-overlay" style="display:none">
+            <div class="modal-box">
+                <div class="modal-title">Приглашения в группы</div>
+                <div class="group-request-list">
+                    @foreach($pendingJoinRequests as $joinRequest)
+                        <div class="group-request-row" data-request-id="{{ $joinRequest->id }}">
+                            <div>
+                                <strong>{{ $joinRequest->conversation->title }}</strong>
+                                <span>пригласил(а): {{ $joinRequest->invitedBy->pseudonym }}</span>
+                            </div>
+                            <div class="group-request-actions">
+                                <button class="modal-btn-secondary" type="button" data-action="decline-group-request">отклонить</button>
+                                <button class="modal-btn-primary" type="button" data-action="accept-group-request">принять</button>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-btn-secondary" id="groupRequestsClose" type="button">закрыть</button>
+                </div>
+            </div>
+        </div>
+    @endif
     <!-- PIN dialog -->
     <div id="pinDialog" class="modal-overlay" style="display:none">
         <div class="modal-box">

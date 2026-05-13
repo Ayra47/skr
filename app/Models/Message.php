@@ -9,15 +9,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'conversation_id', 'sender_id', 'reply_to_id',
-    'encrypted_payload', 'delivered_at', 'read_at',
+    'type', 'conversation_id', 'sender_id', 'reply_to_id',
+    'encrypted_payload', 'system_payload', 'delivered_at', 'read_at',
     'expires_at', 'edited_at', 'deleted_at', 'deleted_for',
 ])]
 class Message extends Model
 {
+    public const TYPE_MESSAGE = 'message';
+
+    public const TYPE_SYSTEM = 'system';
+
     protected function casts(): array
     {
         return [
+            'system_payload' => 'array',
             'delivered_at' => 'datetime',
             'read_at' => 'datetime',
             'expires_at' => 'datetime',

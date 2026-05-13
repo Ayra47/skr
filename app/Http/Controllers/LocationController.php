@@ -24,6 +24,10 @@ class LocationController extends Controller
             return response()->json(['success' => false, 'message' => 'Нет доступа'], 403);
         }
 
+        if ($conversation->isGroup()) {
+            return response()->json(['success' => false, 'message' => 'Геолокация в группах пока недоступна'], 422);
+        }
+
         $recipientId = $conversation->user_a_id === $user->id
             ? $conversation->user_b_id
             : $conversation->user_a_id;

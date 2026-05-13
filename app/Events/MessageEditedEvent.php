@@ -16,6 +16,7 @@ class MessageEditedEvent implements ShouldBroadcastNow
     public function __construct(
         public Message $message,
         public int $recipientId,
+        public ?string $encryptedPayload = null,
     ) {}
 
     public function broadcastOn(): PrivateChannel
@@ -33,7 +34,7 @@ class MessageEditedEvent implements ShouldBroadcastNow
         return [
             'id' => $this->message->id,
             'conversation_id' => $this->message->conversation_id,
-            'encrypted_payload' => $this->message->encrypted_payload,
+            'encrypted_payload' => $this->encryptedPayload ?? $this->message->encrypted_payload,
             'edited_at' => $this->message->edited_at->toIso8601String(),
         ];
     }
