@@ -43,12 +43,18 @@
             </a>
         </div>
         <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
-            <span
-                style="display:flex;align-items:center;gap:6px;font-size:11px;color:#6dd49a;padding:4px 10px;border-radius:999px;background:rgba(109,212,154,.08);border:1px solid rgba(109,212,154,.20);">
+            @php
+                $navAllOk = !\App\Models\StatusIncident::where('status', 'ongoing')->exists();
+            @endphp
+            <a href="{{ route('status.index') }}"
+                style="display:flex;align-items:center;gap:6px;font-size:11px;text-decoration:none;padding:4px 10px;border-radius:999px;
+                       color:{{ $navAllOk ? '#6dd49a' : '#e8c656' }};
+                       background:{{ $navAllOk ? 'rgba(109,212,154,.08)' : 'rgba(232,198,86,.08)' }};
+                       border:1px solid {{ $navAllOk ? 'rgba(109,212,154,.20)' : 'rgba(232,198,86,.20)' }};">
                 <span
-                    style="width:6px;height:6px;border-radius:50%;background:#6dd49a;box-shadow:0 0 6px rgba(109,212,154,.6);"></span>
-                e2e
-            </span>
+                    style="width:6px;height:6px;border-radius:50%;background:{{ $navAllOk ? '#6dd49a' : '#e8c656' }};box-shadow:0 0 6px {{ $navAllOk ? 'rgba(109,212,154,.6)' : 'rgba(232,198,86,.6)' }};"></span>
+                {{ $navAllOk ? 'все системы работают' : 'есть проблемы' }}
+            </a>
             <button id="nav-bell-btn" class="bell-btn {{ request()->routeIs('notifications.*') ? 'bell-btn--active' : '' }}" title="Уведомления">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                      stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">

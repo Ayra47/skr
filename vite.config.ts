@@ -24,6 +24,7 @@ export default defineConfig({
                 "resources/js/pages/friends.js",
                 "resources/js/pages/settings.js",
                 "resources/js/pages/profile.ts",
+                "resources/js/pages/status.js",
                 "resources/js/global-notifications.js",
             ],
             refresh: true,

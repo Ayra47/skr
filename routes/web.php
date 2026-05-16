@@ -12,6 +12,7 @@ use App\Http\Controllers\NotificationsController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\StatusController;
 use App\Http\Controllers\TwoFactorController;
 use Illuminate\Support\Facades\Route;
 
@@ -50,6 +51,10 @@ Route::post('/2fa/resend', [TwoFactorController::class, 'resend'])->name('2fa.re
 Route::get('/friends/join/{code}', [FriendsController::class, 'joinByCode'])->name('friends.join');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/status', [StatusController::class, 'index'])->name('status.index');
+    Route::get('/status/incidents/more', [StatusController::class, 'moreIncidents'])->name('status.incidents.more');
+    Route::get('/status/canary/more', [StatusController::class, 'moreCanary'])->name('status.canary.more');
+
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
     Route::get('/notifications', [NotificationsController::class, 'index'])->name('notifications.index');
     Route::get('/profile/{user}', [ProfileController::class, 'show'])->name('profiles.show');
