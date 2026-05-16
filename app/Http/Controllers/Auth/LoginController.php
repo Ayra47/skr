@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\TwoFactorController;
 use App\Models\LoginHistory;
 use App\Models\User;
+use App\Notifications\LoginNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -47,7 +48,9 @@ class LoginController extends Controller
                 'event' => 'login_success',
             ]);
 
-            return redirect()->intended('/chats');
+            $user->notify(new LoginNotification($user->id, $request->ip(), $request->userAgent() ?? ''));
+
+            return redirect()->intended('/');
         }
 
         if ($user) {
@@ -86,7 +89,7 @@ class LoginController extends Controller
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 
-        return redirect()->intended('/chats');
+        return redirect()->intended('/');
     }
 
     public function logout(Request $request): RedirectResponse

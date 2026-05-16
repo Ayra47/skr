@@ -22,6 +22,17 @@ class UserKey extends Model
         ];
     }
 
+    public function fingerprint(): ?string
+    {
+        if (! $this->public_key_jwk) {
+            return null;
+        }
+
+        $hex = hash('sha256', $this->public_key_jwk);
+
+        return strtoupper(implode(' ', str_split(substr($hex, 0, 12), 4)));
+    }
+
     public function shouldWarnPartners(): bool
     {
         return $this->key_change_source === 'fresh'

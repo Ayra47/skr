@@ -21,6 +21,7 @@ use App\Models\MessageEdit;
 use App\Models\PinnedMessage;
 use App\Models\User;
 use App\Models\UserKey;
+use App\Notifications\KeyChangedNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -96,6 +97,11 @@ class ChatController extends Controller
                 'user_agent' => $request->userAgent(),
                 'event' => 'key_changed',
             ]);
+
+            $changedUser = Auth::user();
+            foreach ($changedUser->friendIds() as $friendId) {
+                User::find($friendId)?->notify(new KeyChangedNotification($changedUser, $friendId));
+            }
         }
 
         return response()->json(['success' => true]);
@@ -302,7 +308,7 @@ class ChatController extends Controller
         $filename = 'group_avatars/'.Str::uuid().'.webp';
         $encoded = (new ImageManager(new GdDriver))
             ->decode($request->file('avatar')->getRealPath())
-            ->cover(200, 200)
+            ->cover(32, 32)
             ->encode(new WebpEncoder(80));
         Storage::disk('public')->put($filename, (string) $encoded);
 
@@ -449,6 +455,37 @@ class ChatController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function destroyConversation(int $conversationId, Request $request): JsonResponse
+    {
+        $request->validate(['scope' => 'required|in:all,me']);
+
+        $user = Auth::user();
+        $conversation = Conversation::findOrFail($conversationId);
+
+        if (! $conversation->hasParticipant($user->id)) {
+            return response()->json(['success' => false, 'message' => 'Нет доступа'], 403);
+        }
+
+        if ($request->scope === 'all') {
+            if ($conversation->isGroup() && ! $conversation->isOwner($user->id)) {
+                return response()->json(['success' => false, 'message' => 'Только владелец может удалить группу'], 403);
+            }
+
+            $conversation->delete();
+        } else {
+            $conversation->messages()
+                ->whereNull('deleted_at')
+                ->each(function (Message $message) use ($user): void {
+                    $deletedFor = $message->deleted_for ?? [];
+                    if (! in_array($user->id, $deletedFor, strict: true)) {
+                        $message->update(['deleted_for' => [...$deletedFor, $user->id]]);
+                    }
+                });
+        }
+
+        return response()->json(['success' => true]);
+    }
+
     public function promoteMember(int $conversationId, int $userId): JsonResponse
     {
         $user = Auth::user();
@@ -590,13 +627,36 @@ class ChatController extends Controller
             }
         }
 
-        $query = $conversation->messages()->visibleTo($user->id)->orderBy('created_at', 'desc');
+        $hasMore = false;
+        $hasMoreAfter = false;
 
-        if ($request->filled('before_id')) {
-            $query->where('id', '<', (int) $request->before_id);
+        if ($request->filled('around_id')) {
+            $aroundId = (int) $request->around_id;
+            $base = $conversation->messages()->visibleTo($user->id);
+            $before = (clone $base)->where('id', '<=', $aroundId)->orderBy('id', 'desc')->limit(25)->get()->reverse();
+            $after = (clone $base)->where('id', '>', $aroundId)->orderBy('id', 'asc')->limit(24)->get();
+            $hasMore = $before->count() === 25;
+            $hasMoreAfter = $after->count() === 24;
+            $messages = $before->merge($after)->values();
+        } elseif ($request->filled('after_id')) {
+            $afterId = (int) $request->after_id;
+            $messages = $conversation->messages()->visibleTo($user->id)
+                ->where('id', '>', $afterId)
+                ->orderBy('id', 'asc')
+                ->limit(50)
+                ->get()
+                ->values();
+            $hasMoreAfter = $messages->count() === 50;
+        } else {
+            $query = $conversation->messages()->visibleTo($user->id)->orderBy('created_at', 'desc');
+
+            if ($request->filled('before_id')) {
+                $query->where('id', '<', (int) $request->before_id);
+            }
+
+            $messages = $query->limit(50)->get()->reverse()->values();
+            $hasMore = $messages->count() === 50;
         }
-
-        $messages = $query->limit(50)->get()->reverse()->values();
 
         if (! $conversation->isGroup()) {
             $undeliveredIds = $messages
@@ -636,7 +696,8 @@ class ChatController extends Controller
                 'edited_at' => $m->edited_at?->toIso8601String(),
                 'reply_to_id' => $m->reply_to_id,
             ]),
-            'has_more' => $messages->count() === 50,
+            'has_more' => $hasMore,
+            'has_more_after' => $hasMoreAfter,
         ]);
     }
 

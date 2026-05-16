@@ -1,12 +1,12 @@
 <meta name="vapid-public-key" content="{{ config('app.vapid_public_key') }}">
 <nav class="app-nav">
     <div class="app-nav-inner">
-        <a href="{{ route('chats.index') }}" class="app-brand">
+        <a href="{{ route('feed.index') }}" class="app-brand">
             <span class="app-brand-mark">s</span>
             <span style="color:#e8e8ec;font-size:14px;font-weight:500;letter-spacing:.02em;">skr</span>
         </a>
         <div class="app-links">
-            <a href="#">
+            <a href="{{ route('feed.index') }}" class="{{ request()->routeIs('feed.*') ? 'active' : '' }}">
                 <svg width=" 14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
                     stroke-linecap="round" stroke-linejoin="round">
                     <path d="M3 12L12 4l9 8" />
@@ -49,14 +49,59 @@
                     style="width:6px;height:6px;border-radius:50%;background:#6dd49a;box-shadow:0 0 6px rgba(109,212,154,.6);"></span>
                 e2e
             </span>
+            <button id="nav-bell-btn" class="bell-btn {{ request()->routeIs('notifications.*') ? 'bell-btn--active' : '' }}" title="Уведомления">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.7 21a2 2 0 0 1-3.4 0"/>
+                </svg>
+                <span id="nav-bell-badge" class="bell-badge" style="display:none;">0</span>
+            </button>
             @php $navUser = auth()->user(); @endphp
-            <a href="{{ route('settings.index') }}" style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,oklch(.32 .04 60),oklch(.22 .03 30));border:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;color:#e8e8ec;font-size:13px;font-weight:500;overflow:hidden;flex-shrink:0;text-decoration:none;">
-                @if($navUser->avatar)
-                    <img src="/storage/{{ $navUser->avatar }}" alt="" style="width:100%;height:100%;object-fit:cover;">
-                @else
-                    {{ mb_strtoupper(mb_substr($navUser->login, 0, 1)) }}
-                @endif
-            </a>
+            <div class="profile-menu-wrap" data-profile-menu-root>
+                <button class="profile-menu-toggle" type="button" data-profile-menu-toggle aria-haspopup="menu" aria-expanded="false" aria-label="Открыть меню профиля">
+                    @if($navUser->avatar)
+                        <img src="/storage/{{ $navUser->avatar }}" alt="">
+                    @else
+                        {{ mb_strtoupper(mb_substr($navUser->feedName(), 0, 1)) }}
+                    @endif
+                </button>
+
+                <div class="profile-menu" data-profile-menu hidden>
+                    <a href="{{ route('settings.index') }}">
+                        <span class="profile-menu-item-icon" aria-hidden="true">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>
+                            </svg>
+                        </span>
+                        Настройки
+                    </a>
+                    <a href="{{ route('profiles.show', $navUser) }}">
+                        <span class="profile-menu-item-icon" aria-hidden="true">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21a8 8 0 0 0-16 0"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </span>
+                        Профиль
+                    </a>
+                    <div class="profile-menu-divider" aria-hidden="true"></div>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button class="profile-menu-logout" type="submit">
+                            <span class="profile-menu-item-icon" aria-hidden="true">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M10 17l5-5-5-5"/>
+                                    <path d="M15 12H3"/>
+                                    <path d="M21 19V5a2 2 0 0 0-2-2h-5"/>
+                                </svg>
+                            </span>
+                            Выйти
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </nav>

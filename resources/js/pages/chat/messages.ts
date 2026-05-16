@@ -72,6 +72,7 @@ interface MessagesResponse {
     success: boolean;
     data: Message[];
     has_more: boolean;
+    has_more_after?: boolean;
 }
 
 interface SendResponse {
@@ -118,6 +119,7 @@ export async function openConversation(
     state.currentUserRole = null;
     state.currentParticipants = [];
     state.oldestMessageId = null;
+    state.newestMessageId = null;
 
     document
         .querySelectorAll(".conversation-item")
@@ -126,8 +128,11 @@ export async function openConversation(
         .querySelector<HTMLElement>(`[data-conv-id="${convId}"]`)
         ?.classList.add("active");
 
-    document.getElementById("noChatSelected")?.style.setProperty("display", "none");
-    (document.getElementById("chatHeader") as HTMLElement).style.display = "flex";
+    (document.getElementById("noChatSelected") as HTMLElement).style.display = "none";
+    (document.getElementById("messagesArea") as HTMLElement).style.display = "";
+    const chatHeaderEl = document.getElementById("chatHeader") as HTMLElement;
+    chatHeaderEl.style.display = "flex";
+    chatHeaderEl.classList.toggle("chat-header--linkable", conversationType === "direct");
     (document.getElementById("inputArea") as HTMLElement).style.display = "block";
     await window.emojiPanelOnChatOpen?.();
 
@@ -294,11 +299,7 @@ export async function loadMessages(before: number | null = null): Promise<void> 
         notice.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> сообщения и звонки защищены сквозным шифрованием`;
         document.getElementById("messagesArea")!.appendChild(notice);
         if (data.has_more) {
-            const btn = document.createElement("button");
-            btn.className = "load-more-btn";
-            btn.textContent = "↑ загрузить ранее";
-            btn.onclick = () => loadMessages(state.oldestMessageId);
-            document.getElementById("messagesArea")!.appendChild(btn);
+            prependBeforeSentinel();
         }
     }
 
@@ -306,9 +307,19 @@ export async function loadMessages(before: number | null = null): Promise<void> 
         if (!state.oldestMessageId || msg.id < state.oldestMessageId) {
             state.oldestMessageId = msg.id;
         }
-        await appendMessage(msg, before ? "prepend-before-btn" : "append", true);
+        if (!state.newestMessageId || msg.id > state.newestMessageId) {
+            state.newestMessageId = msg.id;
+        }
+        await appendMessage(msg, before ? "prepend-before-sentinel" : "append", true);
         if (storePref === "browser" || storePref === "device") {
             await IDB.putMessage({ ...msg, conversation_id: state.currentConvId! });
+        }
+    }
+
+    if (before) {
+        document.querySelector(".load-before-sentinel")?.remove();
+        if (data.has_more) {
+            prependBeforeSentinel();
         }
     }
 
@@ -360,14 +371,14 @@ async function encryptForCurrentConversation(plaintext: string): Promise<{
 
 export async function appendMessage(
     msg: Message,
-    mode: "append" | "prepend-before-btn" = "append",
+    mode: "append" | "prepend-before-sentinel" = "append",
     isFromHistory = false,
 ): Promise<void> {
     if (msg.type === "system") {
         const systemNode = createSystemMessageNode(msg);
         const area = document.getElementById("messagesArea")!;
-        const btn = area.querySelector(".load-more-btn");
-        if (mode === "prepend-before-btn" && btn) {
+        const btn = area.querySelector(".load-before-sentinel");
+        if (mode === "prepend-before-sentinel" && btn) {
             btn.insertAdjacentElement("afterend", systemNode);
         } else {
             area.appendChild(systemNode);
@@ -446,10 +457,10 @@ export async function appendMessage(
     bindContextMenu(bubble, msg.id, isOwn, msg.created_at, msgType, snippet);
 
     const area = document.getElementById("messagesArea")!;
-    const btn = area.querySelector(".load-more-btn");
+    const btn = area.querySelector(".load-before-sentinel");
     const messageNode = wrapGroupIncomingBubble(bubble, msg.sender_id);
 
-    if (mode === "prepend-before-btn" && btn) {
+    if (mode === "prepend-before-sentinel" && btn) {
         btn.insertAdjacentElement("afterend", messageNode);
     } else {
         area.appendChild(messageNode);
@@ -519,6 +530,153 @@ function peerIdForBubble(bubble: HTMLElement): number {
     }
 
     return senderId === AUTH_USER_ID ? state.currentPartnerId! : senderId;
+}
+
+export async function decryptPayload(encryptedPayload: string): Promise<string> {
+    return decryptCurrentPayload(encryptedPayload);
+}
+
+export async function searchMessages(
+    convId: number,
+    query: string,
+    onProgress: (matchCount: number) => void,
+    signal: { cancelled: boolean },
+): Promise<{ id: number }[]> {
+    const lq = query.toLowerCase();
+    const matching: { id: number }[] = [];
+    let cursor: number | null = null;
+    let hasMore = true;
+
+    while (hasMore) {
+        if (signal.cancelled) { return []; }
+        const endpoint: string = `/chat/${convId}/messages${cursor ? `?before_id=${cursor}` : ""}`;
+        const data: MessagesResponse = await fetchJson<MessagesResponse>(endpoint);
+        if (!data.success || signal.cancelled) { return []; }
+
+        hasMore = data.has_more;
+
+        for (const msg of data.data) {
+            if (cursor === null || msg.id < cursor) { cursor = msg.id; }
+            if (msg.type === "system" || !msg.encrypted_payload) { continue; }
+            try {
+                const text = await decryptCurrentPayload(msg.encrypted_payload);
+                let searchable: string;
+                try {
+                    const parsed = JSON.parse(text) as { text?: string };
+                    searchable = (typeof parsed === "object" && parsed !== null)
+                        ? (parsed.text ?? "")
+                        : text;
+                } catch {
+                    searchable = text;
+                }
+                if (searchable.toLowerCase().includes(lq)) {
+                    matching.push({ id: msg.id });
+                }
+            } catch { /* undecryptable */ }
+        }
+        onProgress(matching.length);
+    }
+    return matching.sort((a, b) => a.id - b.id);
+}
+
+export async function loadMessagesAround(targetId: number): Promise<void> {
+    const url = `/chat/${state.currentConvId}/messages?around_id=${targetId}`;
+    const data = await fetchJson<MessagesResponse>(url);
+    if (!data.success) { return; }
+
+    const messagesArea = document.getElementById("messagesArea")!;
+    messagesArea.innerHTML = "";
+
+    const notice = document.createElement("div");
+    notice.className = "e2e-notice";
+    notice.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> сообщения и звонки защищены сквозным шифрованием`;
+    messagesArea.appendChild(notice);
+
+    if (data.has_more) {
+        prependBeforeSentinel();
+    }
+
+    state.oldestMessageId = null;
+    const storePref = (document.getElementById("storageSelect") as HTMLSelectElement).value;
+    for (const msg of data.data) {
+        if (!state.oldestMessageId || msg.id < state.oldestMessageId) {
+            state.oldestMessageId = msg.id;
+        }
+        await appendMessage(msg, "append", true);
+        if (storePref === "browser" || storePref === "device") {
+            await IDB.putMessage({ ...msg, conversation_id: state.currentConvId! });
+        }
+    }
+
+    // scroll target into view immediately (caller will smooth-scroll after highlights)
+    document.getElementById(`msg-${targetId}`)?.scrollIntoView({ block: "center" });
+
+    if (data.has_more_after) {
+        const newestId = data.data[data.data.length - 1]?.id;
+        if (newestId !== undefined) {
+            appendAfterSentinel(newestId);
+        }
+    }
+}
+
+function prependBeforeSentinel(): void {
+    const messagesArea = document.getElementById("messagesArea")!;
+    const sentinel = document.createElement("div");
+    sentinel.className = "load-before-sentinel";
+
+    const notice = messagesArea.querySelector(".e2e-notice");
+    if (notice) {
+        notice.insertAdjacentElement("afterend", sentinel);
+    } else {
+        messagesArea.prepend(sentinel);
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        if (!entries[0].isIntersecting) { return; }
+        observer.disconnect();
+        void loadMessages(state.oldestMessageId);
+    }, { root: messagesArea, threshold: 0 });
+
+    observer.observe(sentinel);
+}
+
+function appendAfterSentinel(afterId: number): void {
+    const messagesArea = document.getElementById("messagesArea")!;
+    const sentinel = document.createElement("div");
+    sentinel.className = "load-after-sentinel";
+    messagesArea.appendChild(sentinel);
+
+    const observer = new IntersectionObserver((entries) => {
+        if (!entries[0].isIntersecting) { return; }
+        observer.disconnect();
+        sentinel.remove();
+        void loadMessagesAfter(afterId);
+    }, { root: messagesArea, threshold: 0 });
+
+    observer.observe(sentinel);
+}
+
+export async function loadMessagesAfter(afterId: number): Promise<void> {
+    const url = `/chat/${state.currentConvId}/messages?after_id=${afterId}`;
+    const data = await fetchJson<MessagesResponse>(url);
+    if (!data.success) { return; }
+
+    const storePref = (document.getElementById("storageSelect") as HTMLSelectElement).value;
+    for (const msg of data.data) {
+        if (!state.newestMessageId || msg.id > state.newestMessageId) {
+            state.newestMessageId = msg.id;
+        }
+        await appendMessage(msg, "append", true);
+        if (storePref === "browser" || storePref === "device") {
+            await IDB.putMessage({ ...msg, conversation_id: state.currentConvId! });
+        }
+    }
+
+    if (data.has_more_after && data.data.length > 0) {
+        appendAfterSentinel(data.data[data.data.length - 1].id);
+    }
+
+    markVisibleMessagesRead();
 }
 
 async function decryptCurrentPayload(

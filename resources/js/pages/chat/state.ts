@@ -10,5 +10,6 @@ export const state = {
     myPublicKeyJwk: null as JsonWebKey | null,
     typingTimeout: null as ReturnType<typeof setTimeout> | null,
     oldestMessageId: null as number | null,
+    newestMessageId: null as number | null,
     onlineUsers: new Set<number>(),
 };

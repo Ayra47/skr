@@ -2,33 +2,36 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\FriendRequestAcceptedEvent;
 use App\Models\Friend;
 use App\Models\FriendCode;
 use App\Models\FriendRequest;
 use App\Models\User;
-use App\Events\FriendRequestAcceptedEvent;
-use App\Events\FriendRequestEvent;
 use App\Notifications\FriendRequestAccepted;
 use App\Notifications\FriendRequestNotification;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class FriendsController extends Controller
 {
-    public function index(): \Illuminate\View\View
+    public function index(): View
     {
         $user = Auth::user();
         $allFriends = $user->friends->merge($user->friendOf)->unique('id');
-        
+        $allFriends->load('userKey');
+
         $activeCode = $user->activeFriendCode();
         $pendingRequests = $user->receivedFriendRequests()
             ->pending()
             ->with('sender')
             ->latest()
             ->get();
-        
+
         $unreadCount = $user->unreadFriendRequestsCount();
 
         return view('pages.friends.index', compact('allFriends', 'activeCode', 'pendingRequests', 'unreadCount'));
@@ -37,7 +40,7 @@ class FriendsController extends Controller
     public function createCode(): JsonResponse
     {
         $user = Auth::user();
-        
+
         // Block any existing active codes
         $user->friendCodes()->active()->update([
             'is_blocked' => true,
@@ -68,7 +71,7 @@ class FriendsController extends Controller
             ->with('user')
             ->first();
 
-        if (!$code) {
+        if (! $code) {
             return response()->json([
                 'success' => false,
                 'message' => 'Код не найден или истёк',
@@ -76,7 +79,7 @@ class FriendsController extends Controller
         }
 
         $user = Auth::user();
-        
+
         // Check if already friends
         if ($user->isFriendWith($code->user_id)) {
             return response()->json([
@@ -114,12 +117,12 @@ class FriendsController extends Controller
         ]);
 
         $user = Auth::user();
-        
+
         $code = FriendCode::where('code', $request->code)
             ->active()
             ->first();
 
-        if (!$code) {
+        if (! $code) {
             return response()->json([
                 'success' => false,
                 'message' => 'Код не найден или истёк',
@@ -166,6 +169,51 @@ class FriendsController extends Controller
         ]);
     }
 
+    public function joinByCode(string $code): RedirectResponse
+    {
+        if (! Auth::check()) {
+            return redirect('/');
+        }
+
+        $user = Auth::user();
+
+        $friendCode = FriendCode::where('code', $code)->active()->first();
+
+        if (! $friendCode) {
+            return redirect()->route('friends.index')->with('join_error', 'Код не найден или уже истёк.');
+        }
+
+        if ($friendCode->user_id === $user->id) {
+            return redirect()->route('friends.index')->with('join_error', 'Нельзя добавить самого себя.');
+        }
+
+        if ($user->isFriendWith($friendCode->user_id)) {
+            return redirect()->route('friends.index')->with('join_error', 'Вы уже друзья с этим пользователем.');
+        }
+
+        $alreadySent = FriendRequest::where('sender_id', $user->id)
+            ->where('receiver_id', $friendCode->user_id)
+            ->where('status', 'pending')
+            ->exists();
+
+        if ($alreadySent) {
+            return redirect()->route('friends.index')->with('join_error', 'Вы уже отправили запрос этому пользователю.');
+        }
+
+        $friendCode->update(['is_blocked' => true]);
+
+        $friendRequest = FriendRequest::create([
+            'sender_id' => $user->id,
+            'receiver_id' => $friendCode->user_id,
+            'friend_code_id' => $friendCode->id,
+            'status' => 'pending',
+        ]);
+
+        $friendCode->user->notify(new FriendRequestNotification($user, $friendRequest));
+
+        return redirect()->route('friends.index')->with('join_success', 'Запрос в друзья отправлен.');
+    }
+
     public function acceptRequest(Request $request): JsonResponse
     {
         $request->validate([
@@ -173,13 +221,13 @@ class FriendsController extends Controller
         ]);
 
         $user = Auth::user();
-        
+
         $friendRequest = FriendRequest::where('id', $request->request_id)
             ->where('receiver_id', $user->id)
             ->where('status', 'pending')
             ->first();
 
-        if (!$friendRequest) {
+        if (! $friendRequest) {
             return response()->json([
                 'success' => false,
                 'message' => 'Запрос не найден',
@@ -227,6 +275,7 @@ class FriendsController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка при принятии запроса',
@@ -241,13 +290,13 @@ class FriendsController extends Controller
         ]);
 
         $user = Auth::user();
-        
+
         $friendRequest = FriendRequest::where('id', $request->request_id)
             ->where('receiver_id', $user->id)
             ->where('status', 'pending')
             ->first();
 
-        if (!$friendRequest) {
+        if (! $friendRequest) {
             return response()->json([
                 'success' => false,
                 'message' => 'Запрос не найден',
@@ -275,7 +324,7 @@ class FriendsController extends Controller
         ]);
 
         $user = Auth::user();
-        
+
         // Remove both directions
         Friend::where('user_id', $user->id)
             ->where('friend_id', $request->friend_id)
@@ -294,7 +343,7 @@ class FriendsController extends Controller
     public function markAsRead(Request $request): JsonResponse
     {
         $user = Auth::user();
-        
+
         $user->receivedFriendRequests()
             ->where('is_read', false)
             ->update(['is_read' => true]);
@@ -307,13 +356,13 @@ class FriendsController extends Controller
     public function getUnreadCount(): JsonResponse
     {
         $user = Auth::user();
-        
+
         return response()->json([
             'count' => $user->unreadFriendRequestsCount(),
         ]);
     }
 
-    public function syncTime(): \Illuminate\Http\Response
+    public function syncTime(): Response
     {
         return response()->noContent();
     }

@@ -1,5 +1,5 @@
 import "../../css/pages/settings.scss";
-import "../pusher";
+import "../app";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const AUTH_USER_ID = window.Laravel.userId;
@@ -179,16 +179,26 @@ function initProfile() {
         msg.style.display = 'none';
     });
 
+    const bioField = document.getElementById('fieldBio');
+    const bioCharCount = document.getElementById('bioCharCount');
+    if (bioField && bioCharCount) {
+        bioField.addEventListener('input', () => {
+            bioCharCount.textContent = bioField.value.length;
+        });
+    }
+
     document.getElementById('profileSaveBtn').addEventListener('click', async () => {
         const btn   = document.getElementById('profileSaveBtn');
         const login = document.getElementById('fieldLogin').value.trim();
         const email = document.getElementById('fieldEmail').value.trim() || null;
+        const bio   = document.getElementById('fieldBio')?.value.trim() || null;
 
         btn.disabled = true;
         const data = await post('/settings/profile', {
             login,
             pseudonym: document.getElementById('fieldPseudo').value.trim(),
             email,
+            bio,
         });
         btn.disabled = false;
 
@@ -503,6 +513,83 @@ async function initNotifications() {
     });
 }
 
+function initProfileVisibility() {
+    const prefs = {
+        show_shared_chats: true,
+        show_shared_groups: true,
+        profile_access: 'everyone',
+        online_status_visibility: 'everyone',
+        shared_friends_count_visibility: 'everyone',
+        feed_posts_count_visibility: 'everyone',
+        profile_posts_visibility: 'everyone',
+        avatar_visibility: 'everyone',
+        ...(window.Laravel.profileSettings ?? {}),
+    };
+    const msg = document.getElementById('profileVisibilityMsg');
+    const sharedChatsToggle = document.getElementById('showSharedChatsToggle');
+    const sharedGroupsToggle = document.getElementById('showSharedGroupsToggle');
+
+    function applyToggle(toggle, enabled) {
+        toggle?.classList.toggle('active', enabled);
+    }
+
+    function applyChoice(field, value) {
+        document.querySelectorAll(`[data-profile-visibility-field="${field}"] button`).forEach(button => {
+            button.classList.toggle('active', button.dataset.value === value);
+        });
+    }
+
+    async function save() {
+        const data = await post('/settings/profile/visibility', prefs);
+
+        if (data.success) {
+            showMsg(msg, 'success', 'Настройки профиля сохранены');
+
+            return;
+        }
+
+        const first = data.errors ? Object.values(data.errors)[0]?.[0] : (data.message ?? 'Ошибка');
+        showMsg(msg, 'error', first);
+    }
+
+    applyToggle(sharedChatsToggle, prefs.show_shared_chats);
+    applyToggle(sharedGroupsToggle, prefs.show_shared_groups);
+    [
+        'profile_access',
+        'online_status_visibility',
+        'shared_friends_count_visibility',
+        'feed_posts_count_visibility',
+        'profile_posts_visibility',
+        'avatar_visibility',
+    ].forEach(field => applyChoice(field, prefs[field]));
+
+    sharedChatsToggle?.addEventListener('click', async () => {
+        prefs.show_shared_chats = !prefs.show_shared_chats;
+        applyToggle(sharedChatsToggle, prefs.show_shared_chats);
+        await save();
+    });
+
+    sharedGroupsToggle?.addEventListener('click', async () => {
+        prefs.show_shared_groups = !prefs.show_shared_groups;
+        applyToggle(sharedGroupsToggle, prefs.show_shared_groups);
+        await save();
+    });
+
+    document.querySelectorAll('[data-profile-visibility-field] button').forEach(button => {
+        button.addEventListener('click', async () => {
+            const field = button.closest('[data-profile-visibility-field]')?.dataset.profileVisibilityField;
+
+            if (!field || !button.dataset.value) {
+                return;
+            }
+
+            prefs[field] = button.dataset.value;
+            applyChoice(field, button.dataset.value);
+            await save();
+        });
+    });
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 function initPagination() {
     document.querySelectorAll('[data-paginate]').forEach(container => {
@@ -558,5 +645,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initBackupCode();
     initTwoFactor();
     initNotifications();
+    initProfileVisibility();
     initPagination();
 });

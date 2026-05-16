@@ -27,6 +27,7 @@
         "laravel-echo": "^2.3.4",
         "leaflet": "^1.9.4",
         "pusher": "^5.3.3",
+        "qrcode": "^1.5.4",
         "toastify-js": "^1.12.0"
     }
 }

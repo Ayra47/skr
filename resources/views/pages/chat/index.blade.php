@@ -41,8 +41,13 @@
                     </div>
                     <div class="sidebar-brand-text">
                         <h2>сообщения</h2>
-                        <p>сквозное шифрование</p>
+                        <p>е2е шифрование</p>
                     </div>
+                    <button class="sidebar-new-btn" id="newGroupBtn" type="button" title="создать группу">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 5v14M5 12h14"/>
+                        </svg>
+                    </button>
                 </div>
                 <div class="sidebar-search">
                     <svg class="sidebar-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -50,12 +55,14 @@
                         <circle cx="11" cy="11" r="8" />
                         <path d="M21 21l-4.4-4.4" />
                     </svg>
-                    <input type="text" placeholder="поиск…">
+                    <input type="text" placeholder="поиск">
                 </div>
-                <div class="sidebar-actions">
-                    <button class="export-btn" id="newGroupBtn" type="button">новая группа</button>
+                <div class="sidebar-filters">
+                    <button class="sidebar-filter-btn active" data-filter="all">все</button>
+                    <button class="sidebar-filter-btn" data-filter="direct">личные</button>
+                    <button class="sidebar-filter-btn" data-filter="group">группы</button>
                     @if($pendingJoinRequests->isNotEmpty())
-                        <button class="export-btn" id="groupRequestsBtn" type="button">приглашения ({{ $pendingJoinRequests->count() }})</button>
+                        <button class="export-btn" id="groupRequestsBtn" type="button" style="display:none">приглашения</button>
                     @endif
                 </div>
             </div>
@@ -158,25 +165,77 @@
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.3L2 21h20L13.7 3.3a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                     <span id="keyChangeWarnText"></span>
                 </div>
+                <div class="chat-header-tools">
+                    <button class="chat-tool-btn" id="callBtn" type="button" title="позвонить">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.9.7A2 2 0 0 1 22 16.9z"/>
+                        </svg>
+                    </button>
+                    <button class="chat-tool-btn" id="headerSearchBtn" type="button" title="поиск">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="M21 21l-4.4-4.4"/>
+                        </svg>
+                    </button>
+                    <div class="chat-more-wrap">
+                        <button class="chat-tool-btn" id="chatMoreBtn" type="button" title="ещё">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none"/>
+                                <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/>
+                                <circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none"/>
+                            </svg>
+                        </button>
+                        <div class="chat-more-menu" id="chatMoreMenu">
+                            <button class="chat-more-item chat-more-item--danger" id="deleteChatBtn" type="button">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                                </svg>
+                                Удалить чат
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="msg-search-bar" id="msgSearchBar" style="display:none">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.4-4.4"/>
+                </svg>
+                <input type="text" id="msgSearchInput" placeholder="поиск по сообщениям…" autocomplete="off">
+                <span class="msg-search-counter" id="msgSearchCounter"></span>
+                <button class="msg-search-nav" id="msgSearchPrev" type="button" title="предыдущее">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                </button>
+                <button class="msg-search-nav" id="msgSearchNext" type="button" title="следующее">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                </button>
+                <button class="msg-search-close" id="msgSearchClose" type="button">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
             </div>
             <div class="group-panel" id="groupPanel" style="display:none"></div>
             <div class="pin-bar" id="pinBar" style="display:none"></div>
             <div class="typing-indicator" id="typingIndicator"></div>
-            <div class="messages-area" id="messagesArea">
-                <div class="no-chat-selected" id="noChatSelected">
-                    <div class="empty-glow-a"></div>
-                    <div class="empty-glow-b"></div>
-                    <div class="empty-lock-box">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="11" width="18" height="11" rx="2" />
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
-                    </div>
-                    <p class="empty-title">выберите диалог</p>
-                    <p class="empty-shortcuts">N — новый · F — друзья · / — поиск</p>
+            <div class="no-chat-selected" id="noChatSelected">
+                <div class="empty-glow"></div>
+                <div class="empty-lock-box">
+                    <svg width="36" height="40" viewBox="0 0 24 28" fill="none" stroke="currentColor"
+                        stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="11" width="20" height="16" rx="3" />
+                        <path d="M6 11V8a6 6 0 0 1 12 0v3" />
+                    </svg>
+                </div>
+                <p class="empty-title">Выберите диалог</p>
+                <p class="empty-subtitle">Все сообщения шифруются на устройстве.<br>Сервер видит только зашифрованный поток.</p>
+                <div class="empty-badge">
+                    <span class="empty-badge-dot"></span>
+                    канал защищён · ed25519 + xchacha20
+                </div>
+                <div class="empty-shortcuts">
+                    <span class="empty-shortcut"><kbd>N</kbd> новая группа</span>
+                    <span class="empty-shortcut"><kbd>F</kbd> поиск</span>
                 </div>
             </div>
+            <div class="messages-area" id="messagesArea" style="display:none"></div>
             <div class="input-area" id="inputArea" style="display:none">
                 <div class="upload-progress" id="uploadProgress" hidden>
                     <div class="upload-progress-bar" id="uploadProgressBar"></div>

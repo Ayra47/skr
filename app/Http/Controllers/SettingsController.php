@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\LoginHistory;
+use App\Models\ProfileSetting;
 use App\Models\PushSubscription;
 use App\Models\User;
 use App\Models\UserKey;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
@@ -73,6 +75,7 @@ class SettingsController extends Controller
 
         return view('pages.settings.index', [
             'user' => $user,
+            'profileSettings' => $user->profileSetting()->firstOrNew(),
             'hasBackupCode' => filled($user->backup_code_hash),
             'sessions' => $sessions,
             'loginHistory' => $loginHistory,
@@ -125,6 +128,7 @@ class SettingsController extends Controller
             'login' => 'required|string|max:255|unique:users,login,'.$user->id,
             'pseudonym' => 'required|string|max:50|alpha_dash:ascii|lowercase|unique:users,pseudonym,'.$user->id,
             'email' => 'nullable|email|max:255',
+            'bio' => 'nullable|string|max:255',
         ]);
 
         $newEmail = $validated['email'] ?? null;
@@ -151,7 +155,27 @@ class SettingsController extends Controller
             'pseudonym' => $validated['pseudonym'],
         ], $emailUpdates));
 
+        $user->profileSetting()->updateOrCreate([], ['bio' => $validated['bio'] ?? null]);
+
         return response()->json(['success' => true, 'verification_sent' => filled($emailUpdates['pending_email'] ?? null)]);
+    }
+
+    public function updateProfileVisibility(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'show_shared_chats' => ['required', 'boolean'],
+            'show_shared_groups' => ['required', 'boolean'],
+            'profile_access' => ['required', Rule::in(ProfileSetting::audienceValues())],
+            'online_status_visibility' => ['required', Rule::in(ProfileSetting::audienceValues())],
+            'shared_friends_count_visibility' => ['required', Rule::in(ProfileSetting::audienceValues())],
+            'feed_posts_count_visibility' => ['required', Rule::in(ProfileSetting::audienceValues())],
+            'profile_posts_visibility' => ['required', Rule::in(ProfileSetting::audienceValues())],
+            'avatar_visibility' => ['required', Rule::in(ProfileSetting::audienceValues())],
+        ]);
+
+        auth()->user()->profileSetting()->updateOrCreate([], $validated);
+
+        return response()->json(['success' => true]);
     }
 
     public function resendEmailVerification(): JsonResponse
@@ -209,7 +233,7 @@ class SettingsController extends Controller
         $filename = 'avatars/'.Str::uuid().'.webp';
         $encoded = (new ImageManager(new GdDriver))
             ->decode($request->file('avatar')->getRealPath())
-            ->cover(200, 200)
+            ->cover(32, 32)
             ->encode(new WebpEncoder(80));
         Storage::disk('public')->put($filename, (string) $encoded);
 

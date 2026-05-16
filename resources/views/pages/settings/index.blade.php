@@ -1,3 +1,16 @@
+@php
+    $profileSettingsPayload = [
+        'show_shared_chats' => $profileSettings->show_shared_chats ?? true,
+        'show_shared_groups' => $profileSettings->show_shared_groups ?? true,
+        'profile_access' => $profileSettings->profile_access ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
+        'online_status_visibility' => $profileSettings->online_status_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
+        'shared_friends_count_visibility' => $profileSettings->shared_friends_count_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
+        'feed_posts_count_visibility' => $profileSettings->feed_posts_count_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
+        'profile_posts_visibility' => $profileSettings->profile_posts_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
+        'avatar_visibility' => $profileSettings->avatar_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
+    ];
+@endphp
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -14,6 +27,7 @@
             emailVerified: @json((bool) $user->email_verified_at),
             pendingEmail: @json($user->pending_email),
             avatarUrl: @json($user->avatar ? '/storage/' . $user->avatar : null),
+            profileSettings: @json($profileSettingsPayload),
             hasBackupCode: @json($hasBackupCode),
             twoFactorEnabled: @json((bool) $user->two_factor_enabled),
         };
@@ -134,6 +148,13 @@
                             </div>
                         </div>
 
+                        {{-- bio --}}
+                        <div class="field-wrap" style="margin-bottom:14px;">
+                            <label class="field-label">О себе</label>
+                            <textarea class="field-input field-bio" id="fieldBio" maxlength="255" rows="3" placeholder="Расскажите о себе...">{{ $profileSettings->bio ?? '' }}</textarea>
+                            <div class="field-hint"><span id="bioCharCount">{{ mb_strlen($profileSettings->bio ?? '') }}</span>/255</div>
+                        </div>
+
                         {{-- email --}}
                         <div class="field-wrap" style="margin-bottom:14px;">
                             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
@@ -172,6 +193,53 @@
                             <button class="s-btn s-btn-ghost" id="profileCancelBtn">Отмена</button>
                             <button class="s-btn s-btn-primary" id="profileSaveBtn">Сохранить</button>
                         </div>
+
+                        <div class="s-divider profile-visibility-divider"></div>
+
+                        <div class="profile-visibility-head">
+                            <h3>Видимость профиля</h3>
+                            <div id="profileVisibilityMsg" class="form-msg" style="display:none;"></div>
+                        </div>
+
+                        <div class="s-row">
+                            <div class="s-row-info">
+                                <div class="s-row-label">Показывать общие чаты</div>
+                                <div class="s-row-sub">Отображать групповые чаты, в которых состоите вы оба</div>
+                            </div>
+                            <button class="s-toggle" id="showSharedChatsToggle" aria-label="Показывать общие чаты">
+                                <span class="s-toggle-thumb"></span>
+                            </button>
+                        </div>
+
+                        <div class="s-row">
+                            <div class="s-row-info">
+                                <div class="s-row-label">Показывать общие группы <span class="soon-tag">в будущем</span></div>
+                                <div class="s-row-sub">Настройка уже сохранится, сами группы появятся позже</div>
+                            </div>
+                            <button class="s-toggle" id="showSharedGroupsToggle" aria-label="Показывать общие группы">
+                                <span class="s-toggle-thumb"></span>
+                            </button>
+                        </div>
+
+                        @foreach([
+                            ['profileAccess', 'profile_access', 'Кто может открыть мой профиль?', ['Никто', 'Друзья', 'Все']],
+                            ['onlineStatusVisibility', 'online_status_visibility', 'Кто видит, что я в сети?', ['Никто', 'Друзья', 'Все']],
+                            ['sharedFriendsCountVisibility', 'shared_friends_count_visibility', 'Показывать ли кол-во общих друзей?', ['Никому', 'Друзьям', 'Всем']],
+                            ['feedPostsCountVisibility', 'feed_posts_count_visibility', 'Показывать ли кол-во постов в ленте?', ['Никому', 'Друзьям', 'Всем']],
+                            ['profilePostsVisibility', 'profile_posts_visibility', 'Показывать ли посты в профиле?', ['Никому', 'Друзьям', 'Всем']],
+                            ['avatarVisibility', 'avatar_visibility', 'Показывать ли аватар?', ['Никому', 'Друзьям', 'Всем']],
+                        ] as [$id, $field, $label, $choices])
+                            <div class="s-row profile-visibility-row">
+                                <div class="s-row-info">
+                                    <div class="s-row-label">{{ $label }}</div>
+                                </div>
+                                <div class="profile-visibility-toggle" data-profile-visibility-field="{{ $field }}" id="{{ $id }}">
+                                    <button type="button" data-value="none">{{ $choices[0] }}</button>
+                                    <button type="button" data-value="friends">{{ $choices[1] }}</button>
+                                    <button type="button" data-value="everyone">{{ $choices[2] }}</button>
+                                </div>
+                            </div>
+                        @endforeach
                     </section>
 
                     {{-- ── SECURITY ── --}}

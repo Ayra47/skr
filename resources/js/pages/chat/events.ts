@@ -9,8 +9,10 @@ import {
     handleInputKeydown,
     handleInputKeyup,
     refreshCurrentGroupPanel,
+    searchMessages,
+    loadMessagesAround,
 } from "./messages";
-import { CSRF, del, patch, post } from "./api";
+import { CSRF, del, delWithBody, patch, post } from "./api";
 import { uploadFile, uploadPhoto } from "./file-upload";
 import { sendOneTimeLocation, startLiveLocation, stopLiveLocation, clearLiveSession } from "./location";
 import {
@@ -124,6 +126,67 @@ export function bindEvents(): void {
         });
     }
 
+    function showDeleteChatModal(): void {
+        const convId = state.currentConvId;
+        if (!convId) { return; }
+
+        document.querySelector(".delete-msg-overlay")?.remove();
+
+        const overlay = document.createElement("div");
+        overlay.className = "delete-msg-overlay";
+        overlay.addEventListener("click", (e) => {
+            if (e.target === overlay) { overlay.remove(); }
+        });
+
+        const modal = document.createElement("div");
+        modal.className = "delete-msg-modal";
+
+        const title = document.createElement("p");
+        title.className = "delete-msg-title";
+        title.textContent = "Удалить чат?";
+
+        const subtitle = document.createElement("p");
+        subtitle.className = "delete-group-subtitle";
+        subtitle.textContent = "Выберите, для кого удалить историю переписки.";
+
+        const btns = document.createElement("div");
+        btns.className = "delete-msg-btns";
+
+        if (state.currentConversationType === "direct") {
+            const forAllBtn = document.createElement("button");
+            forAllBtn.className = "delete-msg-btn delete-msg-btn--all";
+            forAllBtn.textContent = "Удалить для всех";
+            forAllBtn.addEventListener("click", async () => {
+                forAllBtn.disabled = true;
+                await delWithBody(`/chat/${convId}`, { scope: "all" });
+                window.location.href = "/chats";
+            });
+            btns.appendChild(forAllBtn);
+        }
+
+        const forMeBtn = document.createElement("button");
+        forMeBtn.className = "delete-msg-btn delete-msg-btn--me";
+        forMeBtn.textContent = "Удалить для меня";
+        forMeBtn.addEventListener("click", async () => {
+            forMeBtn.disabled = true;
+            await delWithBody(`/chat/${convId}`, { scope: "me" });
+            window.location.href = "/chats";
+        });
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.className = "delete-msg-btn delete-msg-btn--cancel";
+        cancelBtn.textContent = "Отмена";
+        cancelBtn.addEventListener("click", () => overlay.remove());
+
+        btns.appendChild(forMeBtn);
+        btns.appendChild(cancelBtn);
+        modal.appendChild(title);
+        modal.appendChild(subtitle);
+        modal.appendChild(btns);
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+    }
+
     function applyConversationSearch(query: string): void {
         const normalizedQuery = query.trim().toLowerCase();
         const labels = document.querySelectorAll<HTMLElement>("#conversationList .conv-section-label");
@@ -203,6 +266,211 @@ export function bindEvents(): void {
 
     document.getElementById("newGroupBtn")?.addEventListener("click", () => {
         (document.getElementById("groupCreateModal") as HTMLElement).style.display = "flex";
+    });
+
+    // ─── Message search ───────────────────────────────────────────────────────
+    const msgSearchBar = document.getElementById("msgSearchBar") as HTMLElement;
+    const msgSearchInput = document.getElementById("msgSearchInput") as HTMLInputElement;
+    const msgSearchCounter = document.getElementById("msgSearchCounter") as HTMLElement;
+    const msgSearchPrev = document.getElementById("msgSearchPrev") as HTMLButtonElement;
+    const msgSearchNext = document.getElementById("msgSearchNext") as HTMLButtonElement;
+    const msgSearchClose = document.getElementById("msgSearchClose") as HTMLButtonElement;
+
+    // IDB-backed results: sorted by message id ascending
+    let idbResults: { id: number }[] = [];
+    let searchIndex = -1;
+    let activeQuery = "";
+
+    function clearSearchHighlights(): void {
+        document.querySelectorAll<HTMLElement>(".msg-search-highlight, .msg-search-highlight--active").forEach(el => {
+            el.outerHTML = el.textContent ?? "";
+        });
+        msgSearchCounter.textContent = "";
+        msgSearchPrev.disabled = true;
+        msgSearchNext.disabled = true;
+    }
+
+    function highlightDomMatches(query: string): void {
+        const bubbles = document.querySelectorAll<HTMLElement>("#messagesArea .bubble-text");
+        const lq = query.toLowerCase();
+        bubbles.forEach(bubble => {
+            const walker = document.createTreeWalker(bubble, NodeFilter.SHOW_TEXT);
+            const textNodes: Text[] = [];
+            let n: Node | null;
+            while ((n = walker.nextNode())) { textNodes.push(n as Text); }
+            textNodes.forEach(textNode => {
+                const text = textNode.textContent ?? "";
+                const lower = text.toLowerCase();
+                let idx = lower.indexOf(lq);
+                if (idx === -1) { return; }
+                const frag = document.createDocumentFragment();
+                let last = 0;
+                while (idx !== -1) {
+                    if (idx > last) { frag.appendChild(document.createTextNode(text.slice(last, idx))); }
+                    const mark = document.createElement("mark");
+                    mark.className = "msg-search-highlight";
+                    mark.textContent = text.slice(idx, idx + query.length);
+                    frag.appendChild(mark);
+                    last = idx + query.length;
+                    idx = lower.indexOf(lq, last);
+                }
+                if (last < text.length) { frag.appendChild(document.createTextNode(text.slice(last))); }
+                textNode.replaceWith(frag);
+            });
+        });
+    }
+
+    let searchSignal = { cancelled: false };
+
+    async function runSearch(query: string): Promise<void> {
+        clearSearchHighlights();
+        idbResults = [];
+        searchIndex = -1;
+        activeQuery = query;
+        searchSignal.cancelled = true;
+        searchSignal = { cancelled: false };
+        const signal = searchSignal;
+
+        if (!query.trim() || !state.currentConvId) { return; }
+
+        msgSearchCounter.textContent = "поиск…";
+        msgSearchPrev.disabled = true;
+        msgSearchNext.disabled = true;
+
+        const convId = state.currentConvId;
+        const results = await searchMessages(
+            convId,
+            query,
+            (count) => { if (!signal.cancelled) { msgSearchCounter.textContent = `поиск… (${count})`; } },
+            signal,
+        );
+
+        if (signal.cancelled) { return; }
+
+        idbResults = results;
+
+        if (idbResults.length === 0) {
+            msgSearchCounter.textContent = "нет результатов";
+            return;
+        }
+
+        highlightDomMatches(query);
+        msgSearchCounter.textContent = `0 / ${idbResults.length}`;
+        msgSearchPrev.disabled = true;
+        msgSearchNext.disabled = false;
+    }
+
+    async function activateMatch(): Promise<void> {
+        if (idbResults.length === 0 || searchIndex < 0) { return; }
+        const { id } = idbResults[searchIndex];
+
+        msgSearchCounter.textContent = `${searchIndex + 1} / ${idbResults.length}`;
+        msgSearchPrev.disabled = searchIndex === 0;
+        msgSearchNext.disabled = searchIndex === idbResults.length - 1;
+
+        let el = document.getElementById(`msg-${id}`);
+        if (!el) {
+            await loadMessagesAround(id);
+            highlightDomMatches(activeQuery);
+            el = document.getElementById(`msg-${id}`);
+        }
+
+        if (el) {
+            document.querySelectorAll<HTMLElement>(".msg-search-highlight--active").forEach(m => m.classList.remove("msg-search-highlight--active"));
+            el.querySelectorAll<HTMLElement>(".msg-search-highlight").forEach(m => m.classList.add("msg-search-highlight--active"));
+            el.scrollIntoView({ block: "center", behavior: "smooth" });
+        }
+    }
+
+    function openMsgSearch(): void {
+        msgSearchBar.style.display = "flex";
+        msgSearchInput.value = "";
+        msgSearchInput.focus();
+        clearSearchHighlights();
+        idbResults = [];
+        searchIndex = -1;
+    }
+
+    function closeMsgSearch(): void {
+        msgSearchBar.style.display = "none";
+        clearSearchHighlights();
+        idbResults = [];
+        searchIndex = -1;
+        activeQuery = "";
+    }
+
+    document.getElementById("headerSearchBtn")?.addEventListener("click", openMsgSearch);
+    msgSearchClose.addEventListener("click", closeMsgSearch);
+    msgSearchInput.addEventListener("input", () => { void runSearch(msgSearchInput.value); });
+    msgSearchNext.addEventListener("click", () => {
+        if (searchIndex < idbResults.length - 1) { searchIndex++; void activateMatch(); }
+    });
+    msgSearchPrev.addEventListener("click", () => {
+        if (searchIndex > 0) { searchIndex--; void activateMatch(); }
+    });
+    msgSearchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            if (e.shiftKey) {
+                if (searchIndex > 0) { searchIndex--; void activateMatch(); }
+            } else {
+                if (searchIndex < idbResults.length - 1) { searchIndex++; void activateMatch(); }
+                else if (searchIndex === -1 && idbResults.length > 0) { searchIndex = 0; void activateMatch(); }
+            }
+        }
+        if (e.key === "Escape") { closeMsgSearch(); }
+    });
+
+    document.addEventListener("keydown", (e) => {
+        if (e.metaKey || e.ctrlKey || e.altKey) { return; }
+
+        const noChatSelected = document.getElementById("noChatSelected") as HTMLElement;
+        const chatIsOpen = (window as any).currentConvId != null;
+
+        if (e.key === "Escape" && chatIsOpen) {
+            document.querySelectorAll(".conversation-item.active").forEach(el => el.classList.remove("active"));
+            noChatSelected.style.display = "";
+            (document.getElementById("messagesArea") as HTMLElement).style.display = "none";
+            (document.getElementById("chatHeader") as HTMLElement).style.display = "none";
+            (document.getElementById("inputArea") as HTMLElement).style.display = "none";
+            document.getElementById("emojiPanel")?.classList.remove("emoji-panel--open");
+            document.querySelector(".emoji-backdrop")?.classList.remove("emoji-backdrop--open");
+            closeMsgSearch();
+            (window as any).currentConvId = null;
+            state.currentConvId = null;
+            return;
+        }
+
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) { return; }
+        if (chatIsOpen) { return; }
+
+        if (e.key === "n" || e.key === "N" || e.key === "т" || e.key === "Т") {
+            e.preventDefault();
+            document.getElementById("newGroupBtn")?.click();
+        } else if (e.key === "f" || e.key === "F" || e.key === "а" || e.key === "А") {
+            e.preventDefault();
+            (document.querySelector(".sidebar-search input") as HTMLInputElement)?.focus();
+        }
+    });
+
+    document.querySelectorAll<HTMLButtonElement>(".sidebar-filter-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll(".sidebar-filter-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+
+            const filter = btn.dataset.filter as string;
+            document.querySelectorAll<HTMLElement>(".conversation-item").forEach(item => {
+                if (filter === "all") {
+                    item.style.display = "";
+                } else {
+                    item.style.display = item.dataset.convType === filter ? "" : "none";
+                }
+            });
+
+            const sectionLabel = document.querySelector<HTMLElement>(".conv-section-label");
+            if (sectionLabel) {
+                sectionLabel.style.display = filter === "all" || filter === "direct" ? "" : "none";
+            }
+        });
     });
 
     document.getElementById("groupRequestsBtn")?.addEventListener("click", () => {
@@ -392,7 +660,7 @@ export function bindEvents(): void {
         }
 
         if (target.id === "groupLeaveBtn" && state.currentConvId) {
-            showLeaveGroupModal(String(state.currentConvId), state.currentPartnerLogin);
+            showLeaveGroupModal(String(state.currentConvId), state.currentPartnerLogin ?? "");
         }
     });
 
@@ -465,6 +733,32 @@ export function bindEvents(): void {
     });
     document.addEventListener("click", () => {
         attachMenu?.classList.remove("attach-menu--open");
+    });
+
+    // Profile link from chat header
+    function goToPartnerProfile(): void {
+        if (state.currentPartnerId !== null) {
+            window.location.href = `/profile/${state.currentPartnerId}`;
+        }
+    }
+    document.getElementById("chatAvatar")?.addEventListener("click", goToPartnerProfile);
+    document.getElementById("chatPartnerName")?.closest(".chat-header-info")?.addEventListener("click", goToPartnerProfile);
+
+    // Chat more menu
+    const chatMoreBtn = document.getElementById("chatMoreBtn") as HTMLButtonElement;
+    const chatMoreMenu = document.getElementById("chatMoreMenu") as HTMLElement;
+
+    chatMoreBtn?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        chatMoreMenu.classList.toggle("chat-more-menu--open");
+    });
+    document.addEventListener("click", () => {
+        chatMoreMenu?.classList.remove("chat-more-menu--open");
+    });
+
+    document.getElementById("deleteChatBtn")?.addEventListener("click", () => {
+        chatMoreMenu.classList.remove("chat-more-menu--open");
+        showDeleteChatModal();
     });
 
     function getUploadUiRefs() {

@@ -81,6 +81,11 @@ class User extends Authenticatable
         return $this->hasOne(UserKey::class);
     }
 
+    public function profileSetting(): HasOne
+    {
+        return $this->hasOne(ProfileSetting::class);
+    }
+
     public function conversations(): HasMany
     {
         return $this->hasMany(Conversation::class, 'user_a_id');
@@ -91,6 +96,39 @@ class User extends Authenticatable
         return $this->belongsToMany(Conversation::class, 'conversation_members')
             ->withPivot(['role', 'joined_at'])
             ->withTimestamps();
+    }
+
+    public function feedPosts(): HasMany
+    {
+        return $this->hasMany(FeedPost::class);
+    }
+
+    public function feedVotes(): HasMany
+    {
+        return $this->hasMany(FeedVote::class);
+    }
+
+    public function feedComments(): HasMany
+    {
+        return $this->hasMany(FeedComment::class);
+    }
+
+    public function feedName(): string
+    {
+        return $this->pseudonym ?: 'anon-'.$this->id;
+    }
+
+    /**
+     * @return array<int>
+     */
+    public function friendIds(): array
+    {
+        return $this->friends()
+            ->pluck('friend_id')
+            ->merge($this->friendOf()->pluck('user_id'))
+            ->unique()
+            ->values()
+            ->all();
     }
 
     public function isFriendWith(int $userId): bool

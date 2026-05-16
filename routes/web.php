@@ -5,8 +5,11 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChatFileController;
+use App\Http\Controllers\FeedController;
 use App\Http\Controllers\FriendsController;
 use App\Http\Controllers\LocationController;
+use App\Http\Controllers\NotificationsController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TwoFactorController;
@@ -44,12 +47,22 @@ Route::get('/2fa', [TwoFactorController::class, 'show'])->name('2fa.show');
 Route::post('/2fa', [TwoFactorController::class, 'verify'])->name('2fa.verify');
 Route::post('/2fa/resend', [TwoFactorController::class, 'resend'])->name('2fa.resend');
 
+Route::get('/friends/join/{code}', [FriendsController::class, 'joinByCode'])->name('friends.join');
+
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+    Route::get('/notifications', [NotificationsController::class, 'index'])->name('notifications.index');
+    Route::get('/profile/{user}', [ProfileController::class, 'show'])->name('profiles.show');
+    Route::post('/notifications/{id}/read', [NotificationsController::class, 'markRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationsController::class, 'markAllRead'])->name('notifications.read-all');
+    Route::get('/', [FeedController::class, 'index'])->name('feed.index');
+    Route::post('/feed/posts', [FeedController::class, 'store'])->name('feed.posts.store');
+    Route::post('/feed/posts/{post}/vote', [FeedController::class, 'vote'])->name('feed.posts.vote');
+    Route::post('/feed/posts/{post}/comments', [FeedController::class, 'comment'])->name('feed.posts.comments.store');
+    Route::get('/feed/posts/{post}/attachments/{attachment}', [FeedController::class, 'attachment'])
+        ->scopeBindings()
+        ->name('feed.posts.attachments.show');
     Route::get('/chats', [ChatController::class, 'index'])->name('chats.index');
-    Route::get('/', function () {
-        return 'home';
-    })->name('home');
 
     // Friends routes
     Route::get('/friends', [FriendsController::class, 'index'])->name('friends.index');
@@ -66,6 +79,7 @@ Route::middleware('auth')->group(function () {
     // Settings routes
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.profile.update');
+    Route::post('/settings/profile/visibility', [SettingsController::class, 'updateProfileVisibility'])->name('settings.profile-visibility.update');
     Route::post('/settings/email/resend', [SettingsController::class, 'resendEmailVerification'])->name('settings.email.resend');
     Route::delete('/settings/email', [SettingsController::class, 'detachEmail'])->name('settings.email.detach');
     Route::post('/settings/avatar', [SettingsController::class, 'updateAvatar'])->name('settings.avatar.update');
@@ -103,6 +117,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/chat/{conversationId}/invites', [ChatController::class, 'createInvite'])->name('chat.invites.store');
     Route::delete('/chat/{conversationId}/invites/{inviteId}', [ChatController::class, 'revokeInvite'])->name('chat.invites.destroy');
     Route::delete('/chat/{conversationId}/group', [ChatController::class, 'destroyGroup'])->name('chat.groups.destroy');
+    Route::delete('/chat/{conversationId}', [ChatController::class, 'destroyConversation'])->name('chat.destroy');
     Route::get('/chat/{conversationId}/messages', [ChatController::class, 'messages'])->name('chat.messages.index');
     Route::post('/chat/{conversationId}/messages', [ChatController::class, 'store'])->name('chat.messages.store');
     Route::patch('/chat/{conversationId}/messages/{messageId}', [ChatController::class, 'update'])->name('chat.messages.update');
