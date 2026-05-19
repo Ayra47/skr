@@ -123,6 +123,13 @@
                                 @endforeach
                             </div>
 
+                            <button class="feed-poll-toggle {{ $hasPoll ? 'active' : '' }}" type="button" wire:click="togglePoll" aria-pressed="{{ $hasPoll ? 'true' : 'false' }}" title="Добавить опрос">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+                                </svg>
+                                Опрос
+                            </button>
+
                             <input type="checkbox" wire:model="isWhisper" data-feed-whisper-input hidden>
 
                             <button class="feed-whisper-toggle {{ $isWhisper ? 'active' : '' }}" type="button" data-feed-whisper-toggle aria-pressed="{{ $isWhisper ? 'true' : 'false' }}" title="Тихий пост — без псевдонима">
@@ -150,6 +157,82 @@
                             </svg>
                             <span>Абсолютно анонимный пост, даже ваш псевдоним будет скрыт.</span>
                         </div>
+
+                        @if($hasPoll)
+                            <div class="feed-poll-composer">
+                                <div class="feed-poll-composer-header">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                                    <span>Опрос</span>
+                                </div>
+
+                                <div class="feed-poll-composer-options">
+                                    @foreach($pollOptions as $i => $optionText)
+                                        <div class="feed-poll-composer-option-row">
+                                            <input
+                                                class="feed-poll-composer-option-input"
+                                                type="text"
+                                                wire:model="pollOptions.{{ $i }}"
+                                                maxlength="100"
+                                                placeholder="Вариант {{ $i + 1 }}"
+                                            >
+                                            @if(count($pollOptions) > 2)
+                                                <button class="feed-poll-composer-remove" type="button" wire:click="removePollOption({{ $i }})" aria-label="Удалить вариант">
+                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                                </button>
+                                            @endif
+                                        </div>
+                                    @endforeach
+
+                                    @if(count($pollOptions) < 10)
+                                        <button class="feed-poll-composer-add" type="button" wire:click="addPollOption">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                            Добавить вариант
+                                        </button>
+                                    @endif
+                                </div>
+
+                                <div class="feed-poll-composer-settings">
+                                    <div class="feed-poll-composer-mode" role="radiogroup" aria-label="Тип выбора">
+                                        <label class="{{ $pollMode === \App\Models\Poll::MODE_SINGLE ? 'active' : '' }}">
+                                            <input type="radio" wire:model="pollMode" value="{{ \App\Models\Poll::MODE_SINGLE }}" hidden>
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+                                            Один
+                                        </label>
+                                        <label class="{{ $pollMode === \App\Models\Poll::MODE_MULTIPLE ? 'active' : '' }}">
+                                            <input type="radio" wire:model="pollMode" value="{{ \App\Models\Poll::MODE_MULTIPLE }}" hidden>
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="4" height="4" rx="1"/><line x1="10" y1="7" x2="21" y2="7"/><rect x="3" y="14" width="4" height="4" rx="1"/><line x1="10" y1="16" x2="21" y2="16"/></svg>
+                                            Несколько
+                                        </label>
+                                    </div>
+
+                                    @if($pollMode === \App\Models\Poll::MODE_MULTIPLE)
+                                        <div class="feed-poll-composer-max">
+                                            <label>
+                                                <span>Макс. вариантов</span>
+                                                <input type="number" wire:model="pollMaxChoices" min="2" max="10" placeholder="любое" class="feed-poll-composer-max-input">
+                                            </label>
+                                        </div>
+                                    @endif
+
+                                    <div class="feed-poll-composer-expires" role="radiogroup" aria-label="Время опроса">
+                                        @foreach(['12h' => '12ч', '24h' => '24ч', '7d' => '7д', 'never' => '∞'] as $val => $lbl)
+                                            <label class="{{ $pollClosesIn === $val ? 'active' : '' }}">
+                                                <input type="radio" wire:model="pollClosesIn" value="{{ $val }}" hidden>
+                                                {{ $lbl }}
+                                            </label>
+                                        @endforeach
+                                        <label class="{{ $pollClosesIn === 'custom' ? 'active' : '' }}">
+                                            <input type="radio" wire:model="pollClosesIn" value="custom" hidden>
+                                            Дата
+                                        </label>
+                                    </div>
+
+                                    @if($pollClosesIn === 'custom')
+                                        <input type="datetime-local" wire:model="pollClosesAt" class="feed-poll-composer-datetime">
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </form>
@@ -167,6 +250,9 @@
                         :answer-label="$answerLabel"
                         :interactive="true"
                         :expanded-comment-posts="$expandedCommentPosts"
+                        :is-bookmarked="array_key_exists($post->id, $bookmarkIds)"
+                        :bookmark-id="$bookmarkIds[$post->id] ?? null"
+                        :poll-voted-option-ids="$pollVotedOptionIds"
                     />
 
                     @if(! ($expandedCommentPosts[$post->id] ?? false) && $topComments->has($post->id))

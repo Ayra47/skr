@@ -5,11 +5,15 @@
     'myVote' => null,
     'answerLabel' => null,
     'expandedCommentPosts' => [],
+    'isBookmarked' => false,
+    'bookmarkId' => null,
+    'pollVotedOptionIds' => [],
 ])
 
 @php
     $authorFeedName = $post->author?->feedName();
     $answerText = $answerLabel ? $answerLabel($post->comments_count) : 'ответов';
+    $hasPoll = $post->relationLoaded('poll') && $post->poll !== null;
 @endphp
 
 <article class="feed-post">
@@ -62,36 +66,46 @@
         'post' => $post,
     ])
 
+    @if($hasPoll)
+        @include('livewire.partials.feed-poll', [
+            'poll' => $post->poll,
+            'postId' => $post->id,
+            'votedOptionIds' => $pollVotedOptionIds[$post->poll->id] ?? [],
+        ])
+    @endif
+
     <footer class="feed-post-footer">
         <div class="feed-actions">
-            @if($interactive)
-                <button class="feed-reaction-btn {{ $myVote === \App\Models\FeedVote::VALUE_UP ? 'active-up' : '' }}" type="button" wire:click="vote({{ $post->id }}, '{{ \App\Models\FeedVote::VALUE_UP }}')" aria-label="Голос за">
-            @else
-                <span class="feed-reaction-btn {{ $myVote === \App\Models\FeedVote::VALUE_UP ? 'active-up' : '' }}">
-            @endif
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="m7 14 5-5 5 5"/>
-                </svg>
-                {{ $post->up_votes_count }}
-            @if($interactive)
-                </button>
-            @else
-                </span>
-            @endif
+            @if(! $hasPoll)
+                @if($interactive)
+                    <button class="feed-reaction-btn {{ $myVote === \App\Models\FeedVote::VALUE_UP ? 'active-up' : '' }}" type="button" wire:click="vote({{ $post->id }}, '{{ \App\Models\FeedVote::VALUE_UP }}')" aria-label="Голос за">
+                @else
+                    <span class="feed-reaction-btn {{ $myVote === \App\Models\FeedVote::VALUE_UP ? 'active-up' : '' }}">
+                @endif
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m7 14 5-5 5 5"/>
+                    </svg>
+                    {{ $post->up_votes_count }}
+                @if($interactive)
+                    </button>
+                @else
+                    </span>
+                @endif
 
-            @if($interactive)
-                <button class="feed-reaction-btn {{ $myVote === \App\Models\FeedVote::VALUE_DOWN ? 'active-down' : '' }}" type="button" wire:click="vote({{ $post->id }}, '{{ \App\Models\FeedVote::VALUE_DOWN }}')" aria-label="Голос против">
-            @else
-                <span class="feed-reaction-btn {{ $myVote === \App\Models\FeedVote::VALUE_DOWN ? 'active-down' : '' }}">
-            @endif
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="m7 10 5 5 5-5"/>
-                </svg>
-                {{ $post->down_votes_count }}
-            @if($interactive)
-                </button>
-            @else
-                </span>
+                @if($interactive)
+                    <button class="feed-reaction-btn {{ $myVote === \App\Models\FeedVote::VALUE_DOWN ? 'active-down' : '' }}" type="button" wire:click="vote({{ $post->id }}, '{{ \App\Models\FeedVote::VALUE_DOWN }}')" aria-label="Голос против">
+                @else
+                    <span class="feed-reaction-btn {{ $myVote === \App\Models\FeedVote::VALUE_DOWN ? 'active-down' : '' }}">
+                @endif
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m7 10 5 5 5-5"/>
+                    </svg>
+                    {{ $post->down_votes_count }}
+                @if($interactive)
+                    </button>
+                @else
+                    </span>
+                @endif
             @endif
 
             @if($interactive)
@@ -109,6 +123,32 @@
                 </span>
             @endif
         </div>
-        <span class="feed-anonymous-note">комментарии с псевдонимами</span>
+        <div class="feed-footer-right">
+            <span class="feed-anonymous-note">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                реакции анонимны
+            </span>
+            @if($interactive)
+                <button
+                    class="feed-bookmark-btn {{ $isBookmarked ? 'feed-bookmark-btn--active' : '' }}"
+                    type="button"
+                    data-bookmark-btn
+                    data-post-id="{{ $post->id }}"
+                    data-bookmarked="{{ $isBookmarked ? 'true' : 'false' }}"
+                    data-bookmark-id="{{ $bookmarkId }}"
+                    title="{{ $isBookmarked ? 'Убрать из закладок' : 'Сохранить в закладки' }}"
+                >
+                    @if($isBookmarked)
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                            <path d="M6 3a2 2 0 0 0-2 2v16l8-5 8 5V5a2 2 0 0 0-2-2H6z"/>
+                        </svg>
+                    @else
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                        </svg>
+                    @endif
+                </button>
+            @endif
+        </div>
     </footer>
 </article>

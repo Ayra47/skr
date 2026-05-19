@@ -3,12 +3,15 @@
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChatFileController;
+use App\Http\Controllers\CommunitiesController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\FriendsController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\NotificationsController;
+use App\Http\Controllers\PollController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\SettingsController;
@@ -51,6 +54,12 @@ Route::post('/2fa/resend', [TwoFactorController::class, 'resend'])->name('2fa.re
 Route::get('/friends/join/{code}', [FriendsController::class, 'joinByCode'])->name('friends.join');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/communities', [CommunitiesController::class, 'index'])->name('communities.index');
+    Route::get('/bookmarks', [BookmarkController::class, 'index'])->name('bookmarks.index');
+    Route::post('/bookmarks', [BookmarkController::class, 'store'])->name('bookmarks.store');
+    Route::delete('/bookmarks/{bookmark}', [BookmarkController::class, 'destroy'])->name('bookmarks.destroy');
+    Route::get('/bookmarks/{bookmark}/attachments/{attachment}', [BookmarkController::class, 'attachment'])->name('bookmarks.attachments.show');
+
     Route::get('/status', [StatusController::class, 'index'])->name('status.index');
     Route::get('/status/incidents/more', [StatusController::class, 'moreIncidents'])->name('status.incidents.more');
     Route::get('/status/canary/more', [StatusController::class, 'moreCanary'])->name('status.canary.more');
@@ -63,6 +72,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/', [FeedController::class, 'index'])->name('feed.index');
     Route::post('/feed/posts', [FeedController::class, 'store'])->name('feed.posts.store');
     Route::post('/feed/posts/{post}/vote', [FeedController::class, 'vote'])->name('feed.posts.vote');
+    Route::post('/feed/posts/{post}/poll/vote', [PollController::class, 'vote'])->name('feed.posts.poll.vote');
+    Route::delete('/feed/posts/{post}/poll/vote', [PollController::class, 'cancelVote'])->name('feed.posts.poll.vote.cancel');
     Route::post('/feed/posts/{post}/comments', [FeedController::class, 'comment'])->name('feed.posts.comments.store');
     Route::get('/feed/posts/{post}/attachments/{attachment}', [FeedController::class, 'attachment'])
         ->scopeBindings()

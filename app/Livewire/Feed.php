@@ -2,15 +2,18 @@
 
 namespace App\Livewire;
 
+use App\Models\Bookmark;
 use App\Models\FeedComment;
 use App\Models\FeedCommentVote;
 use App\Models\FeedPost;
 use App\Models\FeedVote;
+use App\Models\Poll;
 use App\Notifications\FeedCommentNotification;
 use App\Notifications\FeedVoteNotification;
 use App\Services\FeedAttachmentThumbnail;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -36,6 +39,21 @@ class Feed extends Component
     public string $expiresIn = FeedPost::EXPIRES_24H;
 
     public bool $isWhisper = false;
+
+    public bool $hasPoll = false;
+
+    public string $pollMode = Poll::MODE_SINGLE;
+
+    public ?int $pollMaxChoices = null;
+
+    public string $pollClosesIn = 'never';
+
+    public string $pollClosesAt = '';
+
+    /**
+     * @var array<int, string>
+     */
+    public array $pollOptions = ['', ''];
 
     /**
      * @var array<int, mixed>
@@ -105,6 +123,38 @@ class Feed extends Component
         $this->resetPage();
     }
 
+    public function togglePoll(): void
+    {
+        $this->hasPoll = ! $this->hasPoll;
+
+        if ($this->hasPoll) {
+            $this->pollOptions = ['', ''];
+            $this->pollMode = Poll::MODE_SINGLE;
+            $this->pollMaxChoices = null;
+            $this->pollClosesIn = 'never';
+            $this->pollClosesAt = '';
+        }
+    }
+
+    public function addPollOption(): void
+    {
+        if (count($this->pollOptions) >= 10) {
+            return;
+        }
+
+        $this->pollOptions[] = '';
+    }
+
+    public function removePollOption(int $index): void
+    {
+        if (count($this->pollOptions) <= 2) {
+            return;
+        }
+
+        array_splice($this->pollOptions, $index, 1);
+        $this->pollOptions = array_values($this->pollOptions);
+    }
+
     public function createPost(): void
     {
         $this->body = trim($this->body);
@@ -114,7 +164,14 @@ class Feed extends Component
         $validated['expires_at'] = FeedPost::expiresAtFor($validated['expiresIn']);
         unset($validated['attachments'], $validated['expiresIn'], $validated['isWhisper']);
 
-        DB::transaction(function () use ($validated): void {
+        $hasPoll = $this->hasPoll;
+        $pollMode = $this->pollMode;
+        $pollMaxChoices = $this->pollMaxChoices;
+        $pollClosesIn = $this->pollClosesIn;
+        $pollClosesAt = $this->pollClosesAt;
+        $pollOptions = array_values(array_filter(array_map('trim', $this->pollOptions), 'strlen'));
+
+        DB::transaction(function () use ($validated, $hasPoll, $pollMode, $pollMaxChoices, $pollClosesIn, $pollClosesAt, $pollOptions): void {
             $post = FeedPost::query()->create([
                 ...$validated,
                 'body' => filled($validated['body'] ?? null) ? trim($validated['body']) : null,
@@ -147,12 +204,53 @@ class Feed extends Component
             if ($attachmentRows !== []) {
                 $post->attachments()->insert($attachmentRows);
             }
+
+            if ($hasPoll && count($pollOptions) >= 2) {
+                $closesAt = match ($pollClosesIn) {
+                    '12h' => now()->addHours(12),
+                    '24h' => now()->addDay(),
+                    '7d' => now()->addDays(7),
+                    'custom' => filled($pollClosesAt) ? Carbon::parse($pollClosesAt) : null,
+                    default => null,
+                };
+
+                $poll = $post->poll()->create([
+                    'mode' => $pollMode,
+                    'max_choices' => $pollMode === Poll::MODE_MULTIPLE ? $pollMaxChoices : null,
+                    'closes_at' => $closesAt,
+                    'secret' => bin2hex(random_bytes(32)),
+                ]);
+
+                $optionRows = array_map(fn (string $text, int $pos) => [
+                    'poll_id' => $poll->id,
+                    'text' => $text,
+                    'position' => $pos + 1,
+                    'votes_count' => 0,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ], $pollOptions, array_keys($pollOptions));
+
+                $poll->options()->insert($optionRows);
+            }
         });
 
+        $wasWhisper = $this->isWhisper;
+
         $this->reset(['body', 'attachments']);
+        $this->hasPoll = false;
+        $this->pollOptions = ['', ''];
+        $this->pollMode = Poll::MODE_SINGLE;
+        $this->pollMaxChoices = null;
+        $this->pollClosesIn = 'never';
+        $this->pollClosesAt = '';
         $this->visibility = FeedPost::VISIBILITY_FRIENDS;
         $this->expiresIn = FeedPost::EXPIRES_24H;
         $this->isWhisper = false;
+
+        if ($wasWhisper) {
+            $this->tab = 'all';
+        }
+
         $this->resetPage();
         $this->dispatch('feed-post-created');
     }
@@ -417,6 +515,7 @@ class Feed extends Component
                 'attachments' => fn ($query) => $query->orderBy('position'),
                 'author',
                 'votes' => fn ($query) => $query->where('user_id', $user->id),
+                'poll.options',
             ])
             ->withCount([
                 'comments',
@@ -503,6 +602,7 @@ class Feed extends Component
                 ->with([
                     'attachments' => fn ($query) => $query->orderBy('position'),
                     'author',
+                    'poll.options',
                 ])
                 ->withCount([
                     'comments',
@@ -547,10 +647,24 @@ class Feed extends Component
             }
         }
 
+        $bookmarkIds = Bookmark::query()
+            ->where('user_id', $user->id)
+            ->where('bookmarkable_type', FeedPost::class)
+            ->whereIn('bookmarkable_id', $postIds)
+            ->pluck('id', 'bookmarkable_id')
+            ->all();
+
+        $pollVotedOptionIds = $this->loadPollVotedOptionIds(
+            collect($posts->items())->pluck('poll')->filter()->values()->all(),
+            $user->id
+        );
+
         return view('livewire.feed', [
+            'bookmarkIds' => $bookmarkIds,
             'modalCommentsByParent' => $modalCommentsByParent,
             'modalPost' => $modalPost,
             'modalReplyCounts' => $modalReplyCounts,
+            'pollVotedOptionIds' => $pollVotedOptionIds,
             'posts' => $posts,
             'previewComments' => $previewComments,
             'previewCommentsByParent' => $previewCommentsByParent,
@@ -565,7 +679,7 @@ class Feed extends Component
      */
     private function postRules(): array
     {
-        return [
+        $rules = [
             'body' => ['nullable', 'string', 'max:2000', 'required_without:attachments'],
             'visibility' => ['required', Rule::in(FeedPost::visibilityValues())],
             'expiresIn' => ['required', Rule::in(FeedPost::expirationValues())],
@@ -577,6 +691,17 @@ class Feed extends Component
                     ->max(500 * 1024),
             ],
         ];
+
+        if ($this->hasPoll) {
+            $rules['pollMode'] = ['required', Rule::in([Poll::MODE_SINGLE, Poll::MODE_MULTIPLE])];
+            $rules['pollMaxChoices'] = ['nullable', 'integer', 'min:2', 'max:10'];
+            $rules['pollClosesIn'] = ['required', Rule::in(['12h', '24h', '7d', 'custom', 'never'])];
+            $rules['pollClosesAt'] = ['required_if:pollClosesIn,custom', 'nullable', 'date', 'after:now'];
+            $rules['pollOptions'] = ['required', 'array', 'min:2', 'max:10'];
+            $rules['pollOptions.*'] = ['required', 'string', 'max:100'];
+        }
+
+        return $rules;
     }
 
     private function attachmentName(string $name): string
@@ -585,6 +710,25 @@ class Feed extends Component
         $name = preg_replace('/[^\pL\pN ._\-]/u', '_', $name) ?: 'attachment';
 
         return Str::limit($name, 120, '');
+    }
+
+    /**
+     * @param  array<int, Poll>  $polls
+     * @return array<int, array<int>> keyed by poll_id
+     */
+    private function loadPollVotedOptionIds(array $polls, int $userId): array
+    {
+        if (empty($polls)) {
+            return [];
+        }
+
+        $result = [];
+
+        foreach ($polls as $poll) {
+            $result[$poll->id] = $poll->votedOptionIds($userId);
+        }
+
+        return $result;
     }
 
     private function findVisibleComment(int $commentId): FeedComment

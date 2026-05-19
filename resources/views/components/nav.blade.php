@@ -22,6 +22,16 @@
                 </svg>
                 Чаты
             </a>
+            <a href="{{ route('communities.index') }}" class="{{ request()->routeIs('communities.*') ? 'active' : '' }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                Сообщества
+            </a>
             <a href="{{ route('friends.index') }}" class="{{ request()->routeIs('friends.*') ? 'active' : '' }}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
                     stroke-linecap="round" stroke-linejoin="round">
@@ -31,15 +41,6 @@
                     <path d="M16 3.1a4 4 0 0 1 0 7.8" />
                 </svg>
                 Друзья
-            </a>
-            <a href="{{ route('settings.index') }}" class="{{ request()->routeIs('settings.*') ? 'active' : '' }}">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="3" />
-                    <path
-                        d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z" />
-                </svg>
-                Настройки
             </a>
         </div>
         <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
@@ -54,6 +55,11 @@
                 <span
                     style="width:6px;height:6px;border-radius:50%;background:{{ $navAllOk ? '#6dd49a' : '#e8c656' }};box-shadow:0 0 6px {{ $navAllOk ? 'rgba(109,212,154,.6)' : 'rgba(232,198,86,.6)' }};"></span>
                 {{ $navAllOk ? 'все системы работают' : 'есть проблемы' }}
+            </a>
+            <a href="{{ route('bookmarks.index') }}" class="nav-bookmark-btn {{ request()->routeIs('bookmarks.*') ? 'nav-bookmark-btn--active' : '' }}" title="Закладки" aria-label="Закладки">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
             </a>
             <button id="nav-bell-btn" class="bell-btn {{ request()->routeIs('notifications.*') ? 'bell-btn--active' : '' }}" title="Уведомления">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"

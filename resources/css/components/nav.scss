@@ -103,6 +103,35 @@
     }
 }
 
+.nav-bookmark-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid #272b36;
+    background: transparent;
+    color: #8a8f9c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    flex-shrink: 0;
+    transition:
+        background 0.15s,
+        color 0.15s,
+        border-color 0.15s;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.03);
+        color: #e8e8ec;
+    }
+
+    &--active {
+        background: rgba(232, 166, 86, 0.1);
+        border-color: rgba(232, 166, 86, 0.3);
+        color: #e8a656;
+    }
+}
+
 .bell-badge {
     position: absolute;
     top: -3px;

@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 
@@ -17,6 +19,8 @@ use InvalidArgumentException;
 ])]
 class FeedPost extends Model
 {
+    use SoftDeletes;
+
     public const VISIBILITY_FRIENDS = 'friends';
 
     public const VISIBILITY_PUBLIC = 'public';
@@ -66,6 +70,13 @@ class FeedPost extends Model
             $post->visibility = self::VISIBILITY_PUBLIC;
             $post->user_id = null;
         });
+
+        static::deleted(function (FeedPost $post): void {
+            Bookmark::query()
+                ->where('bookmarkable_type', self::class)
+                ->where('bookmarkable_id', $post->id)
+                ->update(['original_deleted' => true]);
+        });
     }
 
     public static function expiresAtFor(string $expiresIn): ?Carbon
@@ -97,6 +108,11 @@ class FeedPost extends Model
     public function attachments(): HasMany
     {
         return $this->hasMany(FeedPostAttachment::class)->orderBy('position');
+    }
+
+    public function poll(): HasOne
+    {
+        return $this->hasOne(Poll::class, 'feed_post_id');
     }
 
     /**

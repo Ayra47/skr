@@ -14,3 +14,5 @@ Broadcast::channel('chat.{userId}', function (User $user, int $userId) {
 Broadcast::channel('presence-chat', function (User $user) {
     return ['id' => $user->id, 'login' => $user->login];
 });
+
+Broadcast::channel('poll.{pollId}', fn () => true);

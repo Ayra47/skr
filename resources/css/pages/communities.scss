@@ -1,0 +1,35 @@
+@use "../app.scss";
+@use "../components/nav.scss";
+
+.communities-root {
+    min-height: calc(100vh - 64px);
+    padding: 44px 18px 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.communities-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    color: var(--text-mute);
+    text-align: center;
+
+    svg {
+        opacity: 0.3;
+    }
+
+    h2 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-dim);
+        margin: 0;
+    }
+
+    p {
+        font-size: 0.88rem;
+        margin: 0;
+    }
+}

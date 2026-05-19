@@ -10,4 +10,5 @@ Artisan::command('inspire', function () {
 
 Schedule::command('chat:prune')->daily();
 Schedule::command('chat:delete-expired-files')->hourly();
+Schedule::command('polls:reconcile')->hourly();
 Schedule::command('status:canary')->weekly();

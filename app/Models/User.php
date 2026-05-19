@@ -113,6 +113,11 @@ class User extends Authenticatable
         return $this->hasMany(FeedComment::class);
     }
 
+    public function bookmarks(): HasMany
+    {
+        return $this->hasMany(Bookmark::class);
+    }
+
     public function feedName(): string
     {
         return $this->pseudonym ?: 'anon-'.$this->id;

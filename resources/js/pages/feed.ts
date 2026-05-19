@@ -1,5 +1,10 @@
 import "../../css/pages/feed.scss";
 import "../app";
+import { initBookmarkToggle } from "../bookmark-toggle";
+import { initPoll } from "../poll";
+
+initBookmarkToggle();
+initPoll();
 
 type AttachmentPreview = {
     file: File;
