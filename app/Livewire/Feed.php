@@ -11,8 +11,10 @@ use App\Models\Poll;
 use App\Notifications\FeedCommentNotification;
 use App\Notifications\FeedVoteNotification;
 use App\Services\FeedAttachmentThumbnail;
+use App\Services\FeedItemsReader;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -106,6 +108,10 @@ class Feed extends Component
      */
     public array $modalCommentOrders = [];
 
+    public ?string $feedCursor = null;
+
+    public ?string $nextFeedCursor = null;
+
     public function mount(): void
     {
         if (! in_array($this->tab, ['friends', 'all', 'mine'], strict: true)) {
@@ -120,6 +126,8 @@ class Feed extends Component
         }
 
         $this->tab = $tab;
+        $this->feedCursor = null;
+        $this->nextFeedCursor = null;
         $this->resetPage();
     }
 
@@ -510,23 +518,27 @@ class Feed extends Component
     {
         $user = Auth::user();
         $friendIds = $user->friendIds();
-        $posts = FeedPost::query()
-            ->with([
-                'attachments' => fn ($query) => $query->orderBy('position'),
-                'author',
-                'votes' => fn ($query) => $query->where('user_id', $user->id),
-                'poll.options',
-            ])
-            ->withCount([
-                'comments',
-                'comments as root_comments_count' => fn ($query) => $query->whereNull('parent_id'),
-                'votes as up_votes_count' => fn ($query) => $query->where('value', FeedVote::VALUE_UP),
-                'votes as down_votes_count' => fn ($query) => $query->where('value', FeedVote::VALUE_DOWN),
-            ])
-            ->live()
-            ->forTab($user, $this->tab, $friendIds)
-            ->latest()
-            ->simplePaginate(25);
+        if (config('features.unified_feed_items_enabled')) {
+            $posts = $this->loadUnifiedFeedPosts($user);
+        } else {
+            $posts = FeedPost::query()
+                ->with([
+                    'attachments' => fn ($query) => $query->orderBy('position'),
+                    'author',
+                    'votes' => fn ($query) => $query->where('user_id', $user->id),
+                    'poll.options',
+                ])
+                ->withCount([
+                    'comments',
+                    'comments as root_comments_count' => fn ($query) => $query->whereNull('parent_id'),
+                    'votes as up_votes_count' => fn ($query) => $query->where('value', FeedVote::VALUE_UP),
+                    'votes as down_votes_count' => fn ($query) => $query->where('value', FeedVote::VALUE_DOWN),
+                ])
+                ->live()
+                ->forTab($user, $this->tab, $friendIds)
+                ->latest()
+                ->simplePaginate(25);
+        }
 
         $postIds = collect($posts->items())->pluck('id')->all();
         $expandedPostIds = collect(array_keys($this->expandedCommentPosts))
@@ -672,6 +684,44 @@ class Feed extends Component
             'topComments' => $topComments,
             'user' => $user,
         ]);
+    }
+
+    public function loadMoreFeed(): void
+    {
+        if (! config('features.unified_feed_items_enabled') || $this->nextFeedCursor === null) {
+            return;
+        }
+
+        $this->feedCursor = $this->nextFeedCursor;
+        $this->nextFeedCursor = null;
+    }
+
+    private function loadUnifiedFeedPosts(User $user): Paginator
+    {
+        $reader = app(FeedItemsReader::class);
+        $feedPage = $reader->readForFeed($user, $this->tab, 25, $this->feedCursor);
+        $this->nextFeedCursor = $feedPage->nextCursor;
+        $postIds = $feedPage->feedPostIds();
+
+        $ordered = FeedPost::query()
+            ->with([
+                'attachments' => fn ($query) => $query->orderBy('position'),
+                'author',
+                'votes' => fn ($query) => $query->where('user_id', $user->id),
+                'poll.options',
+            ])
+            ->withCount([
+                'comments',
+                'comments as root_comments_count' => fn ($query) => $query->whereNull('parent_id'),
+                'votes as up_votes_count' => fn ($query) => $query->where('value', FeedVote::VALUE_UP),
+                'votes as down_votes_count' => fn ($query) => $query->where('value', FeedVote::VALUE_DOWN),
+            ])
+            ->whereIn('id', $postIds)
+            ->get()
+            ->sortBy(fn (FeedPost $post) => array_search($post->id, $postIds, strict: true))
+            ->values();
+
+        return new Paginator($ordered->all(), 25);
     }
 
     /**
