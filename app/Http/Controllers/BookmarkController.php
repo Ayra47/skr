@@ -32,6 +32,11 @@ class BookmarkController extends Controller
         $type = $request->input('bookmarkable_type');
         $id = (int) $request->input('bookmarkable_id');
 
+        // community_post is reserved for future use; reject until community tables exist.
+        if ($type === 'community_post') {
+            abort(422, 'community_post bookmarks are not yet supported');
+        }
+
         $morphMap = [
             'feed_post' => FeedPost::class,
         ];
@@ -40,11 +45,19 @@ class BookmarkController extends Controller
 
         $modelClass = $morphMap[$type];
         $morphType = $modelClass;
+        $key = (string) $id;
 
+        // Prefer key-based lookup (matches unique index). Fallback to bookmarkable_id
+        // for pre-migration rows where bookmarkable_key was not yet set.
         $existing = Bookmark::query()
             ->where('user_id', $user->id)
             ->where('bookmarkable_type', $morphType)
-            ->where('bookmarkable_id', $id)
+            ->where(function ($q) use ($key, $id): void {
+                $q->where('bookmarkable_key', $key)
+                    ->orWhere(function ($q2) use ($id): void {
+                        $q2->whereNull('bookmarkable_key')->where('bookmarkable_id', $id);
+                    });
+            })
             ->first();
 
         if ($existing) {
@@ -53,11 +66,12 @@ class BookmarkController extends Controller
 
         $model = $modelClass::query()->findOrFail($id);
 
-        $bookmark = DB::transaction(function () use ($user, $model, $morphType, $id, $type): Bookmark {
+        $bookmark = DB::transaction(function () use ($user, $model, $morphType, $id, $key, $type): Bookmark {
             $bookmark = Bookmark::query()->create([
                 'user_id' => $user->id,
                 'bookmarkable_type' => $morphType,
                 'bookmarkable_id' => $id,
+                'bookmarkable_key' => $key,
                 'snapshot_body' => $model->body ?? null,
                 'snapshot_author_id' => $model->is_whisper ? null : ($model->user_id ?? null),
                 'snapshot_author_name' => $model->is_whisper ? null : ($model->author?->feedName() ?? null),

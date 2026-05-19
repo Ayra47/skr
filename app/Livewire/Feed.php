@@ -8,6 +8,7 @@ use App\Models\FeedCommentVote;
 use App\Models\FeedPost;
 use App\Models\FeedVote;
 use App\Models\Poll;
+use App\Models\User;
 use App\Notifications\FeedCommentNotification;
 use App\Notifications\FeedVoteNotification;
 use App\Services\FeedAttachmentThumbnail;

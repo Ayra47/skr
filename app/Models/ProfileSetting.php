@@ -17,6 +17,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'feed_posts_count_visibility',
     'profile_posts_visibility',
     'avatar_visibility',
+    'profile_communities_visibility',
+    'community_activity_visibility',
+    'community_posts_profile_visibility',
+    'community_posts_feed_visibility',
+    'joined_communities_activity_visibility',
+    'community_roles_visibility',
 ])]
 class ProfileSetting extends Model
 {

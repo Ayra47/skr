@@ -25,6 +25,12 @@ class ProfileSettingsTest extends TestCase
                 'feed_posts_count_visibility' => ProfileSetting::AUDIENCE_NONE,
                 'profile_posts_visibility' => ProfileSetting::AUDIENCE_FRIENDS,
                 'avatar_visibility' => ProfileSetting::AUDIENCE_NONE,
+                'profile_communities_visibility' => ProfileSetting::AUDIENCE_EVERYONE,
+                'community_activity_visibility' => ProfileSetting::AUDIENCE_FRIENDS,
+                'community_posts_profile_visibility' => ProfileSetting::AUDIENCE_EVERYONE,
+                'community_posts_feed_visibility' => ProfileSetting::AUDIENCE_NONE,
+                'joined_communities_activity_visibility' => ProfileSetting::AUDIENCE_FRIENDS,
+                'community_roles_visibility' => ProfileSetting::AUDIENCE_EVERYONE,
             ])
             ->assertOk()
             ->assertJson(['success' => true]);
@@ -39,6 +45,12 @@ class ProfileSettingsTest extends TestCase
             'feed_posts_count_visibility' => ProfileSetting::AUDIENCE_NONE,
             'profile_posts_visibility' => ProfileSetting::AUDIENCE_FRIENDS,
             'avatar_visibility' => ProfileSetting::AUDIENCE_NONE,
+            'profile_communities_visibility' => ProfileSetting::AUDIENCE_EVERYONE,
+            'community_activity_visibility' => ProfileSetting::AUDIENCE_FRIENDS,
+            'community_posts_profile_visibility' => ProfileSetting::AUDIENCE_EVERYONE,
+            'community_posts_feed_visibility' => ProfileSetting::AUDIENCE_NONE,
+            'joined_communities_activity_visibility' => ProfileSetting::AUDIENCE_FRIENDS,
+            'community_roles_visibility' => ProfileSetting::AUDIENCE_EVERYONE,
         ]);
     }
 }

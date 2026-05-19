@@ -171,6 +171,12 @@ class SettingsController extends Controller
             'feed_posts_count_visibility' => ['required', Rule::in(ProfileSetting::audienceValues())],
             'profile_posts_visibility' => ['required', Rule::in(ProfileSetting::audienceValues())],
             'avatar_visibility' => ['required', Rule::in(ProfileSetting::audienceValues())],
+            'profile_communities_visibility' => ['required', Rule::in(ProfileSetting::audienceValues())],
+            'community_activity_visibility' => ['required', Rule::in(ProfileSetting::audienceValues())],
+            'community_posts_profile_visibility' => ['required', Rule::in(ProfileSetting::audienceValues())],
+            'community_posts_feed_visibility' => ['required', Rule::in(ProfileSetting::audienceValues())],
+            'joined_communities_activity_visibility' => ['required', Rule::in(ProfileSetting::audienceValues())],
+            'community_roles_visibility' => ['required', Rule::in(ProfileSetting::audienceValues())],
         ]);
 
         auth()->user()->profileSetting()->updateOrCreate([], $validated);
