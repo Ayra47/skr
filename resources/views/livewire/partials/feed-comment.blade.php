@@ -9,7 +9,9 @@
 <div class="feed-reply feed-comment-node" wire:key="feed-comment-{{ $context }}-{{ $comment->id }}" style="--comment-depth: {{ $depth }};">
     <div class="feed-reply-main">
         <div class="feed-reply-meta">
-            <strong>{{ $commentAuthorName }}</strong>
+            @if($context !== 'top')
+                <strong>{{ $commentAuthorName }}</strong>
+            @endif
             <time datetime="{{ $comment->created_at->toIso8601String() }}">{{ $comment->created_at->diffForHumans() }}</time>
             @if(($comment->edits_count ?? 0) > 0 && ! $comment->isDeleted())
                 <span class="feed-comment-edited-badge">ред.</span>

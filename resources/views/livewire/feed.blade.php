@@ -105,7 +105,7 @@
 
                             <div class="feed-visibility-toggle" role="radiogroup" aria-label="Видимость поста">
                                 <label>
-                                    <input type="radio" wire:model="visibility" value="{{ \App\Models\FeedPost::VISIBILITY_FRIENDS }}" data-feed-visibility-friends @disabled($isWhisper)>
+                                    <input type="radio" wire:model="visibility" value="{{ \App\Models\FeedPost::VISIBILITY_FRIENDS }}" @disabled($isWhisper) data-feed-visibility-friends>
                                     <span>для друзей</span>
                                 </label>
                                 <label>
