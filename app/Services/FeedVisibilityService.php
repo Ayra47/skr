@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\Community;
+use App\Models\CommunityMember;
+use App\Models\CommunityPost;
 use App\Models\FeedItem;
 use App\Models\FeedPost;
 use App\Models\ProfileSetting;
@@ -15,13 +18,14 @@ use App\Models\User;
  * This is the canonical access-control layer for feed_items.
  * SQL prefilters (show_in_feed, visibility_scope) only narrow candidates;
  * this service makes the final decision using live data.
- *
- * Community-related branches are stubs until communities are implemented.
  */
 final class FeedVisibilityService
 {
     /** @var array<string, FeedPost> */
     private array $feedPostCache = [];
+
+    /** @var array<string, CommunityPost> */
+    private array $communityPostCache = [];
 
     /**
      * Preload FeedPosts to avoid N+1 queries across a batch of feed items.
@@ -35,6 +39,18 @@ final class FeedVisibilityService
         }
     }
 
+    /**
+     * Preload CommunityPosts to avoid N+1 queries across a batch of feed items.
+     *
+     * @param  CommunityPost[]  $posts
+     */
+    public function preloadCommunityPosts(array $posts): void
+    {
+        foreach ($posts as $post) {
+            $this->communityPostCache[(string) $post->id] = $post;
+        }
+    }
+
     public function canViewerSeeFeedItem(User $viewer, FeedItem $item, string $surface = 'feed'): bool
     {
         if ($item->deleted_at !== null) {
@@ -43,7 +59,7 @@ final class FeedVisibilityService
 
         return match ($item->source_type) {
             FeedItem::SOURCE_FEED_POST => $this->canSeeFeedPost($viewer, $item, $surface),
-            FeedItem::SOURCE_COMMUNITY_POST,
+            FeedItem::SOURCE_COMMUNITY_POST => $this->canSeeCommunityPost($viewer, $item),
             FeedItem::SOURCE_COMMUNITY,
             FeedItem::SOURCE_COMMUNITY_TOPIC,
             FeedItem::SOURCE_COMMUNITY_MEMBER => $this->canSeeCommunityItem($viewer, $item, $surface),
@@ -67,10 +83,37 @@ final class FeedVisibilityService
         return $post->isVisibleTo($viewer);
     }
 
-    /**
-     * Stub — will be implemented once community tables exist.
-     * Returns false until feature is available.
-     */
+    private function canSeeCommunityPost(User $viewer, FeedItem $item): bool
+    {
+        $post = $this->communityPostCache[$item->source_id]
+            ?? CommunityPost::withTrashed()->with('community')->find($item->source_id);
+
+        if (! $post || $post->trashed() || $post->isExpired()) {
+            return false;
+        }
+
+        if ($post->moderation_status !== CommunityPost::MODERATION_VISIBLE) {
+            return false;
+        }
+
+        $community = $post->relationLoaded('community')
+            ? $post->community
+            : $post->community()->first();
+
+        if (! $community || ! $community->allow_posts_in_member_feed) {
+            return false;
+        }
+
+        if (
+            $community->visibility === Community::VISIBILITY_PUBLIC
+            && $post->visibility === CommunityPost::VISIBILITY_PUBLIC
+        ) {
+            return true;
+        }
+
+        return $this->isActiveMember($viewer->id, $community->id);
+    }
+
     private function canSeeCommunityItem(User $viewer, FeedItem $item, string $surface): bool
     {
         return false;
@@ -87,7 +130,10 @@ final class FeedVisibilityService
 
     private function isActiveMember(int $userId, string $communityId): bool
     {
-        // Stub — queries community_members once communities are implemented
-        return false;
+        return CommunityMember::query()
+            ->where('community_id', $communityId)
+            ->where('user_id', $userId)
+            ->where('status', CommunityMember::STATUS_ACTIVE)
+            ->exists();
     }
 }

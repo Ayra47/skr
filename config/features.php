@@ -13,4 +13,10 @@ return [
      * Enable only after feed:backfill-items has been verified.
      */
     'unified_feed_items_enabled' => (bool) env('FEATURE_UNIFIED_FEED_ITEMS', false),
+
+    /*
+     * Project encrypted community_posts into feed_items.
+     * Disabled by default while rendering/profile/bookmark integrations stay off.
+     */
+    'community_feed_items_enabled' => (bool) env('FEATURE_COMMUNITY_FEED_ITEMS', false),
 ];

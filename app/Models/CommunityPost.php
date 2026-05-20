@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\FeedItemProjector;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -34,6 +35,31 @@ class CommunityPost extends Model
     public const MODERATION_HIDDEN = 'hidden';
 
     public const MODERATION_DELETED_BY_MODERATOR = 'deleted_by_moderator';
+
+    protected static function booted(): void
+    {
+        static::created(function (CommunityPost $post): void {
+            app(FeedItemProjector::class)->projectCommunityPostCreated($post);
+        });
+
+        static::updated(function (CommunityPost $post): void {
+            if (! $post->wasChanged('moderation_status')) {
+                return;
+            }
+
+            if ($post->moderation_status === self::MODERATION_VISIBLE) {
+                app(FeedItemProjector::class)->projectCommunityPostCreated($post);
+
+                return;
+            }
+
+            app(FeedItemProjector::class)->deleteForCommunityPost($post);
+        });
+
+        static::deleted(function (CommunityPost $post): void {
+            app(FeedItemProjector::class)->deleteForCommunityPost($post);
+        });
+    }
 
     protected function casts(): array
     {
