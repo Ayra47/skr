@@ -7,6 +7,13 @@ use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChatFileController;
 use App\Http\Controllers\CommunitiesController;
+use App\Http\Controllers\Community\CommunityController;
+use App\Http\Controllers\Community\CommunityInviteController;
+use App\Http\Controllers\Community\CommunityJoinController;
+use App\Http\Controllers\Community\CommunityKeyDeliveryController;
+use App\Http\Controllers\Community\CommunityPostController;
+use App\Http\Controllers\Community\CommunityReadStateController;
+use App\Http\Controllers\Community\CommunityTopicController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\FriendsController;
 use App\Http\Controllers\LocationController;
@@ -55,6 +62,31 @@ Route::get('/friends/join/{code}', [FriendsController::class, 'joinByCode'])->na
 
 Route::middleware('auth')->group(function () {
     Route::get('/communities', [CommunitiesController::class, 'index'])->name('communities.index');
+
+    // Community API routes
+    Route::post('/communities', [CommunityController::class, 'store'])->name('communities.store');
+    Route::get('/communities/{community}', [CommunityController::class, 'show'])->name('communities.show');
+
+    Route::post('/communities/{community}/invites', [CommunityInviteController::class, 'store'])->name('communities.invites.store');
+    Route::delete('/communities/invites/{invite}', [CommunityInviteController::class, 'destroy'])->name('communities.invites.destroy');
+
+    Route::post('/communities/join-by-invite', [CommunityJoinController::class, 'joinByInvite'])->name('communities.join-by-invite');
+    Route::post('/communities/{community}/join', [CommunityJoinController::class, 'joinPublic'])->name('communities.join');
+    Route::post('/communities/{community}/join-requests', [CommunityJoinController::class, 'requestJoin'])->name('communities.join-requests.store');
+    Route::post('/communities/join-requests/{joinRequest}/approve', [CommunityJoinController::class, 'approveJoinRequest'])->name('communities.join-requests.approve');
+    Route::post('/communities/join-requests/{joinRequest}/reject', [CommunityJoinController::class, 'rejectJoinRequest'])->name('communities.join-requests.reject');
+
+    Route::post('/communities/{community}/topics', [CommunityTopicController::class, 'store'])->name('communities.topics.store');
+    Route::patch('/communities/topics/{topic}/archive', [CommunityTopicController::class, 'archive'])->name('communities.topics.archive');
+
+    Route::post('/communities/{community}/topics/{topic}/posts', [CommunityPostController::class, 'store'])
+        ->scopeBindings()
+        ->name('communities.topics.posts.store');
+
+    Route::post('/communities/members/{member}/keys', [CommunityKeyDeliveryController::class, 'store'])->name('communities.members.keys.store');
+
+    Route::post('/communities/topics/{topic}/mark-read', [CommunityReadStateController::class, 'markTopicRead'])->name('communities.topics.mark-read');
+    Route::post('/communities/{community}/mark-read', [CommunityReadStateController::class, 'markCommunityRead'])->name('communities.mark-read');
     Route::get('/bookmarks', [BookmarkController::class, 'index'])->name('bookmarks.index');
     Route::post('/bookmarks', [BookmarkController::class, 'store'])->name('bookmarks.store');
     Route::delete('/bookmarks/{bookmark}', [BookmarkController::class, 'destroy'])->name('bookmarks.destroy');

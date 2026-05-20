@@ -23,6 +23,7 @@ use App\Services\Community\CommunityKeyDeliveryService;
 use App\Services\Community\CommunityPolicyService;
 use App\Services\Community\CommunityPostService;
 use App\Services\Community\CommunityReadStateService;
+use App\Services\Community\CommunityTopicService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Test;
@@ -1148,9 +1149,10 @@ class CommunityServiceTest extends TestCase
     #[Test]
     public function read_state_mark_topic_read_updates_seq(): void
     {
-        $service = new CommunityReadStateService;
+        $service = new CommunityReadStateService(new CommunityPolicyService);
         $user = User::factory()->create();
         $community = Community::factory()->create();
+        CommunityMember::factory()->for($community)->for($user)->create();
         $topic = CommunityTopic::factory()->for($community)->create();
 
         CommunityTopicUserState::create([
@@ -1175,9 +1177,10 @@ class CommunityServiceTest extends TestCase
     #[Test]
     public function read_state_mark_topic_read_does_not_go_backwards(): void
     {
-        $service = new CommunityReadStateService;
+        $service = new CommunityReadStateService(new CommunityPolicyService);
         $user = User::factory()->create();
         $community = Community::factory()->create();
+        CommunityMember::factory()->for($community)->for($user)->create();
         $topic = CommunityTopic::factory()->for($community)->create();
 
         CommunityTopicUserState::create([
@@ -1202,9 +1205,10 @@ class CommunityServiceTest extends TestCase
     #[Test]
     public function read_state_mark_community_read_updates_seq(): void
     {
-        $service = new CommunityReadStateService;
+        $service = new CommunityReadStateService(new CommunityPolicyService);
         $user = User::factory()->create();
         $community = Community::factory()->create();
+        CommunityMember::factory()->for($community)->for($user)->create();
 
         CommunityUserState::create([
             'community_id' => $community->id,
@@ -1228,9 +1232,10 @@ class CommunityServiceTest extends TestCase
     #[Test]
     public function read_state_mark_community_read_does_not_go_backwards(): void
     {
-        $service = new CommunityReadStateService;
+        $service = new CommunityReadStateService(new CommunityPolicyService);
         $user = User::factory()->create();
         $community = Community::factory()->create();
+        CommunityMember::factory()->for($community)->for($user)->create();
 
         CommunityUserState::create([
             'community_id' => $community->id,
@@ -1254,9 +1259,10 @@ class CommunityServiceTest extends TestCase
     #[Test]
     public function read_state_mark_community_read_updates_last_activity_seen_at(): void
     {
-        $service = new CommunityReadStateService;
+        $service = new CommunityReadStateService(new CommunityPolicyService);
         $user = User::factory()->create();
         $community = Community::factory()->create();
+        CommunityMember::factory()->for($community)->for($user)->create();
 
         CommunityUserState::create([
             'community_id' => $community->id,
@@ -1272,6 +1278,115 @@ class CommunityServiceTest extends TestCase
 
         $state = CommunityUserState::where('community_id', $community->id)->where('user_id', $user->id)->first();
         $this->assertNotNull($state->last_activity_seen_at);
+    }
+
+    // -------------------------------------------------------------------------
+    // CommunityReadStateService — authorization (Batch 9.1)
+    // -------------------------------------------------------------------------
+
+    #[Test]
+    public function read_state_non_member_cannot_mark_topic_read(): void
+    {
+        $service = new CommunityReadStateService(new CommunityPolicyService);
+        $user = User::factory()->create();
+        $community = Community::factory()->create();
+        $topic = CommunityTopic::factory()->for($community)->create();
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $service->markTopicRead($user, $topic, 5);
+    }
+
+    #[Test]
+    public function read_state_pending_key_delivery_member_cannot_mark_topic_read(): void
+    {
+        $service = new CommunityReadStateService(new CommunityPolicyService);
+        $user = User::factory()->create();
+        $community = Community::factory()->create();
+        CommunityMember::factory()->for($community)->for($user)->pendingKeyDelivery()->create();
+        $topic = CommunityTopic::factory()->for($community)->create();
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $service->markTopicRead($user, $topic, 5);
+    }
+
+    #[Test]
+    public function read_state_active_member_can_mark_topic_read(): void
+    {
+        $service = new CommunityReadStateService(new CommunityPolicyService);
+        $user = User::factory()->create();
+        $community = Community::factory()->create();
+        CommunityMember::factory()->for($community)->for($user)->create();
+        $topic = CommunityTopic::factory()->for($community)->create();
+        CommunityTopicUserState::create([
+            'community_id' => $community->id,
+            'topic_id' => $topic->id,
+            'user_id' => $user->id,
+            'last_read_topic_seq' => 0,
+            'muted' => false,
+            'notifications_enabled' => true,
+            'unread_count' => 0,
+        ]);
+
+        $service->markTopicRead($user, $topic, 3);
+
+        $this->assertDatabaseHas('community_topic_user_state', [
+            'topic_id' => $topic->id,
+            'user_id' => $user->id,
+            'last_read_topic_seq' => 3,
+        ]);
+    }
+
+    #[Test]
+    public function read_state_non_member_cannot_mark_community_read(): void
+    {
+        $service = new CommunityReadStateService(new CommunityPolicyService);
+        $user = User::factory()->create();
+        $community = Community::factory()->create();
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $service->markCommunityRead($user, $community, 5);
+    }
+
+    #[Test]
+    public function read_state_pending_key_delivery_member_cannot_mark_community_read(): void
+    {
+        $service = new CommunityReadStateService(new CommunityPolicyService);
+        $user = User::factory()->create();
+        $community = Community::factory()->create();
+        CommunityMember::factory()->for($community)->for($user)->pendingKeyDelivery()->create();
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $service->markCommunityRead($user, $community, 5);
+    }
+
+    #[Test]
+    public function read_state_active_member_can_mark_community_read(): void
+    {
+        $service = new CommunityReadStateService(new CommunityPolicyService);
+        $user = User::factory()->create();
+        $community = Community::factory()->create();
+        CommunityMember::factory()->for($community)->for($user)->create();
+        CommunityUserState::create([
+            'community_id' => $community->id,
+            'user_id' => $user->id,
+            'notifications_enabled' => true,
+            'muted' => false,
+            'unread_posts_count' => 0,
+            'pinned' => false,
+            'last_read_community_seq' => 0,
+        ]);
+
+        $service->markCommunityRead($user, $community, 7);
+
+        $this->assertDatabaseHas('community_user_state', [
+            'community_id' => $community->id,
+            'user_id' => $user->id,
+            'last_read_community_seq' => 7,
+        ]);
     }
 
     // -------------------------------------------------------------------------
@@ -1391,6 +1506,148 @@ class CommunityServiceTest extends TestCase
     private function makeKeyDeliveryService(): CommunityKeyDeliveryService
     {
         return new CommunityKeyDeliveryService(new CommunityPolicyService, new CommunityAuditService);
+    }
+
+    // -------------------------------------------------------------------------
+    // CommunityTopicService
+    // -------------------------------------------------------------------------
+
+    private function makeTopicService(): CommunityTopicService
+    {
+        return new CommunityTopicService(new CommunityPolicyService, new CommunityAuditService);
+    }
+
+    #[Test]
+    public function topic_create_moderator_can_create_topic(): void
+    {
+        $service = $this->makeTopicService();
+        $actor = User::factory()->create();
+        $community = Community::factory()->create();
+        CommunityMember::factory()->for($community)->for($actor)->create(['role' => CommunityMember::ROLE_MODERATOR]);
+
+        $topic = $service->createTopic($actor, $community, ['name' => 'General Discussion']);
+
+        $this->assertDatabaseHas('community_topics', [
+            'community_id' => $community->id,
+            'name' => 'General Discussion',
+            'slug' => 'general-discussion',
+            'is_archived' => false,
+        ]);
+        $this->assertEquals('general-discussion', $topic->slug);
+    }
+
+    #[Test]
+    public function topic_create_uses_provided_slug(): void
+    {
+        $service = $this->makeTopicService();
+        $actor = User::factory()->create();
+        $community = Community::factory()->create();
+        CommunityMember::factory()->for($community)->for($actor)->create(['role' => CommunityMember::ROLE_MODERATOR]);
+
+        $topic = $service->createTopic($actor, $community, ['name' => 'My Topic', 'slug' => 'custom-slug']);
+
+        $this->assertEquals('custom-slug', $topic->slug);
+    }
+
+    #[Test]
+    public function topic_create_regular_member_cannot_create_topic(): void
+    {
+        $service = $this->makeTopicService();
+        $actor = User::factory()->create();
+        $community = Community::factory()->create();
+        CommunityMember::factory()->for($community)->for($actor)->create(['role' => CommunityMember::ROLE_MEMBER]);
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $service->createTopic($actor, $community, ['name' => 'New Topic']);
+    }
+
+    #[Test]
+    public function topic_create_rejects_duplicate_slug_in_same_community(): void
+    {
+        $service = $this->makeTopicService();
+        $actor = User::factory()->create();
+        $community = Community::factory()->create();
+        CommunityMember::factory()->for($community)->for($actor)->create(['role' => CommunityMember::ROLE_MODERATOR]);
+        CommunityTopic::factory()->for($community)->create(['slug' => 'existing-slug']);
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $service->createTopic($actor, $community, ['name' => 'Another Topic', 'slug' => 'existing-slug']);
+    }
+
+    #[Test]
+    public function topic_create_allows_same_slug_in_different_community(): void
+    {
+        $service = $this->makeTopicService();
+        $actor = User::factory()->create();
+        $community = Community::factory()->create();
+        $otherCommunity = Community::factory()->create();
+        CommunityMember::factory()->for($community)->for($actor)->create(['role' => CommunityMember::ROLE_MODERATOR]);
+        CommunityTopic::factory()->for($otherCommunity)->create(['slug' => 'shared-slug']);
+
+        $topic = $service->createTopic($actor, $community, ['name' => 'Topic', 'slug' => 'shared-slug']);
+
+        $this->assertEquals('shared-slug', $topic->slug);
+    }
+
+    #[Test]
+    public function topic_archive_moderator_can_archive_topic(): void
+    {
+        $service = $this->makeTopicService();
+        $actor = User::factory()->create();
+        $community = Community::factory()->create();
+        CommunityMember::factory()->for($community)->for($actor)->create(['role' => CommunityMember::ROLE_MODERATOR]);
+        $topic = CommunityTopic::factory()->for($community)->create(['is_archived' => false, 'is_system' => false]);
+
+        $service->archiveTopic($actor, $topic);
+
+        $this->assertDatabaseHas('community_topics', [
+            'id' => $topic->id,
+            'is_archived' => true,
+        ]);
+    }
+
+    #[Test]
+    public function topic_archive_regular_member_cannot_archive(): void
+    {
+        $service = $this->makeTopicService();
+        $actor = User::factory()->create();
+        $community = Community::factory()->create();
+        CommunityMember::factory()->for($community)->for($actor)->create(['role' => CommunityMember::ROLE_MEMBER]);
+        $topic = CommunityTopic::factory()->for($community)->create(['is_archived' => false, 'is_system' => false]);
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $service->archiveTopic($actor, $topic);
+    }
+
+    #[Test]
+    public function topic_archive_cannot_archive_system_topic(): void
+    {
+        $service = $this->makeTopicService();
+        $actor = User::factory()->create();
+        $community = Community::factory()->create();
+        CommunityMember::factory()->for($community)->for($actor)->create(['role' => CommunityMember::ROLE_MODERATOR]);
+        $topic = CommunityTopic::factory()->for($community)->create(['is_archived' => false, 'is_system' => true]);
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $service->archiveTopic($actor, $topic);
+    }
+
+    #[Test]
+    public function topic_archive_cannot_archive_already_archived_topic(): void
+    {
+        $service = $this->makeTopicService();
+        $actor = User::factory()->create();
+        $community = Community::factory()->create();
+        CommunityMember::factory()->for($community)->for($actor)->create(['role' => CommunityMember::ROLE_MODERATOR]);
+        $topic = CommunityTopic::factory()->for($community)->create(['is_archived' => true, 'archived_at' => now(), 'is_system' => false]);
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $service->archiveTopic($actor, $topic);
     }
 
     #[Test]

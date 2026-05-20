@@ -123,6 +123,25 @@ final class CommunityJoinService
         });
     }
 
+    public function rejectJoinRequest(User $actor, CommunityJoinRequest $joinRequest): void
+    {
+        $community = $joinRequest->community;
+
+        if (! $this->policy->canApproveJoin($actor, $community)) {
+            throw new InvalidArgumentException('Actor is not allowed to reject join requests.');
+        }
+
+        if ($joinRequest->status !== CommunityJoinRequest::STATUS_PENDING) {
+            throw new InvalidArgumentException('Join request is not pending.');
+        }
+
+        $joinRequest->update([
+            'status' => CommunityJoinRequest::STATUS_REJECTED,
+            'reviewed_by' => $actor->id,
+            'reviewed_at' => now(),
+        ]);
+    }
+
     /**
      * Core member insertion. Must be called from within an open DB transaction.
      * Callers are responsible for transaction management.

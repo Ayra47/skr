@@ -1,0 +1,54 @@
+<?php
+
+namespace App\Http\Controllers\Community;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Community\JoinByInviteRequest;
+use App\Http\Requests\Community\RequestCommunityJoinRequest;
+use App\Models\Community;
+use App\Models\CommunityJoinRequest;
+use App\Services\Community\CommunityJoinService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
+
+class CommunityJoinController extends Controller
+{
+    public function __construct(
+        private readonly CommunityJoinService $joins,
+    ) {}
+
+    public function joinPublic(Community $community): JsonResponse
+    {
+        $member = $this->joins->joinPublic(Auth::user(), $community);
+
+        return response()->json(['success' => true, 'member' => ['id' => $member->id, 'status' => $member->status]], 201);
+    }
+
+    public function joinByInvite(JoinByInviteRequest $request): JsonResponse
+    {
+        $member = $this->joins->joinByInvite(Auth::user(), $request->validated('code'));
+
+        return response()->json(['success' => true, 'member' => ['id' => $member->id, 'status' => $member->status]], 201);
+    }
+
+    public function requestJoin(RequestCommunityJoinRequest $request, Community $community): JsonResponse
+    {
+        $joinRequest = $this->joins->requestJoin(Auth::user(), $community, $request->validated('message'));
+
+        return response()->json(['success' => true, 'join_request' => ['id' => $joinRequest->id]], 201);
+    }
+
+    public function approveJoinRequest(CommunityJoinRequest $joinRequest): JsonResponse
+    {
+        $member = $this->joins->approveJoinRequest(Auth::user(), $joinRequest);
+
+        return response()->json(['success' => true, 'member' => ['id' => $member->id, 'status' => $member->status]]);
+    }
+
+    public function rejectJoinRequest(CommunityJoinRequest $joinRequest): JsonResponse
+    {
+        $this->joins->rejectJoinRequest(Auth::user(), $joinRequest);
+
+        return response()->json(['success' => true]);
+    }
+}

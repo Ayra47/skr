@@ -101,4 +101,17 @@ final class CommunityPolicyService
 
         return $this->roleAtLeast($membership, CommunityMember::ROLE_MODERATOR);
     }
+
+    /**
+     * Public communities are visible to any authenticated user.
+     * Private and hidden communities require active membership.
+     */
+    public function canViewCommunity(User $user, Community $community): bool
+    {
+        if ($community->visibility === Community::VISIBILITY_PUBLIC) {
+            return true;
+        }
+
+        return $this->isActiveMember($user, $community);
+    }
 }
