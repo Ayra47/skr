@@ -9,6 +9,8 @@ use App\Models\Community;
 use App\Models\CommunityJoinRequest;
 use App\Services\Community\CommunityJoinService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class CommunityJoinController extends Controller
@@ -17,9 +19,14 @@ class CommunityJoinController extends Controller
         private readonly CommunityJoinService $joins,
     ) {}
 
-    public function joinPublic(Community $community): JsonResponse
+    public function joinPublic(Request $request, Community $community): JsonResponse|RedirectResponse
     {
         $member = $this->joins->joinPublic(Auth::user(), $community);
+
+        if (! $request->expectsJson()) {
+            return redirect()->route('communities.show', $community)
+                ->with('community_status', 'Вы присоединились. Ожидается доставка ключей.');
+        }
 
         return response()->json(['success' => true, 'member' => ['id' => $member->id, 'status' => $member->status]], 201);
     }
@@ -31,9 +38,13 @@ class CommunityJoinController extends Controller
         return response()->json(['success' => true, 'member' => ['id' => $member->id, 'status' => $member->status]], 201);
     }
 
-    public function requestJoin(RequestCommunityJoinRequest $request, Community $community): JsonResponse
+    public function requestJoin(RequestCommunityJoinRequest $request, Community $community): JsonResponse|RedirectResponse
     {
         $joinRequest = $this->joins->requestJoin(Auth::user(), $community, $request->validated('message'));
+
+        if (! $request->expectsJson()) {
+            return back()->with('community_status', 'Заявка на вступление отправлена.');
+        }
 
         return response()->json(['success' => true, 'join_request' => ['id' => $joinRequest->id]], 201);
     }

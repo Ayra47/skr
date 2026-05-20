@@ -25,5 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->expectsJson()) {
                 return response()->json(['message' => $e->getMessage()], 422);
             }
+
+            return back()->withErrors(['community' => $e->getMessage()])->withInput();
         });
     })->create();

@@ -104,7 +104,8 @@ final class CommunityPolicyService
 
     /**
      * Public communities are visible to any authenticated user.
-     * Private and hidden communities require active membership.
+     * Private and hidden communities require a member row that can open the
+     * locked waiting-for-keys state or the active community.
      */
     public function canViewCommunity(User $user, Community $community): bool
     {
@@ -112,6 +113,12 @@ final class CommunityPolicyService
             return true;
         }
 
-        return $this->isActiveMember($user, $community);
+        return CommunityMember::where('community_id', $community->id)
+            ->where('user_id', $user->id)
+            ->whereIn('status', [
+                CommunityMember::STATUS_ACTIVE,
+                CommunityMember::STATUS_PENDING_KEY_DELIVERY,
+            ])
+            ->exists();
     }
 }

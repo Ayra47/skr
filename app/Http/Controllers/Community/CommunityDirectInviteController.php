@@ -10,6 +10,8 @@ use App\Models\User;
 use App\Services\Community\CommunityDirectInviteService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class CommunityDirectInviteController extends Controller
@@ -40,7 +42,7 @@ class CommunityDirectInviteController extends Controller
         return response()->json(['success' => true, 'invitations' => $invitations]);
     }
 
-    public function store(SendCommunityDirectInviteRequest $request, Community $community): JsonResponse
+    public function store(SendCommunityDirectInviteRequest $request, Community $community): JsonResponse|RedirectResponse
     {
         $validated = $request->validated();
         $invitee = User::findOrFail($validated['invitee_id']);
@@ -53,6 +55,10 @@ class CommunityDirectInviteController extends Controller
             isset($validated['expires_at']) ? Carbon::parse($validated['expires_at']) : null,
         );
 
+        if (! $request->expectsJson()) {
+            return back()->with('community_status', 'Приглашение отправлено.');
+        }
+
         return response()->json([
             'success' => true,
             'invite' => [
@@ -62,9 +68,14 @@ class CommunityDirectInviteController extends Controller
         ], 201);
     }
 
-    public function accept(CommunityDirectInvite $invite): JsonResponse
+    public function accept(Request $request, CommunityDirectInvite $invite): JsonResponse|RedirectResponse
     {
         $member = $this->invites->acceptInvite(Auth::user(), $invite);
+
+        if (! $request->expectsJson()) {
+            return redirect()->route('communities.show', $member->community)
+                ->with('community_status', 'Приглашение принято. Ожидается доставка ключей.');
+        }
 
         return response()->json([
             'success' => true,
@@ -75,16 +86,25 @@ class CommunityDirectInviteController extends Controller
         ]);
     }
 
-    public function decline(CommunityDirectInvite $invite): JsonResponse
+    public function decline(Request $request, CommunityDirectInvite $invite): JsonResponse|RedirectResponse
     {
         $this->invites->declineInvite(Auth::user(), $invite);
+
+        if (! $request->expectsJson()) {
+            return redirect()->route('communities.index')
+                ->with('community_status', 'Приглашение отклонено.');
+        }
 
         return response()->json(['success' => true]);
     }
 
-    public function cancel(CommunityDirectInvite $invite): JsonResponse
+    public function cancel(Request $request, CommunityDirectInvite $invite): JsonResponse|RedirectResponse
     {
         $this->invites->cancelInvite(Auth::user(), $invite);
+
+        if (! $request->expectsJson()) {
+            return back()->with('community_status', 'Приглашение отменено.');
+        }
 
         return response()->json(['success' => true]);
     }
