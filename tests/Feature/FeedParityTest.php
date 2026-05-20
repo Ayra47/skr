@@ -473,11 +473,12 @@ class FeedParityTest extends TestCase
 
     public function test_default_feature_flag_is_false(): void
     {
-        // Ensure we read the framework-resolved config, not an overridden value.
-        // This verifies the config/features.php default, not .env.
-        $this->assertFalse(
-            config('features.unified_feed_items_enabled'),
-            'features.unified_feed_items_enabled must default to false'
+        // Guard against accidentally changing the config default to true.
+        // We check the source file because .env may legitimately override it in dev.
+        $this->assertStringContainsString(
+            "env('FEATURE_UNIFIED_FEED_ITEMS', false)",
+            file_get_contents(config_path('features.php')),
+            'features.unified_feed_items_enabled must default to false in config/features.php'
         );
     }
 

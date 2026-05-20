@@ -1,0 +1,80 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+#[Fillable([
+    'community_id', 'topic_id', 'user_id', 'epoch_id',
+    'ciphertext', 'nonce', 'community_seq', 'topic_seq',
+    'visibility', 'is_pinned', 'reaction_count', 'comment_count',
+    'reply_count', 'attachments_count', 'expires_at',
+    'ttl_seconds', 'moderation_status', 'client_idempotency_key',
+])]
+class CommunityPost extends Model
+{
+    use HasFactory;
+    use HasUuids;
+    use SoftDeletes;
+
+    public const VISIBILITY_PUBLIC = 'public';
+
+    public const VISIBILITY_MEMBERS_ONLY = 'members_only';
+
+    public const VISIBILITY_PRIVATE = 'private';
+
+    public const MODERATION_VISIBLE = 'visible';
+
+    public const MODERATION_HIDDEN = 'hidden';
+
+    public const MODERATION_DELETED_BY_MODERATOR = 'deleted_by_moderator';
+
+    protected function casts(): array
+    {
+        return [
+            'is_pinned' => 'boolean',
+            'expires_at' => 'datetime',
+        ];
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null && $this->expires_at->isPast();
+    }
+
+    public function community(): BelongsTo
+    {
+        return $this->belongsTo(Community::class);
+    }
+
+    public function topic(): BelongsTo
+    {
+        return $this->belongsTo(CommunityTopic::class, 'topic_id');
+    }
+
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function epoch(): BelongsTo
+    {
+        return $this->belongsTo(CommunityKeyEpoch::class, 'epoch_id');
+    }
+
+    public function files(): HasMany
+    {
+        return $this->hasMany(CommunityFile::class, 'post_id')->orderBy('position');
+    }
+
+    public function reactions(): HasMany
+    {
+        return $this->hasMany(CommunityPostReaction::class, 'post_id');
+    }
+}
