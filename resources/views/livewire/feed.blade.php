@@ -238,62 +238,73 @@
             </form>
         </section>
 
+        @php $feedEntries = $feedCards ?? $posts; @endphp
+
         <section class="feed-post-list" aria-label="Посты">
-            @forelse($posts as $post)
-                @php $myVote = $post->votes->first()?->value; @endphp
+            @forelse($feedEntries as $entry)
+                @if($entry instanceof \App\Services\FeedCard && $entry->isCommunityPost())
+                    <div class="feed-post-shell" wire:key="feed-card-{{ $entry->wireKey() }}">
+                        <x-community-feed-post-card :card="$entry" />
+                    </div>
+                @else
+                    @php
+                        $post = $entry instanceof \App\Services\FeedCard ? $entry->feedPost : $entry;
+                        $myVote = $post->votes->first()?->value;
+                    @endphp
 
-                <div class="feed-post-shell" wire:key="feed-post-{{ $post->id }}">
-                    <x-feed-post-card
-                        :post="$post"
-                        :format-bytes="$formatBytes"
-                        :my-vote="$myVote"
-                        :answer-label="$answerLabel"
-                        :interactive="true"
-                        :expanded-comment-posts="$expandedCommentPosts"
-                        :is-bookmarked="array_key_exists($post->id, $bookmarkIds)"
-                        :bookmark-id="$bookmarkIds[$post->id] ?? null"
-                        :poll-voted-option-ids="$pollVotedOptionIds"
-                    />
+                    <div class="feed-post-shell" wire:key="feed-post-{{ $post->id }}">
+                        <x-feed-post-card
+                            :post="$post"
+                            :format-bytes="$formatBytes"
+                            :my-vote="$myVote"
+                            :answer-label="$answerLabel"
+                            :interactive="true"
+                            :expanded-comment-posts="$expandedCommentPosts"
+                            :is-bookmarked="array_key_exists($post->id, $bookmarkIds)"
+                            :bookmark-id="$bookmarkIds[$post->id] ?? null"
+                            :poll-voted-option-ids="$pollVotedOptionIds"
+                        />
 
-                    @if(! ($expandedCommentPosts[$post->id] ?? false) && $topComments->has($post->id))
-                        <div class="feed-top-reply" wire:click.stop>
-                            @include('livewire.partials.feed-comment', [
-                                'comment' => $topComments->get($post->id),
-                                'context' => 'top',
-                                'depth' => 0,
-                                'modalCommentsByParent' => collect(),
-                                'modalReplyCounts' => collect(),
-                                'visibleReplyLimits' => $visibleReplyLimits,
-                            ])
-                        </div>
-                    @endif
-
-                    <div class="feed-replies-panel {{ ($expandedCommentPosts[$post->id] ?? false) ? 'open' : '' }}" data-feed-replies-panel data-post-id="{{ $post->id }}" wire:click.stop>
-                        @if($expandedCommentPosts[$post->id] ?? false)
-                            @forelse($previewComments->get($post->id, collect()) as $comment)
+                        @if(! ($expandedCommentPosts[$post->id] ?? false) && $topComments->has($post->id))
+                            <div class="feed-top-reply" wire:click.stop>
                                 @include('livewire.partials.feed-comment', [
-                                    'comment' => $comment,
-                                    'context' => 'preview',
+                                    'comment' => $topComments->get($post->id),
+                                    'context' => 'top',
                                     'depth' => 0,
-                                    'modalCommentsByParent' => $previewCommentsByParent,
-                                    'modalReplyCounts' => $previewReplyCounts,
+                                    'modalCommentsByParent' => collect(),
+                                    'modalReplyCounts' => collect(),
                                     'visibleReplyLimits' => $visibleReplyLimits,
                                 ])
-                            @empty
-                                <div class="feed-reply-empty">Ответов пока нет</div>
-                            @endforelse
-
-                            @if($post->root_comments_count > ($previewCommentLimits[$post->id] ?? 3))
-                                <button class="feed-hidden-load-more" type="button" data-feed-replies-load-more wire:click="loadMorePostComments({{ $post->id }})" aria-hidden="true" tabindex="-1"></button>
-                            @endif
+                            </div>
                         @endif
-                    </div>
 
-                    <form class="feed-comment-form" wire:submit="createComment({{ $post->id }})" wire:click.stop>
-                        <input type="text" wire:model="commentBodies.{{ $post->id }}" maxlength="1000" placeholder="Ответить под псевдонимом">
-                        <button type="submit" wire:loading.attr="disabled" wire:target="createComment({{ $post->id }})">Ответить</button>
-                    </form>
-                </div>
+                        <div class="feed-replies-panel {{ ($expandedCommentPosts[$post->id] ?? false) ? 'open' : '' }}" data-feed-replies-panel data-post-id="{{ $post->id }}" wire:click.stop>
+                            @if($expandedCommentPosts[$post->id] ?? false)
+                                @forelse($previewComments->get($post->id, collect()) as $comment)
+                                    @include('livewire.partials.feed-comment', [
+                                        'comment' => $comment,
+                                        'context' => 'preview',
+                                        'depth' => 0,
+                                        'modalCommentsByParent' => $previewCommentsByParent,
+                                        'modalReplyCounts' => $previewReplyCounts,
+                                        'visibleReplyLimits' => $visibleReplyLimits,
+                                    ])
+                                @empty
+                                    <div class="feed-reply-empty">Ответов пока нет</div>
+                                @endforelse
+
+                                @if($post->root_comments_count > ($previewCommentLimits[$post->id] ?? 3))
+                                    <button class="feed-hidden-load-more" type="button" data-feed-replies-load-more wire:click="loadMorePostComments({{ $post->id }})" aria-hidden="true" tabindex="-1"></button>
+                                @endif
+                            @endif
+                        </div>
+
+                        <form class="feed-comment-form" wire:submit="createComment({{ $post->id }})" wire:click.stop>
+                            <input type="text" wire:model="commentBodies.{{ $post->id }}" maxlength="1000" placeholder="Ответить под псевдонимом">
+                            <button type="submit" wire:loading.attr="disabled" wire:target="createComment({{ $post->id }})">Ответить</button>
+                        </form>
+                    </div>
+                @endif
             @empty
                 <div class="feed-empty">
                     <strong>Пока пусто</strong>
@@ -302,9 +313,9 @@
             @endforelse
         </section>
 
-        @if($posts->hasPages())
+        @if($feedEntries->hasPages())
             <div class="feed-pagination">
-                {{ $posts->links() }}
+                {{ $feedEntries->links() }}
             </div>
         @endif
     </div>

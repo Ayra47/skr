@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\CommunityPost;
 use App\Models\FeedItem;
 use App\Models\FeedPost;
 use App\Models\User;
@@ -54,7 +55,7 @@ final class FeedItemsReader
                 break;
             }
 
-            $this->preloadFeedPosts($batch);
+            $this->preloadSources($batch);
 
             foreach ($batch as $item) {
                 $lastScannedItem = $item;
@@ -113,12 +114,20 @@ final class FeedItemsReader
             ->where('show_in_feed', true)
             ->whereNull('deleted_at');
 
+        if (! config('features.community_feed_items_enabled')) {
+            $query->where('source_type', '!=', FeedItem::SOURCE_COMMUNITY_POST);
+        }
+
         match ($tab) {
             'all' => $query->where('visibility_scope', FeedItem::SCOPE_PUBLIC),
             'mine' => $query->where('actor_id', $viewer->id),
             default => $query->where(function ($q) use ($viewer, $friendIds): void {
                 $q->where('actor_id', $viewer->id)
                     ->orWhereIn('actor_id', $friendIds);
+
+                if (config('features.community_feed_items_enabled')) {
+                    $q->orWhere('source_type', FeedItem::SOURCE_COMMUNITY_POST);
+                }
             }),
         };
 
@@ -146,6 +155,15 @@ final class FeedItemsReader
     /**
      * @param  Collection<int, FeedItem>  $items
      */
+    private function preloadSources(Collection $items): void
+    {
+        $this->preloadFeedPosts($items);
+        $this->preloadCommunityPosts($items);
+    }
+
+    /**
+     * @param  Collection<int, FeedItem>  $items
+     */
     private function preloadFeedPosts(Collection $items): void
     {
         $ids = $items
@@ -160,6 +178,31 @@ final class FeedItemsReader
 
         $posts = FeedPost::withTrashed()->whereIn('id', $ids)->get();
         $this->visibilityService->preloadFeedPosts($posts->all());
+    }
+
+    /**
+     * @param  Collection<int, FeedItem>  $items
+     */
+    private function preloadCommunityPosts(Collection $items): void
+    {
+        if (! config('features.community_feed_items_enabled')) {
+            return;
+        }
+
+        $ids = $items
+            ->where('source_type', FeedItem::SOURCE_COMMUNITY_POST)
+            ->pluck('source_id')
+            ->all();
+
+        if (empty($ids)) {
+            return;
+        }
+
+        $posts = CommunityPost::withTrashed()
+            ->with('community')
+            ->whereIn('id', $ids)
+            ->get();
+        $this->visibilityService->preloadCommunityPosts($posts->all());
     }
 
     private function encodeCursor(Carbon $sortAt, int $id): string
