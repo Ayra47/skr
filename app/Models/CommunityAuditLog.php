@@ -48,6 +48,14 @@ class CommunityAuditLog extends Model
 
     public const ACTION_KEY_DELIVERED = 'key_delivered';
 
+    public const ACTION_DIRECT_INVITE_CREATED = 'direct_invite_created';
+
+    public const ACTION_DIRECT_INVITE_ACCEPTED = 'direct_invite_accepted';
+
+    public const ACTION_DIRECT_INVITE_DECLINED = 'direct_invite_declined';
+
+    public const ACTION_DIRECT_INVITE_CANCELLED = 'direct_invite_cancelled';
+
     protected function casts(): array
     {
         return [

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Community;
 use App\Models\CommunityAuditLog;
+use App\Models\CommunityDirectInvite;
 use App\Models\CommunityFile;
 use App\Models\CommunityInvite;
 use App\Models\CommunityInviteUse;
@@ -218,6 +219,78 @@ class CommunityTest extends TestCase
         ]);
 
         $this->assertFalse($invite->isUsable());
+    }
+
+    // -------------------------------------------------------------------------
+    // CommunityDirectInvite
+    // -------------------------------------------------------------------------
+
+    public function test_community_direct_invite_can_be_created_pending(): void
+    {
+        $invite = CommunityDirectInvite::factory()->pending()->create();
+
+        $this->assertDatabaseHas('community_direct_invites', ['id' => $invite->id]);
+        $this->assertTrue(strlen($invite->id) === 36); // UUID
+        $this->assertTrue($invite->isPending());
+        $this->assertTrue($invite->isAcceptable());
+    }
+
+    public function test_duplicate_pending_community_direct_invite_is_blocked(): void
+    {
+        $community = Community::factory()->create();
+        $inviter = User::factory()->create();
+        $invitee = User::factory()->create();
+
+        CommunityDirectInvite::factory()->pending()->for($community)->create([
+            'inviter_id' => $inviter->id,
+            'invitee_id' => $invitee->id,
+        ]);
+
+        $this->expectException(UniqueConstraintViolationException::class);
+
+        CommunityDirectInvite::factory()->pending()->for($community)->create([
+            'inviter_id' => $inviter->id,
+            'invitee_id' => $invitee->id,
+        ]);
+    }
+
+    public function test_declined_community_direct_invite_allows_new_pending_invite(): void
+    {
+        $community = Community::factory()->create();
+        $inviter = User::factory()->create();
+        $invitee = User::factory()->create();
+
+        CommunityDirectInvite::factory()->declined()->for($community)->create([
+            'inviter_id' => $inviter->id,
+            'invitee_id' => $invitee->id,
+        ]);
+
+        $invite = CommunityDirectInvite::factory()->pending()->for($community)->create([
+            'inviter_id' => $inviter->id,
+            'invitee_id' => $invitee->id,
+        ]);
+
+        $this->assertModelExists($invite);
+    }
+
+    public function test_expired_community_direct_invite_is_not_acceptable(): void
+    {
+        $invite = CommunityDirectInvite::factory()->expired()->create();
+
+        $this->assertTrue($invite->isExpired());
+        $this->assertFalse($invite->isAcceptable());
+    }
+
+    public function test_community_direct_invite_rejects_same_inviter_and_invitee(): void
+    {
+        $user = User::factory()->create();
+
+        $this->expectException(QueryException::class);
+
+        CommunityDirectInvite::factory()->pending()->create([
+            'inviter_id' => $user->id,
+            'invitee_id' => $user->id,
+        ]);
     }
 
     // -------------------------------------------------------------------------

@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\Community;
+use App\Models\CommunityDirectInvite;
 use App\Models\CommunityInvite;
 use App\Models\CommunityJoinRequest;
 use App\Models\CommunityKeyEpoch;
 use App\Models\CommunityMember;
 use App\Models\CommunityTopic;
+use App\Models\Friend;
 use App\Models\User;
 use App\Models\UserDeviceKey;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,6 +30,8 @@ class CommunityHttpTest extends TestCase
         $this->postJson(route('communities.store'))->assertUnauthorized();
         $this->getJson(route('communities.show', $community))->assertUnauthorized();
         $this->postJson(route('communities.join', $community))->assertUnauthorized();
+        $this->getJson(route('communities.invitations.index'))->assertUnauthorized();
+        $this->postJson(route('communities.direct-invites.store', $community))->assertUnauthorized();
     }
 
     // -------------------------------------------------------------------------
@@ -165,6 +169,114 @@ class CommunityHttpTest extends TestCase
         $this->actingAs($user)
             ->postJson(route('communities.invites.store', $community))
             ->assertStatus(422);
+    }
+
+    // -------------------------------------------------------------------------
+    // Direct community invitations
+    // -------------------------------------------------------------------------
+
+    public function test_send_direct_invite_route_works_for_allowed_friend(): void
+    {
+        $inviter = User::factory()->create();
+        $invitee = User::factory()->create();
+        $community = Community::factory()->create(['invite_policy' => Community::INVITE_POLICY_ALL_MEMBERS]);
+        CommunityMember::factory()->for($community)->for($inviter)->create(['status' => CommunityMember::STATUS_ACTIVE]);
+        $this->befriend($inviter, $invitee);
+
+        $this->actingAs($inviter)
+            ->postJson(route('communities.direct-invites.store', $community), [
+                'invitee_id' => $invitee->id,
+                'message' => 'Join design',
+            ])
+            ->assertCreated()
+            ->assertJsonStructure(['success', 'invite' => ['id', 'status']]);
+
+        $this->assertDatabaseHas('community_direct_invites', [
+            'community_id' => $community->id,
+            'inviter_id' => $inviter->id,
+            'invitee_id' => $invitee->id,
+            'status' => CommunityDirectInvite::STATUS_PENDING,
+        ]);
+    }
+
+    public function test_send_direct_invite_rejects_non_friend(): void
+    {
+        $inviter = User::factory()->create();
+        $invitee = User::factory()->create();
+        $community = Community::factory()->create(['invite_policy' => Community::INVITE_POLICY_ALL_MEMBERS]);
+        CommunityMember::factory()->for($community)->for($inviter)->create(['status' => CommunityMember::STATUS_ACTIVE]);
+
+        $this->actingAs($inviter)
+            ->postJson(route('communities.direct-invites.store', $community), ['invitee_id' => $invitee->id])
+            ->assertStatus(422);
+    }
+
+    public function test_pending_invitations_endpoint_returns_safe_invite(): void
+    {
+        $inviter = User::factory()->create(['login' => 'mila', 'pseudonym' => 'Mila']);
+        $invitee = User::factory()->create();
+        $community = Community::factory()->create([
+            'name' => 'design · skr',
+            'visibility' => Community::VISIBILITY_PRIVATE,
+        ]);
+        $invite = CommunityDirectInvite::factory()->pending()->for($community)->create([
+            'inviter_id' => $inviter->id,
+            'invitee_id' => $invitee->id,
+            'message' => 'private message',
+        ]);
+
+        $this->actingAs($invitee)
+            ->getJson(route('communities.invitations.index'))
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('invitations.0.id', $invite->id)
+            ->assertJsonPath('invitations.0.inviter.login', 'mila')
+            ->assertJsonPath('invitations.0.inviter.display_name', 'Mila')
+            ->assertJsonPath('invitations.0.community.name', 'design · skr')
+            ->assertJsonPath('invitations.0.community.visibility', Community::VISIBILITY_PRIVATE)
+            ->assertJsonMissingPath('invitations.0.message')
+            ->assertJsonMissingPath('invitations.0.audit_payload')
+            ->assertJsonMissingPath('invitations.0.member_list');
+    }
+
+    public function test_accept_direct_invite_route_works(): void
+    {
+        $invitee = User::factory()->create();
+        $invite = CommunityDirectInvite::factory()->pending()->create(['invitee_id' => $invitee->id]);
+
+        $this->actingAs($invitee)
+            ->postJson(route('communities.direct-invites.accept', $invite))
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('member.status', CommunityMember::STATUS_PENDING_KEY_DELIVERY);
+
+        $this->assertEquals(CommunityDirectInvite::STATUS_ACCEPTED, $invite->fresh()->status);
+    }
+
+    public function test_decline_direct_invite_route_works(): void
+    {
+        $invitee = User::factory()->create();
+        $invite = CommunityDirectInvite::factory()->pending()->create(['invitee_id' => $invitee->id]);
+
+        $this->actingAs($invitee)
+            ->postJson(route('communities.direct-invites.decline', $invite))
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertEquals(CommunityDirectInvite::STATUS_DECLINED, $invite->fresh()->status);
+    }
+
+    public function test_cancel_direct_invite_route_works(): void
+    {
+        $inviter = User::factory()->create();
+        $invite = CommunityDirectInvite::factory()->pending()->create(['inviter_id' => $inviter->id]);
+
+        $this->actingAs($inviter)
+            ->postJson(route('communities.direct-invites.cancel', $invite))
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertEquals(CommunityDirectInvite::STATUS_CANCELLED, $invite->fresh()->status);
     }
 
     // -------------------------------------------------------------------------
@@ -503,5 +615,11 @@ class CommunityHttpTest extends TestCase
         $this->actingAs($user)
             ->postJson(route('communities.mark-read', $community), [])
             ->assertUnprocessable();
+    }
+
+    private function befriend(User $first, User $second): void
+    {
+        Friend::create(['user_id' => $first->id, 'friend_id' => $second->id]);
+        Friend::create(['user_id' => $second->id, 'friend_id' => $first->id]);
     }
 }

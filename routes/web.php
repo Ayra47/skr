@@ -8,6 +8,7 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChatFileController;
 use App\Http\Controllers\CommunitiesController;
 use App\Http\Controllers\Community\CommunityController;
+use App\Http\Controllers\Community\CommunityDirectInviteController;
 use App\Http\Controllers\Community\CommunityInviteController;
 use App\Http\Controllers\Community\CommunityJoinController;
 use App\Http\Controllers\Community\CommunityKeyDeliveryController;
@@ -65,10 +66,16 @@ Route::middleware('auth')->group(function () {
 
     // Community API routes
     Route::post('/communities', [CommunityController::class, 'store'])->name('communities.store');
+    Route::get('/communities/invitations', [CommunityDirectInviteController::class, 'index'])->name('communities.invitations.index');
     Route::get('/communities/{community}', [CommunityController::class, 'show'])->name('communities.show');
 
     Route::post('/communities/{community}/invites', [CommunityInviteController::class, 'store'])->name('communities.invites.store');
     Route::delete('/communities/invites/{invite}', [CommunityInviteController::class, 'destroy'])->name('communities.invites.destroy');
+
+    Route::post('/communities/{community}/direct-invites', [CommunityDirectInviteController::class, 'store'])->name('communities.direct-invites.store');
+    Route::post('/communities/direct-invites/{invite}/accept', [CommunityDirectInviteController::class, 'accept'])->name('communities.direct-invites.accept');
+    Route::post('/communities/direct-invites/{invite}/decline', [CommunityDirectInviteController::class, 'decline'])->name('communities.direct-invites.decline');
+    Route::post('/communities/direct-invites/{invite}/cancel', [CommunityDirectInviteController::class, 'cancel'])->name('communities.direct-invites.cancel');
 
     Route::post('/communities/join-by-invite', [CommunityJoinController::class, 'joinByInvite'])->name('communities.join-by-invite');
     Route::post('/communities/{community}/join', [CommunityJoinController::class, 'joinPublic'])->name('communities.join');

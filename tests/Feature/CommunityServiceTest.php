@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Community;
 use App\Models\CommunityAuditLog;
+use App\Models\CommunityDirectInvite;
 use App\Models\CommunityInvite;
 use App\Models\CommunityJoinRequest;
 use App\Models\CommunityKeyEpoch;
@@ -13,10 +14,12 @@ use App\Models\CommunityPost;
 use App\Models\CommunityTopic;
 use App\Models\CommunityTopicUserState;
 use App\Models\CommunityUserState;
+use App\Models\Friend;
 use App\Models\User;
 use App\Models\UserDeviceKey;
 use App\Services\Community\CommunityAuditService;
 use App\Services\Community\CommunityCreationService;
+use App\Services\Community\CommunityDirectInviteService;
 use App\Services\Community\CommunityInviteService;
 use App\Services\Community\CommunityJoinService;
 use App\Services\Community\CommunityKeyDeliveryService;
@@ -27,6 +30,7 @@ use App\Services\Community\CommunityTopicService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Test;
+use RuntimeException;
 use Tests\TestCase;
 
 class CommunityServiceTest extends TestCase
@@ -572,7 +576,7 @@ class CommunityServiceTest extends TestCase
             'member_limit' => 5,
         ]);
 
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
 
         $service->joinPublic($user, $community);
     }
@@ -781,6 +785,305 @@ class CommunityServiceTest extends TestCase
             'community_id' => $community->id,
             'action' => CommunityAuditLog::ACTION_JOIN_REQUEST_APPROVED,
         ]);
+    }
+
+    // -------------------------------------------------------------------------
+    // CommunityDirectInviteService
+    // -------------------------------------------------------------------------
+
+    private function makeDirectInviteService(): CommunityDirectInviteService
+    {
+        return new CommunityDirectInviteService(new CommunityPolicyService, new CommunityAuditService);
+    }
+
+    #[Test]
+    public function direct_invite_friend_active_member_can_invite_when_all_members(): void
+    {
+        $service = $this->makeDirectInviteService();
+        $inviter = User::factory()->create();
+        $invitee = User::factory()->create();
+        $community = Community::factory()->create(['invite_policy' => Community::INVITE_POLICY_ALL_MEMBERS]);
+        CommunityMember::factory()->for($community)->for($inviter)->create(['status' => CommunityMember::STATUS_ACTIVE]);
+        $this->befriend($inviter, $invitee);
+
+        $invite = $service->sendInvite($inviter, $community, $invitee, 'Join us');
+
+        $this->assertInstanceOf(CommunityDirectInvite::class, $invite);
+        $this->assertEquals(CommunityDirectInvite::STATUS_PENDING, $invite->status);
+        $this->assertDatabaseHas('community_audit_log', [
+            'community_id' => $community->id,
+            'action' => CommunityAuditLog::ACTION_DIRECT_INVITE_CREATED,
+        ]);
+        $this->assertDatabaseMissing('community_audit_log', ['payload->message' => 'Join us']);
+    }
+
+    #[Test]
+    public function direct_invite_non_friend_cannot_invite(): void
+    {
+        $service = $this->makeDirectInviteService();
+        $inviter = User::factory()->create();
+        $invitee = User::factory()->create();
+        $community = Community::factory()->create(['invite_policy' => Community::INVITE_POLICY_ALL_MEMBERS]);
+        CommunityMember::factory()->for($community)->for($inviter)->create(['status' => CommunityMember::STATUS_ACTIVE]);
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $service->sendInvite($inviter, $community, $invitee);
+    }
+
+    #[Test]
+    public function direct_invite_regular_member_cannot_invite_when_moderators_only(): void
+    {
+        $service = $this->makeDirectInviteService();
+        $inviter = User::factory()->create();
+        $invitee = User::factory()->create();
+        $community = Community::factory()->create(['invite_policy' => Community::INVITE_POLICY_MODERATORS_ONLY]);
+        CommunityMember::factory()->for($community)->for($inviter)->create([
+            'role' => CommunityMember::ROLE_MEMBER,
+            'status' => CommunityMember::STATUS_ACTIVE,
+        ]);
+        $this->befriend($inviter, $invitee);
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $service->sendInvite($inviter, $community, $invitee);
+    }
+
+    #[Test]
+    public function direct_invite_moderator_can_invite_when_moderators_only(): void
+    {
+        $service = $this->makeDirectInviteService();
+        $inviter = User::factory()->create();
+        $invitee = User::factory()->create();
+        $community = Community::factory()->create(['invite_policy' => Community::INVITE_POLICY_MODERATORS_ONLY]);
+        CommunityMember::factory()->for($community)->for($inviter)->create([
+            'role' => CommunityMember::ROLE_MODERATOR,
+            'status' => CommunityMember::STATUS_ACTIVE,
+        ]);
+        $this->befriend($inviter, $invitee);
+
+        $invite = $service->sendInvite($inviter, $community, $invitee);
+
+        $this->assertModelExists($invite);
+    }
+
+    #[Test]
+    public function direct_invite_cannot_invite_self(): void
+    {
+        $service = $this->makeDirectInviteService();
+        $inviter = User::factory()->create();
+        $community = Community::factory()->create(['invite_policy' => Community::INVITE_POLICY_ALL_MEMBERS]);
+        CommunityMember::factory()->for($community)->for($inviter)->create(['status' => CommunityMember::STATUS_ACTIVE]);
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $service->sendInvite($inviter, $community, $inviter);
+    }
+
+    #[Test]
+    public function direct_invite_cannot_invite_existing_active_member(): void
+    {
+        $service = $this->makeDirectInviteService();
+        $inviter = User::factory()->create();
+        $invitee = User::factory()->create();
+        $community = Community::factory()->create(['invite_policy' => Community::INVITE_POLICY_ALL_MEMBERS]);
+        CommunityMember::factory()->for($community)->for($inviter)->create(['status' => CommunityMember::STATUS_ACTIVE]);
+        CommunityMember::factory()->for($community)->for($invitee)->create(['status' => CommunityMember::STATUS_ACTIVE]);
+        $this->befriend($inviter, $invitee);
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $service->sendInvite($inviter, $community, $invitee);
+    }
+
+    #[Test]
+    public function direct_invite_cannot_invite_pending_key_delivery_member(): void
+    {
+        $service = $this->makeDirectInviteService();
+        $inviter = User::factory()->create();
+        $invitee = User::factory()->create();
+        $community = Community::factory()->create(['invite_policy' => Community::INVITE_POLICY_ALL_MEMBERS]);
+        CommunityMember::factory()->for($community)->for($inviter)->create(['status' => CommunityMember::STATUS_ACTIVE]);
+        CommunityMember::factory()->for($community)->for($invitee)->pendingKeyDelivery()->create();
+        $this->befriend($inviter, $invitee);
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $service->sendInvite($inviter, $community, $invitee);
+    }
+
+    #[Test]
+    public function direct_invite_cannot_duplicate_pending_invite(): void
+    {
+        $service = $this->makeDirectInviteService();
+        $inviter = User::factory()->create();
+        $invitee = User::factory()->create();
+        $community = Community::factory()->create(['invite_policy' => Community::INVITE_POLICY_ALL_MEMBERS]);
+        CommunityMember::factory()->for($community)->for($inviter)->create(['status' => CommunityMember::STATUS_ACTIVE]);
+        $this->befriend($inviter, $invitee);
+        $service->sendInvite($inviter, $community, $invitee);
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $service->sendInvite($inviter, $community, $invitee);
+    }
+
+    #[Test]
+    public function direct_invitee_can_accept_invite(): void
+    {
+        $service = $this->makeDirectInviteService();
+        $inviter = User::factory()->create();
+        $invitee = User::factory()->create();
+        $community = Community::factory()->create(['member_count' => 1]);
+        $invite = CommunityDirectInvite::factory()->pending()->for($community)->create([
+            'inviter_id' => $inviter->id,
+            'invitee_id' => $invitee->id,
+        ]);
+
+        $member = $service->acceptInvite($invitee, $invite);
+
+        $this->assertEquals(CommunityDirectInvite::STATUS_ACCEPTED, $invite->fresh()->status);
+        $this->assertNotNull($invite->fresh()->responded_at);
+        $this->assertEquals(CommunityMember::STATUS_PENDING_KEY_DELIVERY, $member->status);
+        $this->assertDatabaseHas('community_user_state', [
+            'community_id' => $community->id,
+            'user_id' => $invitee->id,
+        ]);
+        $this->assertDatabaseHas('community_audit_log', [
+            'community_id' => $community->id,
+            'action' => CommunityAuditLog::ACTION_DIRECT_INVITE_ACCEPTED,
+        ]);
+    }
+
+    #[Test]
+    public function direct_invite_non_invitee_cannot_accept(): void
+    {
+        $service = $this->makeDirectInviteService();
+        $stranger = User::factory()->create();
+        $invite = CommunityDirectInvite::factory()->pending()->create();
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $service->acceptInvite($stranger, $invite);
+    }
+
+    #[Test]
+    public function direct_invite_accept_creates_pending_key_delivery_member(): void
+    {
+        $service = $this->makeDirectInviteService();
+        $invitee = User::factory()->create();
+        $invite = CommunityDirectInvite::factory()->pending()->create(['invitee_id' => $invitee->id]);
+
+        $member = $service->acceptInvite($invitee, $invite);
+
+        $this->assertEquals(CommunityMember::STATUS_PENDING_KEY_DELIVERY, $member->status);
+    }
+
+    #[Test]
+    public function direct_invite_accept_respects_member_limit(): void
+    {
+        $service = $this->makeDirectInviteService();
+        $invitee = User::factory()->create();
+        $community = Community::factory()->create(['member_count' => 5, 'member_limit' => 5]);
+        $invite = CommunityDirectInvite::factory()->pending()->for($community)->create(['invitee_id' => $invitee->id]);
+
+        $this->expectException(RuntimeException::class);
+
+        $service->acceptInvite($invitee, $invite);
+    }
+
+    #[Test]
+    public function direct_invitee_can_decline_invite(): void
+    {
+        $service = $this->makeDirectInviteService();
+        $invitee = User::factory()->create();
+        $invite = CommunityDirectInvite::factory()->pending()->create(['invitee_id' => $invitee->id]);
+
+        $service->declineInvite($invitee, $invite);
+
+        $this->assertEquals(CommunityDirectInvite::STATUS_DECLINED, $invite->fresh()->status);
+        $this->assertNotNull($invite->fresh()->responded_at);
+        $this->assertDatabaseHas('community_audit_log', [
+            'community_id' => $invite->community_id,
+            'action' => CommunityAuditLog::ACTION_DIRECT_INVITE_DECLINED,
+        ]);
+    }
+
+    #[Test]
+    public function direct_inviter_can_cancel_invite(): void
+    {
+        $service = $this->makeDirectInviteService();
+        $inviter = User::factory()->create();
+        $invite = CommunityDirectInvite::factory()->pending()->create(['inviter_id' => $inviter->id]);
+
+        $service->cancelInvite($inviter, $invite);
+
+        $this->assertEquals(CommunityDirectInvite::STATUS_CANCELLED, $invite->fresh()->status);
+        $this->assertDatabaseHas('community_audit_log', [
+            'community_id' => $invite->community_id,
+            'action' => CommunityAuditLog::ACTION_DIRECT_INVITE_CANCELLED,
+        ]);
+    }
+
+    #[Test]
+    public function direct_invite_moderator_admin_owner_can_cancel_invite(): void
+    {
+        $service = $this->makeDirectInviteService();
+
+        foreach ([CommunityMember::ROLE_MODERATOR, CommunityMember::ROLE_ADMIN, CommunityMember::ROLE_OWNER] as $role) {
+            $community = Community::factory()->create();
+            $actor = User::factory()->create();
+            CommunityMember::factory()->for($community)->for($actor)->create([
+                'role' => $role,
+                'status' => CommunityMember::STATUS_ACTIVE,
+            ]);
+            $invite = CommunityDirectInvite::factory()->pending()->for($community)->create();
+
+            $service->cancelInvite($actor, $invite);
+
+            $this->assertEquals(CommunityDirectInvite::STATUS_CANCELLED, $invite->fresh()->status);
+        }
+    }
+
+    #[Test]
+    public function direct_invite_stranger_cannot_cancel_invite(): void
+    {
+        $service = $this->makeDirectInviteService();
+        $stranger = User::factory()->create();
+        $invite = CommunityDirectInvite::factory()->pending()->create();
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $service->cancelInvite($stranger, $invite);
+    }
+
+    #[Test]
+    public function expired_direct_invite_cannot_be_accepted(): void
+    {
+        $service = $this->makeDirectInviteService();
+        $invitee = User::factory()->create();
+        $invite = CommunityDirectInvite::factory()->expired()->create(['invitee_id' => $invitee->id]);
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $service->acceptInvite($invitee, $invite);
+    }
+
+    #[Test]
+    public function direct_invite_list_pending_for_user_returns_non_expired_with_relations(): void
+    {
+        $service = $this->makeDirectInviteService();
+        $invitee = User::factory()->create();
+        $pending = CommunityDirectInvite::factory()->pending()->create(['invitee_id' => $invitee->id]);
+        CommunityDirectInvite::factory()->expired()->create(['invitee_id' => $invitee->id]);
+        CommunityDirectInvite::factory()->declined()->create(['invitee_id' => $invitee->id]);
+
+        $invites = $service->listPendingForUser($invitee);
+
+        $this->assertCount(1, $invites);
+        $this->assertTrue($invites->first()->is($pending));
+        $this->assertTrue($invites->first()->relationLoaded('inviter'));
+        $this->assertTrue($invites->first()->relationLoaded('community'));
     }
 
     // -------------------------------------------------------------------------
@@ -1515,6 +1818,12 @@ class CommunityServiceTest extends TestCase
     private function makeTopicService(): CommunityTopicService
     {
         return new CommunityTopicService(new CommunityPolicyService, new CommunityAuditService);
+    }
+
+    private function befriend(User $first, User $second): void
+    {
+        Friend::create(['user_id' => $first->id, 'friend_id' => $second->id]);
+        Friend::create(['user_id' => $second->id, 'friend_id' => $first->id]);
     }
 
     #[Test]
