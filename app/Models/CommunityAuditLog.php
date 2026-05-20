@@ -40,6 +40,14 @@ class CommunityAuditLog extends Model
 
     public const ACTION_KEY_EPOCH_ROTATED = 'key_epoch_rotated';
 
+    public const ACTION_COMMUNITY_CREATED = 'community_created';
+
+    public const ACTION_MEMBER_JOINED = 'member_joined';
+
+    public const ACTION_JOIN_REQUEST_APPROVED = 'join_request_approved';
+
+    public const ACTION_KEY_DELIVERED = 'key_delivered';
+
     protected function casts(): array
     {
         return [

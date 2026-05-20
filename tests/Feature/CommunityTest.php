@@ -616,14 +616,15 @@ class CommunityTest extends TestCase
         CommunityPost::factory()->create(['ttl_seconds' => 0]);
     }
 
-    public function test_community_post_client_idempotency_key_is_unique_per_user(): void
+    public function test_community_post_client_idempotency_key_is_unique_per_community_and_user(): void
     {
         $user = User::factory()->create();
-        CommunityPost::factory()->for($user, 'author')->create(['client_idempotency_key' => 'key-abc']);
+        $community = Community::factory()->create();
+        CommunityPost::factory()->for($community)->for($user, 'author')->create(['client_idempotency_key' => 'key-abc']);
 
         $this->expectException(UniqueConstraintViolationException::class);
 
-        CommunityPost::factory()->for($user, 'author')->create(['client_idempotency_key' => 'key-abc']);
+        CommunityPost::factory()->for($community)->for($user, 'author')->create(['client_idempotency_key' => 'key-abc']);
     }
 
     // -------------------------------------------------------------------------
