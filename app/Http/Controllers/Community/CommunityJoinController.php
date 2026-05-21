@@ -25,7 +25,7 @@ class CommunityJoinController extends Controller
 
         if (! $request->expectsJson()) {
             return redirect()->route('communities.show', $community)
-                ->with('community_status', 'Вы присоединились. Ожидается доставка ключей.');
+                ->with('community_status', 'Вы присоединились.');
         }
 
         return response()->json(['success' => true, 'member' => ['id' => $member->id, 'status' => $member->status]], 201);

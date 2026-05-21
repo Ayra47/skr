@@ -115,7 +115,7 @@ final class CommunityDirectInviteService
                 'community_id' => $community->id,
                 'user_id' => $invitee->id,
                 'role' => CommunityMember::ROLE_MEMBER,
-                'status' => CommunityMember::STATUS_PENDING_KEY_DELIVERY,
+                'status' => CommunityMember::STATUS_ACTIVE,
                 'joined_at' => now(),
             ]);
 

@@ -513,7 +513,7 @@ class CommunityServiceTest extends TestCase
     // -------------------------------------------------------------------------
 
     #[Test]
-    public function join_public_adds_member_with_pending_key_delivery_status(): void
+    public function join_public_adds_member_with_active_status(): void
     {
         $service = new CommunityJoinService(new CommunityPolicyService, new CommunityAuditService);
         $user = User::factory()->create();
@@ -521,10 +521,11 @@ class CommunityServiceTest extends TestCase
 
         $member = $service->joinPublic($user, $community);
 
-        $this->assertEquals(CommunityMember::STATUS_PENDING_KEY_DELIVERY, $member->status);
+        $this->assertEquals(CommunityMember::STATUS_ACTIVE, $member->status);
         $this->assertDatabaseHas('community_members', [
             'community_id' => $community->id,
             'user_id' => $user->id,
+            'status' => CommunityMember::STATUS_ACTIVE,
         ]);
     }
 
@@ -619,11 +620,13 @@ class CommunityServiceTest extends TestCase
         $community = Community::factory()->create(['member_count' => 1]);
         $invite = CommunityInvite::factory()->for($community)->create();
 
-        $service->joinByInvite($user, $invite->code);
+        $member = $service->joinByInvite($user, $invite->code);
 
+        $this->assertEquals(CommunityMember::STATUS_ACTIVE, $member->status);
         $this->assertDatabaseHas('community_members', [
             'community_id' => $community->id,
             'user_id' => $user->id,
+            'status' => CommunityMember::STATUS_ACTIVE,
         ]);
         $this->assertDatabaseHas('community_invite_uses', [
             'invite_id' => $invite->id,
@@ -724,7 +727,7 @@ class CommunityServiceTest extends TestCase
     }
 
     #[Test]
-    public function approve_join_request_transitions_to_pending_key_delivery(): void
+    public function approve_join_request_transitions_to_active_member(): void
     {
         $service = new CommunityJoinService(new CommunityPolicyService, new CommunityAuditService);
         $modUser = User::factory()->create();
@@ -735,7 +738,7 @@ class CommunityServiceTest extends TestCase
 
         $member = $service->approveJoinRequest($modUser, $joinRequest);
 
-        $this->assertEquals(CommunityMember::STATUS_PENDING_KEY_DELIVERY, $member->status);
+        $this->assertEquals(CommunityMember::STATUS_ACTIVE, $member->status);
         $this->assertEquals(CommunityJoinRequest::STATUS_APPROVED, $joinRequest->fresh()->status);
     }
 
@@ -944,7 +947,7 @@ class CommunityServiceTest extends TestCase
 
         $this->assertEquals(CommunityDirectInvite::STATUS_ACCEPTED, $invite->fresh()->status);
         $this->assertNotNull($invite->fresh()->responded_at);
-        $this->assertEquals(CommunityMember::STATUS_PENDING_KEY_DELIVERY, $member->status);
+        $this->assertEquals(CommunityMember::STATUS_ACTIVE, $member->status);
         $this->assertDatabaseHas('community_user_state', [
             'community_id' => $community->id,
             'user_id' => $invitee->id,
@@ -968,7 +971,7 @@ class CommunityServiceTest extends TestCase
     }
 
     #[Test]
-    public function direct_invite_accept_creates_pending_key_delivery_member(): void
+    public function direct_invite_accept_creates_active_member(): void
     {
         $service = $this->makeDirectInviteService();
         $invitee = User::factory()->create();
@@ -976,7 +979,7 @@ class CommunityServiceTest extends TestCase
 
         $member = $service->acceptInvite($invitee, $invite);
 
-        $this->assertEquals(CommunityMember::STATUS_PENDING_KEY_DELIVERY, $member->status);
+        $this->assertEquals(CommunityMember::STATUS_ACTIVE, $member->status);
     }
 
     #[Test]

@@ -6,9 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Community\StoreCommunityRequest;
 use App\Models\Community;
 use App\Models\CommunityKeyEpoch;
-use App\Models\CommunityMember;
 use App\Models\CommunityTopic;
-use App\Models\UserDeviceKey;
 use App\Services\Community\CommunityCreationService;
 use App\Services\Community\CommunityPolicyService;
 use Illuminate\Contracts\View\View;
@@ -58,16 +56,6 @@ class CommunityController extends Controller
             : collect();
 
         $members = $community->members()->with('user')->orderBy('role')->orderBy('created_at')->get();
-        $pendingKeyMembers = $community->members()
-            ->with('user')
-            ->where('status', CommunityMember::STATUS_PENDING_KEY_DELIVERY)
-            ->orderBy('created_at')
-            ->get();
-        $deviceKeysByUser = UserDeviceKey::whereIn('user_id', $pendingKeyMembers->pluck('user_id'))
-            ->whereNull('revoked_at')
-            ->get()
-            ->groupBy('user_id');
-
         $friends = $user->friends->merge($user->friendOf)->unique('id')->sortBy('login')->values();
 
         return view('pages.communities.show', [
@@ -77,8 +65,6 @@ class CommunityController extends Controller
             'selectedTopic' => $selectedTopic,
             'posts' => $posts,
             'members' => $members,
-            'pendingKeyMembers' => $pendingKeyMembers,
-            'deviceKeysByUser' => $deviceKeysByUser,
             'latestEpoch' => CommunityKeyEpoch::where('community_id', $community->id)->orderByDesc('epoch_number')->first(),
             'friends' => $friends,
             'canInvite' => $this->policy->canInvite($user, $community),

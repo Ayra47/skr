@@ -91,14 +91,17 @@ class CommunityUiTest extends TestCase
         $this->assertDatabaseHas('community_members', [
             'community_id' => $community->id,
             'user_id' => $invitee->id,
-            'status' => CommunityMember::STATUS_PENDING_KEY_DELIVERY,
+            'status' => CommunityMember::STATUS_ACTIVE,
         ]);
     }
 
-    public function test_accept_private_direct_invite_opens_locked_community_state(): void
+    public function test_accept_private_direct_invite_opens_active_community_state(): void
     {
         $invitee = User::factory()->create();
-        $community = Community::factory()->create(['visibility' => Community::VISIBILITY_PRIVATE]);
+        $community = Community::factory()->create([
+            'name' => 'Private Invite Studio',
+            'visibility' => Community::VISIBILITY_PRIVATE,
+        ]);
         $invite = CommunityDirectInvite::factory()->pending()->for($community)->create(['invitee_id' => $invitee->id]);
 
         $this->actingAs($invitee)
@@ -108,7 +111,24 @@ class CommunityUiTest extends TestCase
         $this->actingAs($invitee)
             ->get(route('communities.show', $community))
             ->assertOk()
-            ->assertSeeText('Waiting for keys');
+            ->assertSeeText('Private Invite Studio')
+            ->assertSeeText(CommunityMember::STATUS_ACTIVE)
+            ->assertDontSeeText('Waiting for keys')
+            ->assertDontSeeText('pending_key_delivery');
+    }
+
+    public function test_key_delivery_panel_is_not_rendered_in_community_ui(): void
+    {
+        $moderator = User::factory()->create();
+        $community = Community::factory()->create();
+        CommunityMember::factory()->moderator()->for($community)->for($moderator)->create();
+
+        $this->actingAs($moderator)
+            ->get(route('communities.show', $community))
+            ->assertOk()
+            ->assertDontSeeText('Key delivery MVP')
+            ->assertDontSeeText('Доставить ключи')
+            ->assertDontSeeText('pending_key_delivery');
     }
 
     public function test_decline_direct_invite_works_from_ui_action(): void

@@ -17,7 +17,6 @@
 
     @php
         $isActiveMember = $membership?->status === \App\Models\CommunityMember::STATUS_ACTIVE;
-        $isPendingKeys = $membership?->status === \App\Models\CommunityMember::STATUS_PENDING_KEY_DELIVERY;
         $canCompose = $isActiveMember && $selectedTopic && ! $selectedTopic->is_archived && $latestEpoch;
     @endphp
 
@@ -65,13 +64,6 @@
                 </div>
             @endif
         </section>
-
-        @if ($isPendingKeys)
-            <section class="community-locked">
-                <strong>Waiting for keys</strong>
-                <p>Ваше членство создано, но посты и composer заблокированы до доставки ключей модератором.</p>
-            </section>
-        @endif
 
         <div class="community-detail-grid">
             <aside class="community-left">
@@ -154,29 +146,6 @@
                     </section>
                 @endif
 
-                @if ($canManageTopics)
-                    <section class="community-panel">
-                        <h2>Key delivery MVP</h2>
-                        @forelse ($pendingKeyMembers as $pendingMember)
-                            <form method="POST" action="{{ route('communities.members.keys.store', $pendingMember) }}" class="community-form community-key-form">
-                                @csrf
-                                <strong>{{ $pendingMember->user->pseudonym ?: $pendingMember->user->login }}</strong>
-                                @forelse (($deviceKeysByUser->get($pendingMember->user_id) ?? collect()) as $deviceKey)
-                                    <input type="hidden" name="keys[{{ $loop->index }}][device_key_id]" value="{{ $deviceKey->id }}">
-                                    <label>
-                                        <span>{{ $deviceKey->device_label ?: $deviceKey->fingerprint }}</span>
-                                        <input name="keys[{{ $loop->index }}][encrypted_key]" type="text" placeholder="encrypted key">
-                                    </label>
-                                @empty
-                                    <p class="community-muted">Нет активных device keys.</p>
-                                @endforelse
-                                <button type="submit" class="community-btn community-btn-ghost">Доставить ключи</button>
-                            </form>
-                        @empty
-                            <p class="community-muted">Нет pending_key_delivery участников.</p>
-                        @endforelse
-                    </section>
-                @endif
             </aside>
 
             <section class="community-posts">
@@ -193,7 +162,7 @@
                 @if (! $isActiveMember)
                     <div class="community-locked">
                         <strong>Locked</strong>
-                        <p>Посты доступны после активного членства и доставки ключей.</p>
+                        <p>Посты доступны после активного членства.</p>
                     </div>
                 @else
                     <div class="community-post-list">

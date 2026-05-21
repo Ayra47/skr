@@ -74,7 +74,7 @@ class CommunityDirectInviteController extends Controller
 
         if (! $request->expectsJson()) {
             return redirect()->route('communities.show', $member->community)
-                ->with('community_status', 'Приглашение принято. Ожидается доставка ключей.');
+                ->with('community_status', 'Приглашение принято.');
         }
 
         return response()->json([

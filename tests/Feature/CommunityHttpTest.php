@@ -248,7 +248,7 @@ class CommunityHttpTest extends TestCase
             ->postJson(route('communities.direct-invites.accept', $invite))
             ->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('member.status', CommunityMember::STATUS_PENDING_KEY_DELIVERY);
+            ->assertJsonPath('member.status', CommunityMember::STATUS_ACTIVE);
 
         $this->assertEquals(CommunityDirectInvite::STATUS_ACCEPTED, $invite->fresh()->status);
     }
