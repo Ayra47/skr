@@ -22,7 +22,7 @@ class CommunityPostFactory extends Factory
             'ciphertext' => base64_encode(fake()->sha256()),
             'nonce' => base64_encode(fake()->sha1()),
             'community_seq' => fake()->numberBetween(1, 10000),
-            'topic_seq' => 0,
+            'topic_seq' => fake()->numberBetween(1, 10000),
             'visibility' => CommunityPost::VISIBILITY_MEMBERS_ONLY,
             'moderation_status' => CommunityPost::MODERATION_VISIBLE,
             'is_pinned' => false,
