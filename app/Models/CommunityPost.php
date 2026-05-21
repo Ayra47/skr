@@ -57,6 +57,11 @@ class CommunityPost extends Model
         });
 
         static::deleted(function (CommunityPost $post): void {
+            Bookmark::query()
+                ->where('bookmarkable_type', self::class)
+                ->where('bookmarkable_key', $post->id)
+                ->update(['original_deleted' => true]);
+
             app(FeedItemProjector::class)->deleteForCommunityPost($post);
         });
     }

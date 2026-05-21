@@ -59,7 +59,7 @@ final class FeedVisibilityService
 
         return match ($item->source_type) {
             FeedItem::SOURCE_FEED_POST => $this->canSeeFeedPost($viewer, $item, $surface),
-            FeedItem::SOURCE_COMMUNITY_POST => $this->canSeeCommunityPost($viewer, $item),
+            FeedItem::SOURCE_COMMUNITY_POST => $this->canSeeCommunityFeedItem($viewer, $item, $surface),
             FeedItem::SOURCE_COMMUNITY,
             FeedItem::SOURCE_COMMUNITY_TOPIC,
             FeedItem::SOURCE_COMMUNITY_MEMBER => $this->canSeeCommunityItem($viewer, $item, $surface),
@@ -83,11 +83,8 @@ final class FeedVisibilityService
         return $post->isVisibleTo($viewer);
     }
 
-    private function canSeeCommunityPost(User $viewer, FeedItem $item): bool
+    public function canViewerSeeCommunityPost(User $viewer, CommunityPost $post, string $surface = 'feed'): bool
     {
-        $post = $this->communityPostCache[$item->source_id]
-            ?? CommunityPost::withTrashed()->with('community')->find($item->source_id);
-
         if (! $post || $post->trashed() || $post->isExpired()) {
             return false;
         }
@@ -100,7 +97,11 @@ final class FeedVisibilityService
             ? $post->community
             : $post->community()->first();
 
-        if (! $community || ! $community->allow_posts_in_member_feed) {
+        if (! $community) {
+            return false;
+        }
+
+        if ($surface !== 'bookmark' && ! $community->allow_posts_in_member_feed) {
             return false;
         }
 
@@ -112,6 +113,18 @@ final class FeedVisibilityService
         }
 
         return $this->isActiveMember($viewer->id, $community->id);
+    }
+
+    private function canSeeCommunityFeedItem(User $viewer, FeedItem $item, string $surface): bool
+    {
+        $post = $this->communityPostCache[$item->source_id]
+            ?? CommunityPost::withTrashed()->with('community')->find($item->source_id);
+
+        if (! $post) {
+            return false;
+        }
+
+        return $this->canViewerSeeCommunityPost($viewer, $post, $surface);
     }
 
     private function canSeeCommunityItem(User $viewer, FeedItem $item, string $surface): bool

@@ -46,7 +46,7 @@
         <button class="bm-tab {{ $tab === 'all' ? 'bm-tab--active' : '' }}" wire:click="setTab('all')" type="button">Все</button>
         <button class="bm-tab {{ $tab === 'feed_post' ? 'bm-tab--active' : '' }}" wire:click="setTab('feed_post')" type="button">Из ленты</button>
         <button class="bm-tab {{ $tab === 'whisper' ? 'bm-tab--active' : '' }}" wire:click="setTab('whisper')" type="button">Whisper</button>
-        <button class="bm-tab bm-tab--future" type="button" disabled>Из сообществ</button>
+        <button class="bm-tab {{ $tab === 'community_post' ? 'bm-tab--active' : '' }}" wire:click="setTab('community_post')" type="button">Из сообществ</button>
     </div>
 
     {{-- Content --}}

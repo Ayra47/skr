@@ -1,3 +1,6 @@
+@if($bookmark->bookmarkable_type === \App\Models\CommunityPost::class)
+    @include('pages.bookmarks._community_card', ['bookmark' => $bookmark])
+@else
 @php
     $isDeleted = $bookmark->original_deleted;
     $isWhisper = $bookmark->snapshot_is_whisper;
@@ -88,3 +91,4 @@
     </footer>
 
 </article>
+@endif
