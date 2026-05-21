@@ -2,6 +2,7 @@
     $tabs = [
         'friends' => 'Друзья',
         'all' => 'Все',
+        'groups' => 'Группы',
         'mine' => 'Мои',
     ];
     $lifetimeOptions = [
@@ -56,6 +57,18 @@
                 </button>
             @endforeach
         </nav>
+
+        @if($tab === 'groups')
+            <section class="feed-community-search" aria-label="Поиск в сообществах">
+                <input
+                    type="search"
+                    wire:model.live.debounce.300ms="communitySearch"
+                    maxlength="100"
+                    autocomplete="off"
+                    placeholder="Поиск в сообществах"
+                >
+            </section>
+        @endif
 
         <section class="feed-composer" aria-label="Создать пост">
             <form class="feed-composer-form" wire:submit="createPost" enctype="multipart/form-data">

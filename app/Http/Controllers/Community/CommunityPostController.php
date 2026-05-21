@@ -28,7 +28,7 @@ class CommunityPostController extends Controller
 
         if (! $request->expectsJson()) {
             return redirect()->route('communities.show', ['community' => $community, 'topic' => $topic->id])
-                ->with('community_status', 'Encrypted post опубликован.');
+                ->with('community_status', 'Пост опубликован.');
         }
 
         return response()->json(['success' => true, 'post' => ['id' => $post->id, 'community_seq' => $post->community_seq]], 201);

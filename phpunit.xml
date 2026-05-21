@@ -29,6 +29,7 @@
         <env name="DB_DATABASE" value="skr_testing"/>
         <env name="DB_USERNAME" value="ajratramazanov"/>
         <env name="DB_PASSWORD" value=""/>
+        <env name="FEATURE_COMMUNITY_FEED_ITEMS" value="false"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

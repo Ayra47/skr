@@ -17,7 +17,7 @@
 
     @php
         $isActiveMember = $membership?->status === \App\Models\CommunityMember::STATUS_ACTIVE;
-        $canCompose = $isActiveMember && $selectedTopic && ! $selectedTopic->is_archived && $latestEpoch;
+        $canCompose = $isActiveMember && $selectedTopic && ! $selectedTopic->is_archived;
     @endphp
 
     <main class="community-detail-shell">
@@ -175,10 +175,14 @@
                             @endphp
                             <article class="community-post-card">
                                 <div>
-                                    <strong>Encrypted post</strong>
+                                    <strong>{{ $post->isPlaintext() ? $authorName : 'Encrypted post' }}</strong>
                                     <span>{{ $post->created_at?->toIso8601String() }}</span>
                                 </div>
-                                <p>{{ $authorName }}</p>
+                                @if ($post->isPlaintext())
+                                    <p>{{ $post->body }}</p>
+                                @else
+                                    <p>{{ $authorName }}</p>
+                                @endif
                             </article>
                         @empty
                             <p class="community-muted">В этой теме пока нет постов.</p>
@@ -192,21 +196,13 @@
                         <form method="POST" action="{{ route('communities.topics.posts.store', [$community, $selectedTopic]) }}" class="community-form">
                             @csrf
                             <label>
-                                <span>ciphertext</span>
-                                <textarea name="ciphertext" rows="3" required></textarea>
+                                <span>Сообщение</span>
+                                <textarea name="body" rows="4" maxlength="5000" placeholder="Напишите сообщение..." required></textarea>
                             </label>
-                            <label>
-                                <span>nonce</span>
-                                <input name="nonce" type="text" required>
-                            </label>
-                            <label>
-                                <span>epoch_id</span>
-                                <input name="epoch_id" type="text" value="{{ $latestEpoch->id }}" required>
-                            </label>
-                            <button type="submit" class="community-btn community-btn-primary">Publish encrypted post</button>
+                            <button type="submit" class="community-btn community-btn-primary">Опубликовать</button>
                         </form>
                     @else
-                        <p class="community-muted">Composer disabled: нет активного членства, тема архивирована или нет key epoch.</p>
+                        <p class="community-muted">Composer disabled: нет активного членства или тема архивирована.</p>
                     @endif
                 </section>
             </section>

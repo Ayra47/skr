@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
     'community_id', 'topic_id', 'user_id', 'epoch_id',
-    'ciphertext', 'nonce', 'community_seq', 'topic_seq',
+    'body', 'ciphertext', 'nonce', 'community_seq', 'topic_seq',
     'visibility', 'is_pinned', 'reaction_count', 'comment_count',
     'reply_count', 'attachments_count', 'expires_at',
     'ttl_seconds', 'moderation_status', 'client_idempotency_key',
@@ -77,6 +77,16 @@ class CommunityPost extends Model
     public function isExpired(): bool
     {
         return $this->expires_at !== null && $this->expires_at->isPast();
+    }
+
+    public function isEncrypted(): bool
+    {
+        return blank($this->body) && filled($this->ciphertext) && filled($this->nonce);
+    }
+
+    public function isPlaintext(): bool
+    {
+        return filled($this->body);
     }
 
     public function community(): BelongsTo

@@ -237,27 +237,35 @@ class CommunityUiTest extends TestCase
             ->assertDontSee('SECRET-NONCE-LEAK');
     }
 
-    public function test_composer_does_not_render_or_accept_plaintext_body(): void
+    public function test_composer_renders_and_accepts_plaintext_body(): void
     {
         $member = User::factory()->create();
         $community = Community::factory()->create();
         $topic = CommunityTopic::factory()->for($community)->create();
-        $epoch = CommunityKeyEpoch::factory()->for($community)->create();
         CommunityMember::factory()->for($community)->for($member)->create(['status' => CommunityMember::STATUS_ACTIVE]);
 
         $this->actingAs($member)
             ->get(route('communities.show', ['community' => $community, 'topic' => $topic->id]))
             ->assertOk()
-            ->assertDontSee('name="body"', false);
+            ->assertSee('name="body"', false)
+            ->assertDontSee('name="ciphertext"', false)
+            ->assertDontSee('name="nonce"', false)
+            ->assertDontSee('name="epoch_id"', false);
 
         $this->actingAs($member)
             ->post(route('communities.topics.posts.store', [$community, $topic]), [
-                'body' => 'plaintext must not be accepted',
-                'ciphertext' => 'encrypted',
-                'nonce' => 'nonce',
-                'epoch_id' => $epoch->id,
+                'body' => 'plaintext community UI post',
             ])
-            ->assertSessionHasErrors('body');
+            ->assertRedirect(route('communities.show', ['community' => $community, 'topic' => $topic->id]));
+
+        $this->assertDatabaseHas('community_posts', [
+            'community_id' => $community->id,
+            'topic_id' => $topic->id,
+            'body' => 'plaintext community UI post',
+            'ciphertext' => null,
+            'nonce' => null,
+            'epoch_id' => null,
+        ]);
     }
 
     public function test_invite_panel_visible_to_allowed_inviter_and_hidden_from_disallowed_member(): void

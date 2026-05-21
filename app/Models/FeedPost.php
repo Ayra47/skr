@@ -150,7 +150,7 @@ class FeedPost extends Model
         $friendIds ??= $user->friendIds();
 
         return match ($tab) {
-            'all' => $query->where('visibility', self::VISIBILITY_PUBLIC),
+            'all' => $query->visibleTo($user, $friendIds),
             'mine' => $query->where('user_id', $user->id),
             default => $query->where(function (Builder $query) use ($user, $friendIds) {
                 $query->where('user_id', $user->id)

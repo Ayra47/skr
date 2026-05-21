@@ -38,6 +38,9 @@ class Feed extends Component
     #[Url(as: 'tab', except: 'friends')]
     public string $tab = 'friends';
 
+    #[Url(as: 'community_search', except: '')]
+    public string $communitySearch = '';
+
     public string $body = '';
 
     public string $visibility = FeedPost::VISIBILITY_FRIENDS;
@@ -118,18 +121,26 @@ class Feed extends Component
 
     public function mount(): void
     {
-        if (! in_array($this->tab, ['friends', 'all', 'mine'], strict: true)) {
+        if (! in_array($this->tab, ['friends', 'all', 'mine', 'groups'], strict: true)) {
             $this->tab = 'friends';
         }
     }
 
     public function setTab(string $tab): void
     {
-        if (! in_array($tab, ['friends', 'all', 'mine'], strict: true)) {
+        if (! in_array($tab, ['friends', 'all', 'mine', 'groups'], strict: true)) {
             return;
         }
 
         $this->tab = $tab;
+        $this->feedCursor = null;
+        $this->nextFeedCursor = null;
+        $this->resetPage();
+    }
+
+    public function updatedCommunitySearch(): void
+    {
+        $this->communitySearch = mb_substr(trim($this->communitySearch), 0, 100);
         $this->feedCursor = null;
         $this->nextFeedCursor = null;
         $this->resetPage();
@@ -525,7 +536,7 @@ class Feed extends Component
         $feedCards = null;
 
         if (config('features.unified_feed_items_enabled')) {
-            if (config('features.community_feed_items_enabled')) {
+            if (config('features.community_feed_items_enabled') || $this->tab === 'groups') {
                 $feedCards = $this->loadUnifiedFeedCards($user);
                 $feedPostItems = collect($feedCards->items())
                     ->filter(fn (FeedCard $card) => $card->isFeedPost())
@@ -535,6 +546,8 @@ class Feed extends Component
             } else {
                 $posts = $this->loadUnifiedFeedPosts($user);
             }
+        } elseif ($this->tab === 'groups') {
+            $posts = new Paginator([], 25);
         } else {
             $posts = FeedPost::query()
                 ->with([
@@ -727,7 +740,13 @@ class Feed extends Component
     private function loadUnifiedFeedCards(User $user): Paginator
     {
         $reader = app(FeedItemsReader::class);
-        $feedPage = $reader->readForFeed($user, $this->tab, 25, $this->feedCursor);
+        $feedPage = $reader->readForFeed(
+            $user,
+            $this->tab,
+            25,
+            $this->feedCursor,
+            communitySearch: $this->tab === 'groups' ? $this->communitySearch : null,
+        );
         $this->nextFeedCursor = $feedPage->nextCursor;
 
         $feedPosts = $this->loadFeedPostsByIds($feedPage->feedPostIds(), $user)

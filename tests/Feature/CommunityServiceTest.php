@@ -1365,7 +1365,7 @@ class CommunityServiceTest extends TestCase
     }
 
     #[Test]
-    public function post_publish_no_plaintext_body_stored(): void
+    public function post_publish_encrypted_payload_stores_null_body(): void
     {
         $service = $this->makePostService();
         $user = User::factory()->create();
@@ -1380,7 +1380,9 @@ class CommunityServiceTest extends TestCase
             'epoch_id' => $epoch->id,
         ]);
 
-        $this->assertArrayNotHasKey('body', $post->toArray());
+        $this->assertNull($post->body);
+        $this->assertTrue($post->isEncrypted());
+        $this->assertFalse($post->isPlaintext());
     }
 
     #[Test]

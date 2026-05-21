@@ -20,15 +20,16 @@ final class CommunityPostService
 
     /**
      * @param  array{
-     *     ciphertext: string,
-     *     nonce: string,
-     *     epoch_id: string,
+     *     body?: string|null,
+     *     ciphertext?: string|null,
+     *     nonce?: string|null,
+     *     epoch_id?: string|null,
      *     visibility?: string,
      *     ttl_seconds?: int|null,
      *     client_idempotency_key?: string|null,
      * } $payload
      */
-    public function publishEncryptedPost(
+    public function publishPost(
         User $author,
         Community $community,
         CommunityTopic $topic,
@@ -52,6 +53,13 @@ final class CommunityPostService
         }
 
         $idempotencyKey = $payload['client_idempotency_key'] ?? null;
+        $body = filled($payload['body'] ?? null) ? trim((string) $payload['body']) : null;
+        $isPlaintext = filled($body);
+        $isEncrypted = filled($payload['ciphertext'] ?? null) && filled($payload['nonce'] ?? null);
+
+        if (! $isPlaintext && ! $isEncrypted) {
+            throw new InvalidArgumentException('Community post must include body or encrypted payload.');
+        }
 
         // Fast-path deduplication before acquiring any locks.
         if ($idempotencyKey !== null) {
@@ -65,7 +73,7 @@ final class CommunityPostService
             }
         }
 
-        return DB::transaction(function () use ($author, $community, $topic, $payload, $ttlSeconds, $idempotencyKey): CommunityPost {
+        return DB::transaction(function () use ($author, $community, $topic, $payload, $ttlSeconds, $idempotencyKey, $body, $isPlaintext): CommunityPost {
             // Re-check idempotency inside the transaction under lock to close the race window.
             if ($idempotencyKey !== null) {
                 $existing = CommunityPost::where('community_id', $community->id)
@@ -79,10 +87,18 @@ final class CommunityPostService
                 }
             }
 
-            $epoch = CommunityKeyEpoch::where('id', $payload['epoch_id'])
-                ->where('community_id', $community->id)
-                ->lockForUpdate()
-                ->firstOrFail();
+            $epochId = null;
+
+            if (filled($payload['epoch_id'] ?? null)) {
+                $epochId = CommunityKeyEpoch::where('id', $payload['epoch_id'])
+                    ->where('community_id', $community->id)
+                    ->lockForUpdate()
+                    ->value('id');
+
+                if ($epochId === null) {
+                    throw new InvalidArgumentException('Key epoch does not belong to this community.');
+                }
+            }
 
             $communitySeq = $community->lockForUpdate()->value('post_count') + 1;
             $topicSeq = $topic->lockForUpdate()->value('post_count') + 1;
@@ -93,9 +109,10 @@ final class CommunityPostService
                 'community_id' => $community->id,
                 'topic_id' => $topic->id,
                 'user_id' => $author->id,
-                'epoch_id' => $epoch->id,
-                'ciphertext' => $payload['ciphertext'],
-                'nonce' => $payload['nonce'],
+                'epoch_id' => $epochId,
+                'body' => $isPlaintext ? $body : null,
+                'ciphertext' => $isPlaintext ? null : ($payload['ciphertext'] ?? null),
+                'nonce' => $isPlaintext ? null : ($payload['nonce'] ?? null),
                 'community_seq' => $communitySeq,
                 'topic_seq' => $topicSeq,
                 'visibility' => $payload['visibility'] ?? CommunityPost::VISIBILITY_MEMBERS_ONLY,
@@ -115,5 +132,25 @@ final class CommunityPostService
 
             return $post;
         });
+    }
+
+    /**
+     * @param  array{
+     *     body?: string|null,
+     *     ciphertext?: string|null,
+     *     nonce?: string|null,
+     *     epoch_id?: string|null,
+     *     visibility?: string,
+     *     ttl_seconds?: int|null,
+     *     client_idempotency_key?: string|null,
+     * } $payload
+     */
+    public function publishEncryptedPost(
+        User $author,
+        Community $community,
+        CommunityTopic $topic,
+        array $payload,
+    ): CommunityPost {
+        return $this->publishPost($author, $community, $topic, $payload);
     }
 }

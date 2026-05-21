@@ -31,8 +31,12 @@
         @endif
     </div>
 
-    <div class="community-feed-placeholder">
-        <strong>Encrypted community post</strong>
-        <span>Encrypted post</span>
-    </div>
+    @if($post?->isPlaintext())
+        <div class="feed-post-body">{{ $post->body }}</div>
+    @else
+        <div class="community-feed-placeholder">
+            <strong>Encrypted community post</strong>
+            <span>Encrypted post</span>
+        </div>
+    @endif
 </article>

@@ -59,13 +59,17 @@
             @endif
         </div>
 
-        <div class="community-feed-placeholder">
-            <strong>Encrypted community post</strong>
-            <span>Encrypted post</span>
-        </div>
+        @if($card->communityPost?->isPlaintext())
+            <div class="feed-post-body">{{ $card->communityPost->body }}</div>
+        @else
+            <div class="community-feed-placeholder">
+                <strong>Encrypted community post</strong>
+                <span>Encrypted post</span>
+            </div>
+        @endif
     @endif
 
     <footer class="bm-card-footer">
-        <span class="bm-card-footer-note">source reference only, encrypted payload not copied</span>
+        <span class="bm-card-footer-note">source reference only, community body not copied</span>
     </footer>
 </article>

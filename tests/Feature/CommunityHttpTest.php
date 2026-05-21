@@ -469,22 +469,28 @@ class CommunityHttpTest extends TestCase
             ->assertUnprocessable();
     }
 
-    public function test_publish_post_with_body_returns_422(): void
+    public function test_publish_post_with_body_without_encrypted_payload_works(): void
     {
         $user = User::factory()->create();
         $community = Community::factory()->create();
         CommunityMember::factory()->for($community)->for($user)->create(['role' => CommunityMember::ROLE_MEMBER, 'status' => CommunityMember::STATUS_ACTIVE]);
         $topic = CommunityTopic::factory()->for($community)->create(['is_archived' => false]);
-        $epoch = CommunityKeyEpoch::factory()->for($community)->create();
 
         $this->actingAs($user)
             ->postJson(route('communities.topics.posts.store', [$community, $topic]), [
-                'ciphertext' => base64_encode('encrypted-content'),
-                'nonce' => base64_encode('nonce-bytes-here'),
-                'epoch_id' => $epoch->id,
-                'body' => 'plaintext that must never be stored',
+                'body' => 'plaintext community post',
             ])
-            ->assertUnprocessable();
+            ->assertCreated();
+
+        $this->assertDatabaseHas('community_posts', [
+            'community_id' => $community->id,
+            'topic_id' => $topic->id,
+            'user_id' => $user->id,
+            'body' => 'plaintext community post',
+            'ciphertext' => null,
+            'nonce' => null,
+            'epoch_id' => null,
+        ]);
     }
 
     public function test_publish_post_without_body_still_works(): void

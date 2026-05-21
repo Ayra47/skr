@@ -6,6 +6,7 @@ use App\Models\CommunityPost;
 use App\Models\FeedItem;
 use App\Models\FeedPost;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -22,11 +23,12 @@ final class FeedItemsReader
      * position of the last raw item scanned, so the next request continues from
      * exactly where scanning stopped — even if that item was not visible.
      *
-     * tab='all'     → visibility_scope = public  (mirrors legacy FeedPost::forTab 'all')
+     * tab='all'     → all items visible to viewer
      * tab='mine'    → actor_id = viewer
      * tab='friends' → actor_id = viewer OR actor_id IN friendIds
+     * tab='groups'  → source_type = community_post
      *
-     * @param  'friends'|'all'|'mine'  $tab
+     * @param  'friends'|'all'|'mine'|'groups'  $tab
      */
     public function readForFeed(
         User $viewer,
@@ -35,8 +37,10 @@ final class FeedItemsReader
         ?string $cursor = null,
         int $rawBatch = 100,
         int $maxScan = 500,
+        ?string $communitySearch = null,
     ): FeedPage {
         $friendIds = $viewer->friendIds();
+        $communitySearch = $tab === 'groups' ? $this->normalizeCommunitySearch($communitySearch) : null;
 
         /** @var Collection<int, FeedItem> $visible */
         $visible = collect();
@@ -48,7 +52,7 @@ final class FeedItemsReader
 
         while (! $done && ! $dbExhausted && $visible->count() < $pageSize && $scanned < $maxScan) {
             $limit = min($rawBatch, $maxScan - $scanned);
-            $batch = $this->fetchBatch($viewer, $tab, $friendIds, $batchCursor, $limit);
+            $batch = $this->fetchBatch($viewer, $tab, $friendIds, $batchCursor, $limit, $communitySearch);
 
             if ($batch->isEmpty()) {
                 $dbExhausted = true;
@@ -89,7 +93,7 @@ final class FeedItemsReader
             // This avoids returning a dangling cursor when the page happens to land
             // exactly on the last item in the DB.
             $peekCursor = $this->encodeCursor($lastScannedItem->sort_at, $lastScannedItem->id);
-            $peek = $this->fetchBatch($viewer, $tab, $friendIds, $peekCursor, 1);
+            $peek = $this->fetchBatch($viewer, $tab, $friendIds, $peekCursor, 1, $communitySearch);
 
             if ($peek->isNotEmpty()) {
                 $nextCursor = $peekCursor;
@@ -109,6 +113,7 @@ final class FeedItemsReader
         array $friendIds,
         ?string $cursor,
         int $limit,
+        ?string $communitySearch,
     ): Collection {
         $query = FeedItem::query()
             ->where('show_in_feed', true)
@@ -119,8 +124,17 @@ final class FeedItemsReader
         }
 
         match ($tab) {
-            'all' => $query->where('visibility_scope', FeedItem::SCOPE_PUBLIC),
+            'all' => $query->where(function ($q) use ($viewer, $friendIds): void {
+                $q->where('visibility_scope', FeedItem::SCOPE_PUBLIC)
+                    ->orWhere('actor_id', $viewer->id)
+                    ->orWhereIn('actor_id', $friendIds);
+
+                if (config('features.community_feed_items_enabled')) {
+                    $q->orWhere('source_type', FeedItem::SOURCE_COMMUNITY_POST);
+                }
+            }),
             'mine' => $query->where('actor_id', $viewer->id),
+            'groups' => $query->where('source_type', FeedItem::SOURCE_COMMUNITY_POST),
             default => $query->where(function ($q) use ($viewer, $friendIds): void {
                 $q->where('actor_id', $viewer->id)
                     ->orWhereIn('actor_id', $friendIds);
@@ -130,6 +144,10 @@ final class FeedItemsReader
                 }
             }),
         };
+
+        if ($communitySearch !== null) {
+            $this->applyCommunitySearch($query, $communitySearch);
+        }
 
         if ($cursor !== null) {
             $decoded = $this->decodeCursor($cursor);
@@ -150,6 +168,26 @@ final class FeedItemsReader
             ->orderByDesc('id')
             ->limit($limit)
             ->get();
+    }
+
+    private function normalizeCommunitySearch(?string $search): ?string
+    {
+        $search = trim((string) $search);
+
+        return $search === '' ? null : mb_substr($search, 0, 100);
+    }
+
+    private function applyCommunitySearch(Builder $query, string $search): void
+    {
+        $like = '%'.$search.'%';
+
+        $query->whereIn('post_id', CommunityPost::query()
+            ->select('id')
+            ->where(function ($query) use ($like): void {
+                $query->where('body', 'ilike', $like)
+                    ->orWhereRelation('community', 'name', 'ilike', $like)
+                    ->orWhereRelation('topic', 'name', 'ilike', $like);
+            }));
     }
 
     /**

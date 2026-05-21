@@ -640,14 +640,15 @@ class CommunityTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // Batch 7.1: community_posts E2EE fields
+    // Batch 7.1 / plaintext MVP: community_posts support text and legacy encrypted payloads
     // -------------------------------------------------------------------------
 
-    public function test_community_post_has_no_plaintext_body(): void
+    public function test_community_post_has_nullable_plaintext_body(): void
     {
-        $post = CommunityPost::factory()->create();
+        $post = CommunityPost::factory()->create(['body' => 'Community text body']);
 
-        $this->assertArrayNotHasKey('body', $post->getAttributes());
+        $this->assertSame('Community text body', $post->body);
+        $this->assertTrue($post->isPlaintext());
     }
 
     public function test_community_post_has_ciphertext_and_nonce(): void

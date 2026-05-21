@@ -112,6 +112,36 @@ class CommunityFeedMixedReaderTest extends TestCase
         $this->assertSame([FeedItem::SOURCE_COMMUNITY_POST.':'.$communityPost->id], $this->sourceKeys($page->items->all()));
     }
 
+    public function test_groups_tab_returns_only_visible_community_posts(): void
+    {
+        config(['features.community_feed_items_enabled' => true]);
+
+        $viewer = User::factory()->create();
+        $feedPost = $this->createFeedPost($viewer, ['body' => 'ordinary-feed-post']);
+        $communityPost = $this->createCommunityPost(['visibility' => CommunityPost::VISIBILITY_PUBLIC]);
+
+        $this->setFeedItemSortAt(FeedItem::SOURCE_FEED_POST, (string) $feedPost->id, now()->addMinute());
+        $this->setFeedItemSortAt(FeedItem::SOURCE_COMMUNITY_POST, $communityPost->id, now());
+
+        $page = $this->reader()->readForFeed($viewer, 'groups', 10);
+
+        $this->assertSame([FeedItem::SOURCE_COMMUNITY_POST.':'.$communityPost->id], $this->sourceKeys($page->items->all()));
+    }
+
+    public function test_groups_tab_searches_only_community_posts(): void
+    {
+        config(['features.community_feed_items_enabled' => true]);
+
+        $viewer = User::factory()->create();
+        $this->createFeedPost($viewer, ['body' => 'needle regular feed post']);
+        $matchingCommunityPost = $this->createCommunityPost(['body' => 'needle community body', 'visibility' => CommunityPost::VISIBILITY_PUBLIC]);
+        $this->createCommunityPost(['body' => 'unmatched community body', 'visibility' => CommunityPost::VISIBILITY_PUBLIC]);
+
+        $page = $this->reader()->readForFeed($viewer, 'groups', 10, communitySearch: 'needle');
+
+        $this->assertSame([FeedItem::SOURCE_COMMUNITY_POST.':'.$matchingCommunityPost->id], $this->sourceKeys($page->items->all()));
+    }
+
     public function test_private_community_post_does_not_appear_for_non_member(): void
     {
         config(['features.community_feed_items_enabled' => true]);
@@ -143,6 +173,39 @@ class CommunityFeedMixedReaderTest extends TestCase
         $page = $this->reader()->readForFeed($viewer, 'friends', 10);
 
         $this->assertSame([FeedItem::SOURCE_COMMUNITY_POST.':'.$communityPost->id], $this->sourceKeys($page->items->all()));
+    }
+
+    public function test_private_community_post_appears_in_all_tab_for_active_member(): void
+    {
+        config(['features.community_feed_items_enabled' => true]);
+
+        $viewer = User::factory()->create();
+        $communityPost = $this->createCommunityPost(
+            ['visibility' => CommunityPost::VISIBILITY_MEMBERS_ONLY],
+            ['visibility' => Community::VISIBILITY_PRIVATE],
+        );
+        CommunityMember::factory()->for($communityPost->community)->for($viewer)->create([
+            'status' => CommunityMember::STATUS_ACTIVE,
+        ]);
+
+        $page = $this->reader()->readForFeed($viewer, 'all', 10);
+
+        $this->assertSame([FeedItem::SOURCE_COMMUNITY_POST.':'.$communityPost->id], $this->sourceKeys($page->items->all()));
+    }
+
+    public function test_private_community_post_does_not_appear_in_all_tab_for_non_member(): void
+    {
+        config(['features.community_feed_items_enabled' => true]);
+
+        $viewer = User::factory()->create();
+        $this->createCommunityPost(
+            ['visibility' => CommunityPost::VISIBILITY_MEMBERS_ONLY],
+            ['visibility' => Community::VISIBILITY_PRIVATE],
+        );
+
+        $page = $this->reader()->readForFeed($viewer, 'all', 10);
+
+        $this->assertEmpty($page->items);
     }
 
     public function test_pending_key_delivery_member_does_not_see_community_post_in_global_feed(): void

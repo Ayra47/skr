@@ -74,10 +74,10 @@ class FeedParityTest extends TestCase
     // =========================================================================
 
     // -------------------------------------------------------------------------
-    // 1a. tab=all — only public posts, both paths
+    // 1a. tab=all — everything visible to viewer, both paths
     // -------------------------------------------------------------------------
 
-    public function test_all_tab_legacy_and_unified_show_same_public_posts(): void
+    public function test_all_tab_legacy_and_unified_show_same_visible_posts(): void
     {
         $viewer = $this->makeUser();
         $friend = $this->makeUser();
@@ -88,14 +88,18 @@ class FeedParityTest extends TestCase
         $publicByFriend = $this->makePost($friend, ['body' => 'friend-public', 'visibility' => FeedPost::VISIBILITY_PUBLIC]);
         $privateByFriend = $this->makePost($friend, ['body' => 'friend-friends', 'visibility' => FeedPost::VISIBILITY_FRIENDS]);
         $publicByStranger = $this->makePost($stranger, ['body' => 'stranger-public', 'visibility' => FeedPost::VISIBILITY_PUBLIC]);
+        $privateByStranger = $this->makePost($stranger, ['body' => 'stranger-friends', 'visibility' => FeedPost::VISIBILITY_FRIENDS]);
+        $ownFriends = $this->makePost($viewer, ['body' => 'viewer-friends', 'visibility' => FeedPost::VISIBILITY_FRIENDS]);
 
         $legacy = $this->feedBodies($viewer, 'all', false);
         $unified = $this->feedBodies($viewer, 'all', true);
 
         $this->assertEqualsCanonicalizing($legacy, $unified, 'all tab must return same posts in both paths');
         $this->assertContains($publicByFriend->body, $legacy);
+        $this->assertContains($privateByFriend->body, $legacy);
         $this->assertContains($publicByStranger->body, $legacy);
-        $this->assertNotContains($privateByFriend->body, $legacy);
+        $this->assertContains($ownFriends->body, $legacy);
+        $this->assertNotContains($privateByStranger->body, $legacy);
     }
 
     // -------------------------------------------------------------------------

@@ -198,33 +198,30 @@ class UnifiedFeedTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // 8–10. tab='all' parity with legacy FeedPost::forTab('all')
-    //
-    // Legacy: ->where('visibility', 'public') — only public posts.
-    // Own friends-only and friends' friends-only posts are NOT included.
+    // 8–10. tab='all' includes everything visible to the viewer.
     // -------------------------------------------------------------------------
 
-    public function test_all_tab_excludes_viewers_own_friends_only_post_matching_legacy(): void
+    public function test_all_tab_includes_viewers_own_friends_only_post(): void
     {
         $user = $this->makeUser();
-        $this->makePost($user, ['visibility' => FeedPost::VISIBILITY_FRIENDS]);
+        $post = $this->makePost($user, ['visibility' => FeedPost::VISIBILITY_FRIENDS]);
 
         $page = $this->reader()->readForFeed($user, 'all', 25);
 
-        $this->assertEmpty($page->items, 'all tab must exclude own friends-only posts (legacy parity)');
+        $this->assertSame([(string) $post->id], $page->items->pluck('source_id')->all());
     }
 
-    public function test_all_tab_excludes_friends_friends_only_post_matching_legacy(): void
+    public function test_all_tab_includes_friends_friends_only_post(): void
     {
         $author = $this->makeUser();
         $viewer = $this->makeUser();
         $this->makeFriends($author, $viewer);
 
-        $this->makePost($author, ['visibility' => FeedPost::VISIBILITY_FRIENDS]);
+        $post = $this->makePost($author, ['visibility' => FeedPost::VISIBILITY_FRIENDS]);
 
         $page = $this->reader()->readForFeed($viewer, 'all', 25);
 
-        $this->assertEmpty($page->items, 'all tab must exclude friends-only posts even from friends (legacy parity)');
+        $this->assertSame([(string) $post->id], $page->items->pluck('source_id')->all());
     }
 
     public function test_all_tab_excludes_strangers_friends_only_post(): void

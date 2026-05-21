@@ -86,6 +86,66 @@ class CommunityFeedRenderingTest extends TestCase
             ->assertDontSee('Private Community Feed Name');
     }
 
+    public function test_private_community_post_renders_in_all_tab_for_active_member_only(): void
+    {
+        config(['features.unified_feed_items_enabled' => true, 'features.community_feed_items_enabled' => true]);
+
+        $member = User::factory()->create();
+        $nonMember = User::factory()->create();
+        $communityPost = $this->createCommunityPost(
+            [
+                'body' => 'members should see this community body',
+                'visibility' => CommunityPost::VISIBILITY_MEMBERS_ONLY,
+            ],
+            ['name' => 'Members Only Feed Space', 'visibility' => Community::VISIBILITY_PRIVATE],
+        );
+        CommunityMember::factory()->for($communityPost->community)->for($member)->create([
+            'status' => CommunityMember::STATUS_ACTIVE,
+        ]);
+
+        Livewire::actingAs($member)
+            ->test(Feed::class, ['tab' => 'all'])
+            ->assertSee('Members Only Feed Space')
+            ->assertSee('members should see this community body');
+
+        Livewire::actingAs($nonMember)
+            ->test(Feed::class, ['tab' => 'all'])
+            ->assertDontSee('Members Only Feed Space')
+            ->assertDontSee('members should see this community body');
+    }
+
+    public function test_groups_tab_renders_only_community_posts_and_supports_search(): void
+    {
+        config(['features.unified_feed_items_enabled' => true, 'features.community_feed_items_enabled' => true]);
+
+        $viewer = User::factory()->create();
+        FeedPost::query()->create([
+            'user_id' => $viewer->id,
+            'body' => 'ordinary feed result should be hidden',
+            'visibility' => FeedPost::VISIBILITY_PUBLIC,
+        ]);
+        $this->createCommunityPost(
+            ['body' => 'needle community post body', 'visibility' => CommunityPost::VISIBILITY_PUBLIC],
+            ['name' => 'Searchable Community'],
+        );
+        $this->createCommunityPost(
+            ['body' => 'other community post body', 'visibility' => CommunityPost::VISIBILITY_PUBLIC],
+            ['name' => 'Other Community'],
+        );
+
+        Livewire::actingAs($viewer)
+            ->test(Feed::class, ['tab' => 'groups'])
+            ->assertSee('Группы')
+            ->assertSee('Поиск в сообществах')
+            ->assertSee('needle community post body')
+            ->assertSee('other community post body')
+            ->assertDontSee('ordinary feed result should be hidden')
+            ->set('communitySearch', 'needle')
+            ->assertSee('needle community post body')
+            ->assertDontSee('other community post body')
+            ->assertDontSee('ordinary feed result should be hidden');
+    }
+
     public function test_ordinary_feed_posts_still_render_with_community_feed_enabled(): void
     {
         config(['features.unified_feed_items_enabled' => true, 'features.community_feed_items_enabled' => true]);
@@ -154,7 +214,7 @@ class CommunityFeedRenderingTest extends TestCase
     {
         $community = Community::factory()->create($communityAttributes);
         $topic = CommunityTopic::factory()->for($community)->create(['name' => 'General']);
-        $author = User::factory()->create(['pseudonym' => 'community-author']);
+        $author = User::factory()->create(['pseudonym' => 'community-author-'.uniqid()]);
 
         return CommunityPost::factory()
             ->for($community)

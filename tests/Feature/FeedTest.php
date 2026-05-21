@@ -61,8 +61,8 @@ class FeedTest extends TestCase
         $allResponse
             ->assertOk()
             ->assertSeeText('friend public note')
+            ->assertSeeText('friend private note')
             ->assertSeeText('stranger public note')
-            ->assertDontSeeText('friend private note')
             ->assertDontSeeText('stranger private note');
     }
 

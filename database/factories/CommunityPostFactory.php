@@ -19,6 +19,7 @@ class CommunityPostFactory extends Factory
             'topic_id' => null,
             'user_id' => User::factory(),
             'epoch_id' => null,
+            'body' => null,
             'ciphertext' => base64_encode(fake()->sha256()),
             'nonce' => base64_encode(fake()->sha1()),
             'community_seq' => fake()->numberBetween(1, 10000),
