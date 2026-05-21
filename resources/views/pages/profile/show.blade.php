@@ -142,12 +142,24 @@
                         @if(! $showPosts)
                             <div class="profile-empty">Посты скрыты настройками приватности.</div>
                         @else
-                            @forelse($recentPosts as $post)
-                                <x-feed-post-card
-                                    :post="$post"
-                                    :format-bytes="$formatBytes"
-                                    :answer-label="$answerLabel"
-                                />
+                            @forelse($recentPosts as $activity)
+                                @if($activity instanceof \App\Services\FeedCard)
+                                    @if($activity->isCommunityPost())
+                                        <x-community-feed-post-card :card="$activity" />
+                                    @elseif($activity->isFeedPost())
+                                        <x-feed-post-card
+                                            :post="$activity->feedPost"
+                                            :format-bytes="$formatBytes"
+                                            :answer-label="$answerLabel"
+                                        />
+                                    @endif
+                                @else
+                                    <x-feed-post-card
+                                        :post="$activity"
+                                        :format-bytes="$formatBytes"
+                                        :answer-label="$answerLabel"
+                                    />
+                                @endif
                             @empty
                                 <div class="profile-empty">Пока нет видимых постов.</div>
                             @endforelse

@@ -57,7 +57,7 @@ class CommunityFeedItemProjectionTest extends TestCase
         $this->assertSame($post->topic_id, $item->topic_id);
         $this->assertSame($post->id, $item->post_id);
         $this->assertSame(FeedItem::SCOPE_PUBLIC, $item->visibility_scope);
-        $this->assertFalse($item->show_in_profile_activity);
+        $this->assertTrue($item->show_in_profile_activity);
         $this->assertNull($item->deleted_at);
     }
 

@@ -67,7 +67,7 @@ final class FeedItemProjector
                 'post_id' => $post->id,
                 'visibility_scope' => $this->communityPostVisibilityScope($community, $post),
                 'show_in_feed' => true,
-                'show_in_profile_activity' => false,
+                'show_in_profile_activity' => true,
                 'sort_at' => $post->created_at,
                 'deleted_at' => null,
             ]

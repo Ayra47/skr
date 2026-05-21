@@ -62,7 +62,10 @@ class ProfileController extends Controller
         $friendIds = $viewer->friendIds();
 
         if (config('features.unified_feed_items_enabled')) {
-            $recentPosts = (new ProfileActivityReader(new FeedVisibilityService))->readForProfile($viewer, $user);
+            $activityReader = new ProfileActivityReader(new FeedVisibilityService);
+            $recentPosts = config('features.community_feed_items_enabled')
+                ? $activityReader->readCardsForProfile($viewer, $user)
+                : $activityReader->readForProfile($viewer, $user);
         } else {
             $recentPosts = $user->feedPosts()
                 ->with([
