@@ -2,10 +2,10 @@
     position: sticky;
     top: 0;
     z-index: 50;
-    backdrop-filter: blur(14px);
-    background: rgba(12, 14, 20, 0.78);
+    backdrop-filter: blur(18px);
+    background: rgba(5, 7, 11, 0.72);
     border-bottom: 1px solid var(--border);
-    padding: 0.75rem 1.25rem;
+    padding: 0.68rem 1.25rem;
 }
 
 .app-nav-inner {
@@ -32,10 +32,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #1a1206;
+    color: #061426;
     font-weight: 700;
-    background: linear-gradient(135deg, #e8a656, #c8853a);
+    background: linear-gradient(135deg, var(--accent), var(--accent-deep));
     font-family: var(--font-serif);
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.32), 0 10px 28px rgba(91, 190, 255, 0.16);
 }
 
 .app-links {
@@ -69,7 +70,7 @@
 .app-links a.active {
     color: var(--accent);
     background: var(--accent-soft);
-    border-color: rgba(232, 166, 86, 0.25);
+    border-color: rgba(91, 190, 255, 0.25);
 }
 
 .bell-btn {
@@ -77,9 +78,9 @@
     width: 34px;
     height: 34px;
     border-radius: 8px;
-    border: 1px solid #272b36;
-    background: transparent;
-    color: #8a8f9c;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.025);
+    color: var(--text-mute);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -97,9 +98,9 @@
     }
 
     &--active {
-        background: rgba(232, 166, 86, 0.1);
-        border-color: rgba(232, 166, 86, 0.3);
-        color: #e8a656;
+        background: var(--accent-soft);
+        border-color: rgba(91, 190, 255, 0.3);
+        color: var(--accent);
     }
 }
 
@@ -107,9 +108,9 @@
     width: 34px;
     height: 34px;
     border-radius: 8px;
-    border: 1px solid #272b36;
-    background: transparent;
-    color: #8a8f9c;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.025);
+    color: var(--text-mute);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -126,9 +127,9 @@
     }
 
     &--active {
-        background: rgba(232, 166, 86, 0.1);
-        border-color: rgba(232, 166, 86, 0.3);
-        color: #e8a656;
+        background: var(--accent-soft);
+        border-color: rgba(91, 190, 255, 0.3);
+        color: var(--accent);
     }
 }
 
@@ -140,15 +141,15 @@
     height: 14px;
     padding: 0 4px;
     border-radius: 7px;
-    background: #e8a656;
-    color: #1a1206;
+    background: var(--accent);
+    color: #061426;
     font-size: 9px;
     font-weight: 700;
     font-family: inherit;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid #0c0e14;
+    border: 2px solid var(--bg);
     pointer-events: none;
 }
 
@@ -167,7 +168,7 @@
     overflow: hidden;
     flex-shrink: 0;
     color: #e8e8ec;
-    background: linear-gradient(135deg, oklch(0.32 0.04 60), oklch(0.22 0.03 30));
+    background: linear-gradient(135deg, rgba(91, 190, 255, 0.28), rgba(91, 190, 255, 0.08));
     font: inherit;
     font-size: 13px;
     font-weight: 500;

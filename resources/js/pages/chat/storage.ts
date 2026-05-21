@@ -4,23 +4,35 @@ import { fetchJson, post } from "./api";
 import { showNotification } from "./ui";
 import type { Message } from "./types";
 
+let currentStoragePreference = "server";
+
+export function getStoragePreference(): string {
+    return currentStoragePreference;
+}
+
 export async function loadStoragePreference(): Promise<void> {
     const data = await fetchJson<{ success: boolean; storage_preference: string }>(
         "/chat/settings",
     );
     if (data.success) {
-        (document.getElementById("storageSelect") as HTMLSelectElement).value =
-            data.storage_preference;
+        currentStoragePreference = data.storage_preference;
+        const storageSelect = document.getElementById("storageSelect") as HTMLSelectElement | null;
+        if (storageSelect) {
+            storageSelect.value = data.storage_preference;
+        }
         toggleDeviceExport(data.storage_preference);
     }
 }
 
 export function toggleDeviceExport(pref: string): void {
-    (document.getElementById("deviceExportRow") as HTMLElement).style.display =
-        pref === "device" ? "flex" : "none";
+    const deviceExportRow = document.getElementById("deviceExportRow") as HTMLElement | null;
+    if (deviceExportRow) {
+        deviceExportRow.style.display = pref === "device" ? "flex" : "none";
+    }
 }
 
 export async function updateStoragePreference(value: string): Promise<void> {
+    currentStoragePreference = value;
     toggleDeviceExport(value);
     await post("/chat/settings", { storage_preference: value });
     showNotification("настройки сохранены");

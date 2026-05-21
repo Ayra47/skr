@@ -58,8 +58,10 @@ export async function loadOrGenerateKeyPair(): Promise<void> {
         }
     }
     const fp = await Crypto.fingerprint(state.myPublicKeyJwk!);
-    document.getElementById("keyFingerprint")!.textContent =
-        "отпечаток: " + fp.slice(0, 23) + "…";
+    const keyFingerprint = document.getElementById("keyFingerprint");
+    if (keyFingerprint) {
+        keyFingerprint.textContent = "отпечаток: " + fp.slice(0, 23) + "…";
+    }
 }
 
 export async function generateFreshKeyPair(): Promise<void> {
@@ -162,6 +164,10 @@ export function offerPinBackupSetup(): void {
     if (document.getElementById("backupOfferBanner")) {
         return;
     }
+    const chatPane = document.getElementById("chatPane");
+    if (!chatPane) {
+        return;
+    }
     const banner = document.createElement("div");
     banner.id = "backupOfferBanner";
     banner.className = "key-warning";
@@ -175,7 +181,7 @@ export function offerPinBackupSetup(): void {
         btn,
         " или история может стать недоступной при смене браузера.",
     );
-    document.getElementById("chatPane")!.insertAdjacentElement("afterbegin", banner);
+    chatPane.insertAdjacentElement("afterbegin", banner);
 }
 
 export async function setupKeyBackup(): Promise<void> {

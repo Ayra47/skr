@@ -20,7 +20,7 @@ class FeedAttachmentThumbnail
         $path = 'feed-attachment-thumbnails/'.Str::uuid().'.webp';
         $encoded = (new ImageManager(new GdDriver))
             ->decode($attachment->getRealPath())
-            ->cover(100, 100)
+            ->cover(400, 400)
             ->encode(new WebpEncoder(80));
 
         Storage::disk('local')->put($path, (string) $encoded);

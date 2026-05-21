@@ -77,7 +77,7 @@ export function initWebSocket(): void {
                     // ignore decryption errors for background messages
                 }
             }
-            updateConvPreview(e.conversation_id, e.created_at);
+            void updateConvPreview(e.conversation_id, e.created_at, e.encrypted_payload, e.sender_id);
             post("/chat/messages/delivered", {
                 message_ids: [e.id],
                 conversation_id: e.conversation_id,

@@ -328,6 +328,27 @@
                                 <button class="s-btn s-btn-ghost" id="backupCodeCloseBtn">Скрыть</button>
                             </div>
                         </div>
+
+                        <div class="s-divider"></div>
+
+                        <div class="chat-security-panel settings-chat-security-panel">
+                            <div class="settings-row">
+                                <span>хранение:</span>
+                                <select id="storageSelect">
+                                    <option value="server">сервер (3 мес.)</option>
+                                    <option value="browser">браузер</option>
+                                    <option value="device">устройство</option>
+                                </select>
+                            </div>
+                            <div id="deviceExportRow" style="display:none;" class="device-export-row">
+                                <button class="export-btn" id="exportHistoryBtn">↓ экспорт</button>
+                                <input type="file" id="importFileInput" accept=".enc" style="display:none">
+                                <button class="export-btn" id="importTriggerBtn">↑ импорт</button>
+                            </div>
+                            <div class="key-fingerprint" id="keyFingerprint"></div>
+                            <div id="chatSecurityMsg" class="form-msg" style="display:none;"></div>
+                            <button class="export-btn" id="setupBackupBtn" style="margin-top:6px;width:100%;">бэкап ключа (PIN)</button>
+                        </div>
                     </section>
 
                     {{-- ── NOTIFICATIONS ── --}}
@@ -578,5 +599,32 @@
             </div>{{-- /settings-layout --}}
         </div>{{-- /settings-inner --}}
     </div>{{-- /settings-root --}}
+
+    <!-- PIN dialog -->
+    <div id="pinDialog" class="modal-overlay" style="display:none">
+        <div class="modal-box">
+            <div class="modal-title pin-dialog-title"></div>
+            <div class="modal-subtitle pin-dialog-subtitle"></div>
+            <input type="text" class="pin-input modal-input" maxlength="6" minlength="6"
+                placeholder="● ● ● ● ● ●" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+            <div class="pin-dialog-error modal-error"></div>
+            <div class="modal-actions">
+                <button class="modal-btn-secondary pin-dialog-cancel">отмена</button>
+                <button class="modal-btn-primary pin-dialog-confirm">подтвердить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recovery phrase display modal -->
+    <div id="recoveryPhraseModal" class="modal-overlay" style="display:none">
+        <div class="modal-box">
+            <div class="modal-title">фраза восстановления</div>
+            <div class="modal-subtitle">сохраните в надёжном месте. если забудете PIN — используйте эту фразу для восстановления ключа.</div>
+            <div class="recovery-phrase-text modal-phrase"></div>
+            <div class="modal-actions">
+                <button class="modal-btn-primary" id="recoveryPhraseDoneBtn">понятно, сохранил</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

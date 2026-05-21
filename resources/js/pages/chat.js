@@ -7,7 +7,7 @@ import { bindEvents } from "./chat/events";
 import { setAvatarEl } from "./chat/ui";
 import { loadOrGenerateKeyPair } from "./chat/keys";
 import { loadStoragePreference } from "./chat/storage";
-import { openConversation, startChatWithFriend } from "./chat/messages";
+import { hydrateConversationPreviews, openConversation, startChatWithFriend } from "./chat/messages";
 import { initWebSocket } from "./chat/websocket";
 
 (async () => {
@@ -26,6 +26,7 @@ import { initWebSocket } from "./chat/websocket";
     });
 
     await loadOrGenerateKeyPair();
+    await hydrateConversationPreviews();
     await loadStoragePreference();
 
     // Heartbeat: update last_seen_at every 30 seconds

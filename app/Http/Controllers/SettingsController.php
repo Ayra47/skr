@@ -239,7 +239,7 @@ class SettingsController extends Controller
         $filename = 'avatars/'.Str::uuid().'.webp';
         $encoded = (new ImageManager(new GdDriver))
             ->decode($request->file('avatar')->getRealPath())
-            ->cover(32, 32)
+            ->cover(128, 128)
             ->encode(new WebpEncoder(80));
         Storage::disk('public')->put($filename, (string) $encoded);
 

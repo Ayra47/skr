@@ -13,10 +13,19 @@ const IDB = {
     db: null,
     async open() {
         return new Promise((resolve, reject) => {
-            const req = indexedDB.open('skr_chat', 2);
+            const req = indexedDB.open('skr_chat', 3);
             req.onsuccess = e => { this.db = e.target.result; resolve(); };
             req.onerror = () => reject(req.error);
-            req.onupgradeneeded = () => {};
+            req.onupgradeneeded = e => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains('keys')) {
+                    db.createObjectStore('keys');
+                }
+                if (!db.objectStoreNames.contains('messages')) {
+                    const messages = db.createObjectStore('messages', { keyPath: 'id' });
+                    messages.createIndex('by_conv', 'conversation_id');
+                }
+            };
         });
     },
     async get(store, key) {
@@ -32,6 +41,14 @@ const IDB = {
             const tx = this.db.transaction(store, 'readwrite');
             const req = tx.objectStore(store).put(value, key);
             req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+        });
+    },
+    async getAll(store) {
+        return new Promise((resolve, reject) => {
+            const tx = this.db.transaction(store, 'readonly');
+            const req = tx.objectStore(store).getAll();
+            req.onsuccess = () => resolve(req.result ?? []);
             req.onerror = () => reject(req.error);
         });
     },
@@ -93,6 +110,311 @@ function genPseudo() {
     const a = PS_A[Math.floor(Math.random() * PS_A.length)];
     const b = PS_B[Math.floor(Math.random() * PS_B.length)];
     return `${a}-${b}-${100 + Math.floor(Math.random() * 900)}`;
+}
+
+function bytesToBase64(bytes) {
+    return btoa(String.fromCharCode(...bytes));
+}
+
+function base64ToBytes(value) {
+    return Uint8Array.from(atob(value), c => c.charCodeAt(0));
+}
+
+function normalizeJwkBase64(value) {
+    return value.replace(/-/g, '+').replace(/_/g, '/');
+}
+
+function showChatSecurityMsg(type, text) {
+    const msg = document.getElementById('chatSecurityMsg');
+    if (!msg) { return; }
+    showMsg(msg, type, text);
+}
+
+async function getStoredChatKeypair() {
+    await IDB.open();
+
+    return IDB.get('keys', 'keypair_' + AUTH_USER_ID).catch(() => null);
+}
+
+async function generateAndUploadChatKeypair() {
+    const keyPair = await crypto.subtle.generateKey(
+        { name: 'ECDH', namedCurve: 'P-256' },
+        true,
+        ['deriveKey', 'deriveBits'],
+    );
+    const privateJwk = await crypto.subtle.exportKey('jwk', keyPair.privateKey);
+    const publicJwk = await crypto.subtle.exportKey('jwk', keyPair.publicKey);
+    await IDB.put('keys', { privateJwk, publicJwk }, 'keypair_' + AUTH_USER_ID);
+    await post('/chat/keys', {
+        public_key_jwk: JSON.stringify(publicJwk),
+        key_change_source: 'settings',
+    });
+
+    return { privateJwk, publicJwk };
+}
+
+async function ensureChatKeypair() {
+    const stored = await getStoredChatKeypair();
+    if (stored?.privateJwk && stored?.publicJwk) {
+        return stored;
+    }
+
+    const generated = await generateAndUploadChatKeypair();
+    await renderChatKeyFingerprint(generated.publicJwk);
+    showChatSecurityMsg('success', 'Ключ шифрования создан на этом устройстве');
+
+    return generated;
+}
+
+async function chatKeyFingerprint(publicJwk) {
+    const encoded = new TextEncoder().encode(JSON.stringify(publicJwk));
+    const hash = await crypto.subtle.digest('SHA-256', encoded);
+
+    return Array.from(new Uint8Array(hash))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
+        .toUpperCase()
+        .match(/.{4}/g)
+        .join(' ');
+}
+
+async function renderChatKeyFingerprint(publicJwk = null) {
+    const keyFingerprint = document.getElementById('keyFingerprint');
+    if (!keyFingerprint) { return; }
+
+    const jwk = publicJwk ?? (await getStoredChatKeypair())?.publicJwk;
+    if (!jwk) {
+        keyFingerprint.textContent = 'отпечаток: ключ ещё не создан на этом устройстве';
+        return;
+    }
+
+    const fp = await chatKeyFingerprint(jwk);
+    keyFingerprint.textContent = 'отпечаток: ' + fp.slice(0, 23) + '…';
+}
+
+async function deriveExportKey(privateJwk, usage) {
+    const dBytes = base64ToBytes(normalizeJwkBase64(privateJwk.d));
+    const hkdfKey = await crypto.subtle.importKey('raw', dBytes, 'HKDF', false, ['deriveKey']);
+
+    return crypto.subtle.deriveKey(
+        {
+            name: 'HKDF',
+            hash: 'SHA-256',
+            salt: new Uint8Array(32),
+            info: new TextEncoder().encode('skr-export-v1'),
+        },
+        hkdfKey,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        [usage],
+    );
+}
+
+async function exportChatHistoryToFile() {
+    const keypair = await ensureChatKeypair();
+    const messages = await IDB.getAll('messages').catch(() => []);
+    const json = JSON.stringify(messages);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await deriveExportKey(keypair.privateJwk, 'encrypt');
+    const encrypted = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv },
+        key,
+        new TextEncoder().encode(json),
+    );
+    const blob = new Blob([iv, new Uint8Array(encrypted)], {
+        type: 'application/octet-stream',
+    });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'chat-history-' + Date.now() + '.enc';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showChatSecurityMsg('success', 'История экспортирована');
+}
+
+async function importChatHistoryFromFile(event) {
+    const file = event.target.files?.[0];
+    if (!file) { return; }
+
+    const keypair = await ensureChatKeypair();
+    const buffer = await file.arrayBuffer();
+    const iv = new Uint8Array(buffer, 0, 12);
+    const ciphertext = new Uint8Array(buffer, 12);
+
+    try {
+        const key = await deriveExportKey(keypair.privateJwk, 'decrypt');
+        const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+        const messages = JSON.parse(new TextDecoder().decode(decrypted));
+        for (const message of messages) {
+            await IDB.put('messages', message);
+        }
+        showChatSecurityMsg('success', 'Импортировано сообщений: ' + messages.length);
+    } catch {
+        showChatSecurityMsg('error', 'Не удалось импортировать файл');
+    } finally {
+        event.target.value = '';
+    }
+}
+
+async function deriveKeyFromPin(pin, saltB64) {
+    const salt = base64ToBytes(saltB64);
+    const keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        new TextEncoder().encode(pin),
+        'PBKDF2',
+        false,
+        ['deriveKey'],
+    );
+
+    return crypto.subtle.deriveKey(
+        { name: 'PBKDF2', hash: 'SHA-256', salt, iterations: 100000 },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt', 'decrypt'],
+    );
+}
+
+async function encryptPrivateKey(privateJwk, pin) {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const saltB64 = bytesToBase64(salt);
+    const key = await deriveKeyFromPin(pin, saltB64);
+    const ciphertext = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv },
+        key,
+        new TextEncoder().encode(JSON.stringify(privateJwk)),
+    );
+
+    return JSON.stringify({
+        salt: saltB64,
+        iv: bytesToBase64(iv),
+        ciphertext: bytesToBase64(new Uint8Array(ciphertext)),
+    });
+}
+
+function showPinDialog({ title, subtitle, confirmLabel, onConfirm, onCancel }) {
+    const dialog = document.getElementById('pinDialog');
+    dialog.querySelector('.pin-dialog-title').textContent = title;
+    dialog.querySelector('.pin-dialog-subtitle').textContent = subtitle;
+    const confirmBtn = dialog.querySelector('.pin-dialog-confirm');
+    confirmBtn.textContent = confirmLabel;
+    confirmBtn.disabled = false;
+    dialog.querySelector('.pin-dialog-error').textContent = '';
+    const input = dialog.querySelector('.pin-input');
+    input.value = '';
+    dialog.style.display = 'flex';
+    setTimeout(() => input.focus(), 50);
+    dialog._onConfirm = onConfirm;
+    dialog._onCancel = onCancel;
+}
+
+function hidePinDialog() {
+    document.getElementById('pinDialog').style.display = 'none';
+}
+
+function showRecoveryPhrase(phrase) {
+    const dialog = document.getElementById('recoveryPhraseModal');
+    dialog.querySelector('.recovery-phrase-text').textContent = phrase;
+    dialog.style.display = 'flex';
+}
+
+async function setupChatKeyBackup() {
+    const keypair = await ensureChatKeypair();
+    const recoveryPhrase = btoa(JSON.stringify(keypair.privateJwk));
+
+    showPinDialog({
+        title: 'Настройка бэкапа',
+        subtitle: 'Введите 6-значный PIN для защиты ключа на сервере',
+        confirmLabel: 'Сохранить бэкап',
+        onConfirm: async (pin) => {
+            try {
+                const backupJson = await encryptPrivateKey(keypair.privateJwk, pin);
+                const result = await post('/chat/keys/backup', { key_backup: backupJson });
+                if (!result.success) {
+                    return false;
+                }
+                hidePinDialog();
+                showRecoveryPhrase(recoveryPhrase);
+                showChatSecurityMsg('success', 'Бэкап ключа сохранён');
+                return true;
+            } catch {
+                return false;
+            }
+        },
+        onCancel: () => hidePinDialog(),
+    });
+}
+
+function initChatSecurityDialogs() {
+    const pinDialog = document.getElementById('pinDialog');
+    if (!pinDialog) { return; }
+
+    pinDialog.querySelector('.pin-dialog-confirm').addEventListener('click', async () => {
+        const pin = pinDialog.querySelector('.pin-input').value.trim();
+        if (pin.length !== 6) {
+            pinDialog.querySelector('.pin-dialog-error').textContent = 'введите 6-значный PIN';
+            return;
+        }
+
+        const btn = pinDialog.querySelector('.pin-dialog-confirm');
+        btn.disabled = true;
+        pinDialog.querySelector('.pin-dialog-error').textContent = '';
+        const ok = await pinDialog._onConfirm?.(pin);
+        if (ok === false) {
+            pinDialog.querySelector('.pin-dialog-error').textContent = 'неверный PIN';
+            btn.disabled = false;
+        }
+    });
+
+    pinDialog.querySelector('.pin-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+            pinDialog.querySelector('.pin-dialog-confirm').click();
+        }
+    });
+    pinDialog.querySelector('.pin-dialog-cancel').addEventListener('click', () => pinDialog._onCancel?.());
+
+    document.getElementById('recoveryPhraseDoneBtn')?.addEventListener('click', () => {
+        document.getElementById('recoveryPhraseModal').style.display = 'none';
+    });
+}
+
+async function initChatSecurityPanel() {
+    const panel = document.querySelector('.chat-security-panel');
+    if (!panel) { return; }
+
+    const storageSelect = document.getElementById('storageSelect');
+    const deviceExportRow = document.getElementById('deviceExportRow');
+
+    function toggleDeviceExport(value) {
+        deviceExportRow.style.display = value === 'device' ? 'flex' : 'none';
+    }
+
+    const settings = await fetch('/chat/settings', {
+        headers: { 'Accept': 'application/json' },
+    }).then(r => r.json()).catch(() => ({ success: false }));
+
+    if (settings.success) {
+        storageSelect.value = settings.storage_preference;
+        toggleDeviceExport(settings.storage_preference);
+    }
+
+    storageSelect.addEventListener('change', async () => {
+        toggleDeviceExport(storageSelect.value);
+        const result = await post('/chat/settings', { storage_preference: storageSelect.value });
+        if (result.success) {
+            showChatSecurityMsg('success', 'Настройки хранения сохранены');
+        }
+    });
+
+    document.getElementById('exportHistoryBtn').addEventListener('click', exportChatHistoryToFile);
+    document.getElementById('importFileInput').addEventListener('change', importChatHistoryFromFile);
+    document.getElementById('importTriggerBtn').addEventListener('click', () => {
+        document.getElementById('importFileInput').click();
+    });
+    document.getElementById('setupBackupBtn').addEventListener('click', setupChatKeyBackup);
+
+    await renderChatKeyFingerprint();
 }
 
 // ─── Sidebar nav scroll spy ───────────────────────────────────────────────────
@@ -643,6 +965,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initProfile();
     initPassword();
     initBackupCode();
+    initChatSecurityDialogs();
+    initChatSecurityPanel().catch(() => {
+        showChatSecurityMsg('error', 'Не удалось загрузить настройки шифрования');
+    });
     initTwoFactor();
     initNotifications();
     initProfileVisibility();

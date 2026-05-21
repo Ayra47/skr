@@ -13,6 +13,7 @@ import {
     updateChatHeaderStatus,
 } from "./ui";
 import { getPartnerPublicKey, updateKeyChangeWarn } from "./keys";
+import { getStoragePreference } from "./storage";
 import { renderFileBubble, renderPhotoBubble, type FilePayload } from "./file-display";
 import { renderLocationMapBubble, freezeSession } from "./location-map";
 import { clearLiveSession, stopSessionByUuid } from "./location";
@@ -120,6 +121,7 @@ export async function openConversation(
     state.currentParticipants = [];
     state.oldestMessageId = null;
     state.newestMessageId = null;
+    window.chatSidePanelOnConversationChange?.();
 
     document
         .querySelectorAll(".conversation-item")
@@ -153,7 +155,6 @@ export async function openConversation(
     document.getElementById("chatPartnerName")!.textContent = partnerLogin;
     updateChatHeaderStatus(conversationType === "group" ? false : state.onlineUsers.has(partnerId));
     (document.getElementById("keyChangeWarn") as HTMLElement).style.display = "none";
-    updateGroupActions();
 
     document.getElementById("messagesArea")!.innerHTML =
         '<div class="no-chat-selected" style="flex:1"><p class="empty-title">загрузка…</p></div>';
@@ -204,15 +205,6 @@ export async function refreshCurrentGroupPanel(): Promise<void> {
     }
 }
 
-function updateGroupActions(): void {
-    const btn = document.getElementById("groupManageBtn") as HTMLButtonElement | null;
-    if (!btn) {
-        return;
-    }
-
-    btn.style.display = state.currentConversationType === "group" ? "inline-flex" : "none";
-}
-
 function renderGroupPanel(data: ParticipantsResponse): void {
     const panel = document.getElementById("groupPanel");
     if (!panel) {
@@ -224,61 +216,135 @@ function renderGroupPanel(data: ParticipantsResponse): void {
     const friendsOptions = data.friends
         .map((friend) => `<option value="${friend.id}">${escapeHtml(friend.login)}</option>`)
         .join("");
+    const onlineCount = data.participants.filter((member) => member.id === AUTH_USER_ID || state.onlineUsers.has(member.id)).length;
     const members = data.participants
         .map((member) => {
             const canRemove = canManage && member.role !== "owner" && member.id !== AUTH_USER_ID;
             const canPromote = isOwner && member.role === "member";
             const canDemote = isOwner && member.role === "admin";
+            const isOnline = member.id === AUTH_USER_ID || state.onlineUsers.has(member.id);
             const avatar = member.avatar
                 ? `<img src="${escapeHtml(member.avatar)}" alt="" class="avatar-img">`
                 : escapeHtml(member.login.charAt(0).toUpperCase());
+            const groupRoleBadge = member.role === "owner"
+                ? '<span class="group-role-badge">владелец</span>'
+                : member.role === "admin"
+                    ? '<span class="group-role-badge">админ</span>'
+                    : "";
+
             return `
                 <div class="group-member-row" data-user-id="${member.id}">
-                    <div class="group-member-avatar">${avatar}</div>
-                    <span>${escapeHtml(member.login)}</span>
-                    <small>${member.role}</small>
-                    ${canPromote ? '<button type="button" data-action="promote">admin</button>' : ""}
-                    ${canDemote ? '<button type="button" data-action="demote">member</button>' : ""}
-                    ${canRemove ? '<button type="button" data-action="remove">удалить</button>' : ""}
+                    <div class="group-member-avatar">${avatar}${isOnline ? '<span class="group-member-online"></span>' : ""}</div>
+                    <div class="group-member-info">
+                        <div class="group-member-meta">
+                            <span>${escapeHtml(member.login)}</span>
+                            <small>${isOnline ? "в сети" : "не в сети"}</small>
+                        </div>
+                        ${groupRoleBadge}
+                    </div>
+                    <div class="group-member-actions">
+                        ${canPromote ? '<button type="button" data-action="promote">admin</button>' : ""}
+                        ${canDemote ? '<button type="button" data-action="demote">member</button>' : ""}
+                        ${canRemove ? '<button type="button" data-action="remove">удалить</button>' : ""}
+                    </div>
                 </div>`;
         })
         .join("");
-    const invites = data.invites
+    const activeInvites = data.invites.filter((invite) => !invite.used_at);
+    const invites = activeInvites
         .map((invite) => `
-            <div class="group-invite-row" data-invite-id="${invite.id}">
-                <input readonly value="${escapeHtml(invite.url)}">
-                <small>${invite.type === "permanent" ? "постоянная" : "24ч одноразовая"}</small>
-                <button type="button" data-action="copy-invite">копировать</button>
-                ${canManage ? '<button type="button" data-action="revoke-invite">отозвать</button>' : ""}
+            <div class="group-invite-card" data-invite-id="${invite.id}">
+                <div class="group-invite-card-copy-source">
+                    <input readonly value="${escapeHtml(invite.url)}">
+                </div>
+                <div class="group-invite-card-content">
+                    <strong>${invite.type === "permanent" ? "Постоянная ссылка" : "Одноразовая · 24ч"}</strong>
+                    <small>${invite.type === "permanent" ? "для доверенных участников" : "истекает через 24 часа"}</small>
+                    <span>${escapeHtml(invite.url)}</span>
+                </div>
+                <button class="group-invite-copy-btn" type="button" data-action="copy-invite" aria-label="копировать ссылку">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                </button>
+                ${canManage ? '<button class="group-invite-revoke-btn" type="button" data-action="revoke-invite">отозвать</button>' : ""}
             </div>`)
         .join("");
+    const groupAvatar = data.conversation.avatar_url
+        ? `<img src="${escapeHtml(data.conversation.avatar_url)}" alt="" class="avatar-img">`
+        : `${escapeHtml(data.conversation.title.charAt(0).toUpperCase())}
+            <span class="group-avatar-camera" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                </svg>
+            </span>`;
+            
     panel.innerHTML = `
         <div class="group-panel-head">
-            <strong>${escapeHtml(data.conversation.title)}</strong>
+            <span>GROUP WORKSPACE</span>
             <button type="button" id="groupPanelClose">×</button>
         </div>
-        ${canManage ? `
-            <div class="group-panel-section group-title-edit">
-                <input id="groupTitleInput" value="${escapeHtml(data.conversation.title)}" maxlength="60">
-                <button type="button" id="groupRenameBtn">переименовать</button>
+        <div class="group-info-hero">
+            <button type="button" class="group-info-avatar" id="groupAvatarBtn">${groupAvatar}</button>
+            <div class="group-title-inline" data-editing="false">
+                <strong id="groupTitleDisplay">${escapeHtml(data.conversation.title)}</strong>
+                ${canManage ? `
+                    <input id="groupTitleInput" value="${escapeHtml(data.conversation.title)}" maxlength="60" hidden>
+                    <button type="button" class="group-title-edit-btn" id="groupTitleEditBtn" aria-label="редактировать название">
+                        <svg class="group-title-edit-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 20h9"/>
+                            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+                        </svg>
+                        <svg class="group-title-save-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" hidden>
+                            <path d="M20 6 9 17l-5-5"/>
+                        </svg>
+                    </button>` : ""}
             </div>
-            <div class="group-panel-section">
-                <input id="groupAvatarInput" type="file" accept="image/*" hidden>
-                <button type="button" id="groupAvatarBtn">фото группы</button>
-            </div>` : ""}
-        <div class="group-panel-section">${members}</div>
+            <small>${data.participants.length} участника · ${onlineCount} в сети</small>
+        </div>
         ${canManage ? `
-            <div class="group-panel-section">
-                <select id="groupFriendSelect">${friendsOptions}</select>
-                <button type="button" id="groupAddFriendBtn" ${friendsOptions ? "" : "disabled"}>пригласить</button>
+            <input id="groupAvatarInput" type="file" accept="image/*" hidden>` : ""}
+        <div class="group-panel-section group-members-section">
+            <div class="group-panel-section-head">
+                <div>
+                    <strong>Участники</strong>
+                    <small>${data.participants.length} человека · ${onlineCount} в сети</small>
+                </div>
+                ${canManage ? '<button type="button" id="groupInviteToggle">пригласить</button>' : ""}
             </div>
-            <div class="group-panel-section group-invites">${invites}</div>
-            <div class="group-panel-section">
-                <button type="button" data-invite-type="permanent">постоянная ссылка</button>
-                <button type="button" data-invite-type="single_use">одноразовая 24ч</button>
+            ${canManage ? `
+                <div class="group-invite-friend-row" id="groupInviteFriendRow">
+                    <select id="groupFriendSelect">${friendsOptions}</select>
+                    <button type="button" id="groupAddFriendBtn" ${friendsOptions ? "" : "disabled"}>пригласить</button>
+                </div>` : ""}
+            <div class="group-member-list">${members}</div>
+        </div>
+        ${canManage ? `
+            <div class="group-panel-section group-invites">
+                <div class="group-panel-section-head">
+                    <div>
+                        <strong>Ссылки</strong>
+                        <small>Создавайте постоянные или временные приглашения.</small>
+                    </div>
+                    <span class="group-invites-count">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10 13a5 5 0 0 0 7.1 0l2.8-2.8a5 5 0 0 0-7.1-7.1L11.2 4.7"/>
+                            <path d="M14 11a5 5 0 0 0-7.1 0L4.1 13.8a5 5 0 0 0 7.1 7.1l1.6-1.6"/>
+                        </svg>
+                        ${activeInvites.length} активны
+                    </span>
+                </div>
+                <div class="group-invite-list">${invites || '<div class="group-panel-empty">ссылок пока нет</div>'}</div>
+                <div class="group-link-actions">
+                    <button type="button" data-invite-type="permanent">постоянная ссылка</button>
+                    <button type="button" data-invite-type="single_use">одноразовая 24ч</button>
+                </div>
             </div>` : ""}
-        <button type="button" class="group-leave-btn" id="groupLeaveBtn">выйти</button>
+        <button type="button" class="group-leave-btn" id="groupLeaveBtn">выйти из группы</button>
     `;
+    window.chatSidePanelOnConversationChange?.();
 }
 
 export async function loadMessages(before: number | null = null): Promise<void> {
@@ -290,7 +356,7 @@ export async function loadMessages(before: number | null = null): Promise<void> 
         return;
     }
 
-    const storePref = (document.getElementById("storageSelect") as HTMLSelectElement).value;
+    const storePref = getStoragePreference();
 
     if (!before) {
         document.getElementById("messagesArea")!.innerHTML = "";
@@ -536,6 +602,67 @@ export async function decryptPayload(encryptedPayload: string): Promise<string> 
     return decryptCurrentPayload(encryptedPayload);
 }
 
+function previewSnippetFromPlaintext(text: string): string {
+    try {
+        const candidate = JSON.parse(text) as TextMessageContent | FileMessageContent | PhotoMessageContent | LocationMessageContent | LocationLiveMessageContent;
+        if (candidate?.type === "text") {
+            return (candidate as TextMessageContent).text.slice(0, 80);
+        }
+        if (candidate?.type === "file") {
+            return "📎 " + ((candidate as FileMessageContent).file?.name ?? "Файл");
+        }
+        if (candidate?.type === "photo") {
+            const caption = (candidate as PhotoMessageContent).text?.trim();
+            return caption ? `Фото · ${caption.slice(0, 70)}` : "Фото";
+        }
+        if (candidate?.type === "location" || candidate?.type === "location_live") {
+            return "Геолокация";
+        }
+    } catch {
+        // plain text message
+    }
+
+    return text.slice(0, 80);
+}
+
+async function decryptPreviewPayload(encryptedPayload: string, peerId: number): Promise<string> {
+    const payload = JSON.parse(encryptedPayload) as { iv: string; ciphertext: string };
+    const partnerKey = await getPartnerPublicKey(peerId);
+    const aesKey = await Crypto.deriveAesKey(state.myPrivateKey!, partnerKey);
+
+    return Crypto.decrypt(aesKey, payload.iv, payload.ciphertext);
+}
+
+export async function hydrateConversationPreviews(): Promise<void> {
+    const items = document.querySelectorAll<HTMLElement>(".conversation-item[data-latest-payload]");
+
+    await Promise.all([...items].map(async (item) => {
+        const encryptedPayload = item.dataset.latestPayload;
+        const preview = item.querySelector<HTMLElement>(".conv-preview");
+        const senderId = parseInt(item.dataset.latestSenderId ?? "0");
+        if (!encryptedPayload || !preview || !senderId) {
+            return;
+        }
+
+        const conversationType = item.dataset.convType ?? "direct";
+        const partnerId = parseInt(item.dataset.partnerId ?? "0");
+        const peerId = conversationType === "group"
+            ? (senderId === AUTH_USER_ID ? AUTH_USER_ID : senderId)
+            : (senderId === AUTH_USER_ID ? partnerId : senderId);
+
+        if (!peerId) {
+            return;
+        }
+
+        try {
+            const text = await decryptPreviewPayload(encryptedPayload, peerId);
+            preview.textContent = previewSnippetFromPlaintext(text) || "сообщение";
+        } catch {
+            preview.textContent = "[не удалось расшифровать]";
+        }
+    }));
+}
+
 export async function searchMessages(
     convId: number,
     query: string,
@@ -597,7 +724,7 @@ export async function loadMessagesAround(targetId: number): Promise<void> {
     }
 
     state.oldestMessageId = null;
-    const storePref = (document.getElementById("storageSelect") as HTMLSelectElement).value;
+    const storePref = getStoragePreference();
     for (const msg of data.data) {
         if (!state.oldestMessageId || msg.id < state.oldestMessageId) {
             state.oldestMessageId = msg.id;
@@ -661,7 +788,7 @@ export async function loadMessagesAfter(afterId: number): Promise<void> {
     const data = await fetchJson<MessagesResponse>(url);
     if (!data.success) { return; }
 
-    const storePref = (document.getElementById("storageSelect") as HTMLSelectElement).value;
+    const storePref = getStoragePreference();
     for (const msg of data.data) {
         if (!state.newestMessageId || msg.id > state.newestMessageId) {
             state.newestMessageId = msg.id;
@@ -930,7 +1057,7 @@ export async function sendLocationMessage(lat: number, lng: number, accuracy: nu
         const msg: Message = { id: data.id, sender_id: AUTH_USER_ID, encrypted_payload: localPayload, created_at: data.created_at, delivered_at: null, read_at: null };
         await appendMessage(msg, "append");
         document.getElementById("messagesArea")!.scrollTop = document.getElementById("messagesArea")!.scrollHeight;
-        const storePref = (document.getElementById("storageSelect") as HTMLSelectElement).value;
+        const storePref = getStoragePreference();
         if (storePref === "browser" || storePref === "device") {
             await IDB.putMessage({ ...msg, conversation_id: state.currentConvId! });
         }
@@ -951,7 +1078,7 @@ export async function sendLiveLocationMessage(
         const msg: Message = { id: data.id, sender_id: AUTH_USER_ID, encrypted_payload: localPayload, created_at: data.created_at, delivered_at: null, read_at: null };
         await appendMessage(msg, "append");
         document.getElementById("messagesArea")!.scrollTop = document.getElementById("messagesArea")!.scrollHeight;
-        const storePref = (document.getElementById("storageSelect") as HTMLSelectElement).value;
+        const storePref = getStoragePreference();
         if (storePref === "browser" || storePref === "device") {
             await IDB.putMessage({ ...msg, conversation_id: state.currentConvId! });
         }
@@ -1017,7 +1144,7 @@ export async function sendPhotoMessage(
         const area = document.getElementById("messagesArea")!;
         area.scrollTop = area.scrollHeight;
 
-        const storePref = (document.getElementById("storageSelect") as HTMLSelectElement).value;
+        const storePref = getStoragePreference();
         if (storePref === "browser" || storePref === "device") {
             await IDB.putMessage({ ...msg, conversation_id: state.currentConvId! });
         }
@@ -1073,7 +1200,7 @@ export async function sendFileMessage(
         const area = document.getElementById("messagesArea")!;
         area.scrollTop = area.scrollHeight;
 
-        const storePref = (document.getElementById("storageSelect") as HTMLSelectElement).value;
+        const storePref = getStoragePreference();
         if (storePref === "browser" || storePref === "device") {
             await IDB.putMessage({ ...msg, conversation_id: state.currentConvId! });
         }
@@ -1150,10 +1277,11 @@ export async function sendMessage(): Promise<void> {
                 reply_to_id: currentReply?.msgId ?? null,
             };
             await appendMessage(msg, "append");
+            void updateConvPreview(state.currentConvId, data.created_at, localPayload, AUTH_USER_ID);
             const area = document.getElementById("messagesArea")!;
             area.scrollTop = area.scrollHeight;
 
-            const storePref = (document.getElementById("storageSelect") as HTMLSelectElement).value;
+            const storePref = getStoragePreference();
             if (storePref === "browser" || storePref === "device") {
                 await IDB.putMessage({ ...msg, conversation_id: state.currentConvId! });
             }
@@ -1186,13 +1314,48 @@ export function handleInputKeyup(): void {
     post("/chat/typing", { conversation_id: state.currentConvId }).catch(() => {});
 }
 
-export function updateConvPreview(convId: number, timestamp: string): void {
+export async function updateConvPreview(
+    convId: number,
+    timestamp: string,
+    encryptedPayload: string | null = null,
+    senderId: number | null = null,
+): Promise<void> {
     const timeEl = document.getElementById("time-" + convId);
     if (timeEl && timestamp) {
         timeEl.textContent = new Date(timestamp).toLocaleTimeString("ru", {
             hour: "2-digit",
             minute: "2-digit",
         });
+    }
+
+    if (!encryptedPayload || !senderId) {
+        return;
+    }
+
+    const item = document.querySelector<HTMLElement>(`[data-conv-id="${convId}"]`);
+    const preview = document.getElementById("preview-" + convId);
+    if (!item || !preview) {
+        return;
+    }
+
+    const conversationType = item.dataset.convType ?? "direct";
+    const partnerId = parseInt(item.dataset.partnerId ?? "0");
+    const peerId = conversationType === "group"
+        ? (senderId === AUTH_USER_ID ? AUTH_USER_ID : senderId)
+        : (senderId === AUTH_USER_ID ? partnerId : senderId);
+
+    if (!peerId) {
+        return;
+    }
+
+    item.dataset.latestPayload = encryptedPayload;
+    item.dataset.latestSenderId = String(senderId);
+
+    try {
+        const text = await decryptPreviewPayload(encryptedPayload, peerId);
+        preview.textContent = previewSnippetFromPlaintext(text) || "сообщение";
+    } catch {
+        preview.textContent = "[не удалось расшифровать]";
     }
 }
 
@@ -2108,7 +2271,7 @@ export async function startChatWithFriend(
             <div class="conv-avatar">${avatarUrl ? `<img src="${avatarUrl}" alt="" class="avatar-img">` : escapeHtml(partnerLogin.charAt(0).toUpperCase())}<span class="online-dot${state.onlineUsers.has(partnerId) ? " online" : ""}"></span></div>
             <div class="conv-info">
                 <div class="conv-name">${escapeHtml(partnerLogin)}</div>
-                <div class="conv-preview" id="preview-${convId}">зашифровано</div>
+                <div class="conv-preview" id="preview-${convId}">нет сообщений</div>
             </div>
             <div class="conv-time" id="time-${convId}"></div>`;
         list.prepend(div);
