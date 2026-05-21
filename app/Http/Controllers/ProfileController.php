@@ -6,6 +6,8 @@ use App\Models\Conversation;
 use App\Models\FeedVote;
 use App\Models\ProfileSetting;
 use App\Models\User;
+use App\Services\FeedVisibilityService;
+use App\Services\ProfileActivityReader;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -59,22 +61,29 @@ class ProfileController extends Controller
 
         $friendIds = $viewer->friendIds();
 
-        $recentPosts = $user->feedPosts()
-            ->with([
-                'author',
-                'attachments' => fn ($query) => $query->orderBy('position'),
-            ])
-            ->withCount([
-                'comments',
-                'votes as up_votes_count' => fn ($query) => $query->where('value', FeedVote::VALUE_UP),
-                'votes as down_votes_count' => fn ($query) => $query->where('value', FeedVote::VALUE_DOWN),
-            ])
-            ->visibleTo($viewer, $friendIds)
-            ->visibleOnProfile()
-            ->live()
-            ->latest()
-            ->limit(5)
-            ->get();
+        if (config('features.unified_feed_items_enabled')) {
+            $activityReader = new ProfileActivityReader(new FeedVisibilityService);
+            $recentPosts = config('features.community_feed_items_enabled')
+                ? $activityReader->readCardsForProfile($viewer, $user)
+                : $activityReader->readForProfile($viewer, $user);
+        } else {
+            $recentPosts = $user->feedPosts()
+                ->with([
+                    'author',
+                    'attachments' => fn ($query) => $query->orderBy('position'),
+                ])
+                ->withCount([
+                    'comments',
+                    'votes as up_votes_count' => fn ($query) => $query->where('value', FeedVote::VALUE_UP),
+                    'votes as down_votes_count' => fn ($query) => $query->where('value', FeedVote::VALUE_DOWN),
+                ])
+                ->visibleTo($viewer, $friendIds)
+                ->visibleOnProfile()
+                ->live()
+                ->latest()
+                ->limit(5)
+                ->get();
+        }
 
         $visiblePostsCount = $user->feedPosts()
             ->visibleTo($viewer, $friendIds)

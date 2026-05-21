@@ -9,7 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 #[Fillable([
-    'user_id', 'bookmarkable_type', 'bookmarkable_id',
+    'user_id', 'bookmarkable_type', 'bookmarkable_id', 'bookmarkable_key',
+    'community_id', 'access_revoked',
     'snapshot_body', 'snapshot_author_id', 'snapshot_author_name',
     'snapshot_is_whisper', 'snapshot_posted_at', 'source_label', 'original_deleted',
 ])]
@@ -21,6 +22,7 @@ class Bookmark extends Model
             'snapshot_is_whisper' => 'boolean',
             'snapshot_posted_at' => 'datetime',
             'original_deleted' => 'boolean',
+            'access_revoked' => 'boolean',
         ];
     }
 

@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Bookmark;
 use App\Models\BookmarkAttachment;
+use App\Models\CommunityPost;
 use App\Models\FeedPost;
+use App\Services\FeedVisibilityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -25,43 +27,64 @@ class BookmarkController extends Controller
     {
         $request->validate([
             'bookmarkable_type' => ['required', 'string'],
-            'bookmarkable_id' => ['required', 'integer'],
+            'bookmarkable_id' => ['required'],
         ]);
 
         $user = Auth::user();
         $type = $request->input('bookmarkable_type');
-        $id = (int) $request->input('bookmarkable_id');
+        $requestedId = (string) $request->input('bookmarkable_id');
 
         $morphMap = [
             'feed_post' => FeedPost::class,
+            'community_post' => CommunityPost::class,
         ];
 
         abort_unless(array_key_exists($type, $morphMap), 422);
 
         $modelClass = $morphMap[$type];
         $morphType = $modelClass;
+        $id = $type === 'feed_post' ? (int) $requestedId : null;
+        $key = $type === 'feed_post' ? (string) $id : $requestedId;
 
+        // Prefer key-based lookup (matches unique index). Fallback to bookmarkable_id
+        // for pre-migration rows where bookmarkable_key was not yet set.
         $existing = Bookmark::query()
             ->where('user_id', $user->id)
             ->where('bookmarkable_type', $morphType)
-            ->where('bookmarkable_id', $id)
+            ->where(function ($q) use ($key, $id): void {
+                $q->where('bookmarkable_key', $key)
+                    ->when($id !== null, function ($q) use ($id): void {
+                        $q->orWhere(function ($q2) use ($id): void {
+                            $q2->whereNull('bookmarkable_key')->where('bookmarkable_id', $id);
+                        });
+                    });
+            })
             ->first();
 
         if ($existing) {
             return response()->json(['bookmarked' => true, 'id' => $existing->id]);
         }
 
-        $model = $modelClass::query()->findOrFail($id);
+        $model = $modelClass::query()
+            ->when($modelClass === CommunityPost::class, fn ($query) => $query->with(['author', 'community', 'topic']))
+            ->findOrFail($key);
 
-        $bookmark = DB::transaction(function () use ($user, $model, $morphType, $id, $type): Bookmark {
+        if ($model instanceof CommunityPost) {
+            abort_unless(app(FeedVisibilityService::class)->canViewerSeeCommunityPost($user, $model, 'bookmark'), 403);
+        }
+
+        $bookmark = DB::transaction(function () use ($user, $model, $morphType, $id, $key, $type): Bookmark {
             $bookmark = Bookmark::query()->create([
                 'user_id' => $user->id,
                 'bookmarkable_type' => $morphType,
                 'bookmarkable_id' => $id,
-                'snapshot_body' => $model->body ?? null,
-                'snapshot_author_id' => $model->is_whisper ? null : ($model->user_id ?? null),
-                'snapshot_author_name' => $model->is_whisper ? null : ($model->author?->feedName() ?? null),
-                'snapshot_is_whisper' => $model->is_whisper ?? false,
+                'bookmarkable_key' => $key,
+                'community_id' => $model instanceof CommunityPost ? $model->community_id : null,
+                'access_revoked' => false,
+                'snapshot_body' => $model instanceof FeedPost ? $model->body : null,
+                'snapshot_author_id' => $model instanceof FeedPost && $model->is_whisper ? null : ($model instanceof FeedPost ? $model->user_id : null),
+                'snapshot_author_name' => $model instanceof FeedPost && $model->is_whisper ? null : ($model instanceof FeedPost ? $model->author?->feedName() : null),
+                'snapshot_is_whisper' => $model instanceof FeedPost ? $model->is_whisper : false,
                 'snapshot_posted_at' => $model->created_at,
                 'source_label' => $this->sourceLabelFor($type),
                 'original_deleted' => false,
@@ -145,6 +168,7 @@ class BookmarkController extends Controller
     {
         return match ($type) {
             'feed_post' => 'из ленты',
+            'community_post' => 'из сообщества',
             default => '',
         };
     }

@@ -3,16 +3,22 @@
 namespace App\Livewire;
 
 use App\Models\Bookmark;
+use App\Models\CommunityMember;
+use App\Models\CommunityPost;
 use App\Models\FeedComment;
 use App\Models\FeedCommentVote;
 use App\Models\FeedPost;
 use App\Models\FeedVote;
 use App\Models\Poll;
+use App\Models\User;
 use App\Notifications\FeedCommentNotification;
 use App\Notifications\FeedVoteNotification;
 use App\Services\FeedAttachmentThumbnail;
+use App\Services\FeedCard;
+use App\Services\FeedItemsReader;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +37,9 @@ class Feed extends Component
 
     #[Url(as: 'tab', except: 'friends')]
     public string $tab = 'friends';
+
+    #[Url(as: 'community_search', except: '')]
+    public string $communitySearch = '';
 
     public string $body = '';
 
@@ -106,20 +115,34 @@ class Feed extends Component
      */
     public array $modalCommentOrders = [];
 
+    public ?string $feedCursor = null;
+
+    public ?string $nextFeedCursor = null;
+
     public function mount(): void
     {
-        if (! in_array($this->tab, ['friends', 'all', 'mine'], strict: true)) {
+        if (! in_array($this->tab, ['friends', 'all', 'mine', 'groups'], strict: true)) {
             $this->tab = 'friends';
         }
     }
 
     public function setTab(string $tab): void
     {
-        if (! in_array($tab, ['friends', 'all', 'mine'], strict: true)) {
+        if (! in_array($tab, ['friends', 'all', 'mine', 'groups'], strict: true)) {
             return;
         }
 
         $this->tab = $tab;
+        $this->feedCursor = null;
+        $this->nextFeedCursor = null;
+        $this->resetPage();
+    }
+
+    public function updatedCommunitySearch(): void
+    {
+        $this->communitySearch = mb_substr(trim($this->communitySearch), 0, 100);
+        $this->feedCursor = null;
+        $this->nextFeedCursor = null;
         $this->resetPage();
     }
 
@@ -510,23 +533,40 @@ class Feed extends Component
     {
         $user = Auth::user();
         $friendIds = $user->friendIds();
-        $posts = FeedPost::query()
-            ->with([
-                'attachments' => fn ($query) => $query->orderBy('position'),
-                'author',
-                'votes' => fn ($query) => $query->where('user_id', $user->id),
-                'poll.options',
-            ])
-            ->withCount([
-                'comments',
-                'comments as root_comments_count' => fn ($query) => $query->whereNull('parent_id'),
-                'votes as up_votes_count' => fn ($query) => $query->where('value', FeedVote::VALUE_UP),
-                'votes as down_votes_count' => fn ($query) => $query->where('value', FeedVote::VALUE_DOWN),
-            ])
-            ->live()
-            ->forTab($user, $this->tab, $friendIds)
-            ->latest()
-            ->simplePaginate(25);
+        $feedCards = null;
+
+        if (config('features.unified_feed_items_enabled')) {
+            if (config('features.community_feed_items_enabled') || $this->tab === 'groups') {
+                $feedCards = $this->loadUnifiedFeedCards($user);
+                $feedPostItems = collect($feedCards->items())
+                    ->filter(fn (FeedCard $card) => $card->isFeedPost())
+                    ->map(fn (FeedCard $card) => $card->feedPost)
+                    ->values();
+                $posts = new Paginator($feedPostItems->all(), 25);
+            } else {
+                $posts = $this->loadUnifiedFeedPosts($user);
+            }
+        } elseif ($this->tab === 'groups') {
+            $posts = new Paginator([], 25);
+        } else {
+            $posts = FeedPost::query()
+                ->with([
+                    'attachments' => fn ($query) => $query->orderBy('position'),
+                    'author',
+                    'votes' => fn ($query) => $query->where('user_id', $user->id),
+                    'poll.options',
+                ])
+                ->withCount([
+                    'comments',
+                    'comments as root_comments_count' => fn ($query) => $query->whereNull('parent_id'),
+                    'votes as up_votes_count' => fn ($query) => $query->where('value', FeedVote::VALUE_UP),
+                    'votes as down_votes_count' => fn ($query) => $query->where('value', FeedVote::VALUE_DOWN),
+                ])
+                ->live()
+                ->forTab($user, $this->tab, $friendIds)
+                ->latest()
+                ->simplePaginate(25);
+        }
 
         $postIds = collect($posts->items())->pluck('id')->all();
         $expandedPostIds = collect(array_keys($this->expandedCommentPosts))
@@ -660,6 +700,7 @@ class Feed extends Component
         );
 
         return view('livewire.feed', [
+            'feedCards' => $feedCards,
             'bookmarkIds' => $bookmarkIds,
             'modalCommentsByParent' => $modalCommentsByParent,
             'modalPost' => $modalPost,
@@ -672,6 +713,116 @@ class Feed extends Component
             'topComments' => $topComments,
             'user' => $user,
         ]);
+    }
+
+    public function loadMoreFeed(): void
+    {
+        if (! config('features.unified_feed_items_enabled') || $this->nextFeedCursor === null) {
+            return;
+        }
+
+        $this->feedCursor = $this->nextFeedCursor;
+        $this->nextFeedCursor = null;
+    }
+
+    private function loadUnifiedFeedPosts(User $user): Paginator
+    {
+        $reader = app(FeedItemsReader::class);
+        $feedPage = $reader->readForFeed($user, $this->tab, 25, $this->feedCursor);
+        $this->nextFeedCursor = $feedPage->nextCursor;
+        $postIds = $feedPage->feedPostIds();
+
+        $ordered = $this->loadFeedPostsByIds($postIds, $user);
+
+        return new Paginator($ordered->all(), 25);
+    }
+
+    private function loadUnifiedFeedCards(User $user): Paginator
+    {
+        $reader = app(FeedItemsReader::class);
+        $feedPage = $reader->readForFeed(
+            $user,
+            $this->tab,
+            25,
+            $this->feedCursor,
+            communitySearch: $this->tab === 'groups' ? $this->communitySearch : null,
+        );
+        $this->nextFeedCursor = $feedPage->nextCursor;
+
+        $feedPosts = $this->loadFeedPostsByIds($feedPage->feedPostIds(), $user)
+            ->keyBy('id');
+
+        $communityPostIds = $feedPage->items
+            ->where('source_type', FeedCard::TYPE_COMMUNITY_POST)
+            ->pluck('source_id')
+            ->values()
+            ->all();
+
+        $communityPosts = CommunityPost::query()
+            ->with(['author', 'community', 'topic'])
+            ->whereIn('id', $communityPostIds)
+            ->get()
+            ->keyBy('id');
+
+        $communityMemberNames = CommunityMember::query()
+            ->whereIn('community_id', $communityPosts->pluck('community_id')->filter()->unique()->values())
+            ->whereIn('user_id', $communityPosts->pluck('user_id')->filter()->unique()->values())
+            ->get()
+            ->keyBy(fn (CommunityMember $member) => $member->community_id.':'.$member->user_id);
+
+        $cards = $feedPage->items
+            ->map(function ($item) use ($feedPosts, $communityPosts, $communityMemberNames): ?FeedCard {
+                if ($item->source_type === FeedCard::TYPE_FEED_POST) {
+                    $post = $feedPosts->get((int) $item->source_id);
+
+                    return $post ? FeedCard::forFeedPost($item, $post) : null;
+                }
+
+                if ($item->source_type === FeedCard::TYPE_COMMUNITY_POST) {
+                    $post = $communityPosts->get($item->source_id);
+
+                    if (! $post) {
+                        return null;
+                    }
+
+                    $member = $communityMemberNames->get($post->community_id.':'.$post->user_id);
+                    $authorDisplayName = $post->community?->hide_real_names
+                        ? ($member?->pseudonym ?: $member?->community_display_name ?: 'member #'.$post->user_id)
+                        : ($post->author?->feedName() ?: 'member #'.$post->user_id);
+
+                    return FeedCard::forCommunityPost($item, $post, $authorDisplayName);
+                }
+
+                return null;
+            })
+            ->filter()
+            ->values();
+
+        return new Paginator($cards->all(), 25);
+    }
+
+    /**
+     * @param  array<int>  $postIds
+     */
+    private function loadFeedPostsByIds(array $postIds, User $user): \Illuminate\Support\Collection
+    {
+        return FeedPost::query()
+            ->with([
+                'attachments' => fn ($query) => $query->orderBy('position'),
+                'author',
+                'votes' => fn ($query) => $query->where('user_id', $user->id),
+                'poll.options',
+            ])
+            ->withCount([
+                'comments',
+                'comments as root_comments_count' => fn ($query) => $query->whereNull('parent_id'),
+                'votes as up_votes_count' => fn ($query) => $query->where('value', FeedVote::VALUE_UP),
+                'votes as down_votes_count' => fn ($query) => $query->where('value', FeedVote::VALUE_DOWN),
+            ])
+            ->whereIn('id', $postIds)
+            ->get()
+            ->sortBy(fn (FeedPost $post) => array_search($post->id, $postIds, strict: true))
+            ->values();
     }
 
     /**

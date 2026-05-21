@@ -19,35 +19,35 @@ class FeedPreviewAssetsTest extends TestCase
 
     public function test_post_gallery_uses_large_active_item_with_square_thumbnails(): void
     {
-        $stylesheet = file_get_contents(resource_path('css/pages/feed.scss'));
+        $galleryStylesheet = file_get_contents(resource_path('css/components/gallery.scss'));
         $galleryTemplate = file_get_contents(resource_path('views/livewire/partials/feed-attachments-gallery.blade.php'));
 
         $this->assertStringContainsString('data-feed-gallery', $galleryTemplate);
         $this->assertStringContainsString('data-feed-gallery-main-item', $galleryTemplate);
         $this->assertStringContainsString('data-feed-gallery-thumb', $galleryTemplate);
-        $this->assertStringContainsString('grid-auto-columns: 100px;', $stylesheet);
-        $this->assertStringContainsString('width: 100px;', $stylesheet);
-        $this->assertStringContainsString('height: 100px;', $stylesheet);
+        $this->assertStringContainsString('grid-auto-columns: 100px;', $galleryStylesheet);
+        $this->assertStringContainsString('width: 100px;', $galleryStylesheet);
+        $this->assertStringContainsString('height: 100px;', $galleryStylesheet);
     }
 
     public function test_post_gallery_keeps_stable_sixteen_by_nine_stage_for_all_attachment_types(): void
     {
-        $stylesheet = file_get_contents(resource_path('css/pages/feed.scss'));
+        $galleryStylesheet = file_get_contents(resource_path('css/components/gallery.scss'));
 
-        $this->assertMatchesRegularExpression('/\\.feed-gallery-main-item\\s*\\{[^}]*aspect-ratio:\\s*16\\s*\\/\\s*9;/s', $stylesheet);
-        $this->assertMatchesRegularExpression('/\\.feed-gallery-media img,[^}]*object-fit:\\s*contain;/s', $stylesheet);
-        $this->assertMatchesRegularExpression('/\\.feed-gallery-file-card\\s*\\{[^}]*height:\\s*100%;/s', $stylesheet);
+        $this->assertMatchesRegularExpression('/\\.feed-gallery-main-item\\s*\\{[^}]*aspect-ratio:\\s*16\\s*\\/\\s*9;/s', $galleryStylesheet);
+        $this->assertMatchesRegularExpression('/\\.feed-gallery-media img,[^}]*object-fit:\\s*contain;/s', $galleryStylesheet);
+        $this->assertMatchesRegularExpression('/\\.feed-gallery-file-card\\s*\\{[^}]*height:\\s*100%;/s', $galleryStylesheet);
     }
 
     public function test_gallery_file_card_uses_centered_rich_layout(): void
     {
-        $stylesheet = file_get_contents(resource_path('css/pages/feed.scss'));
+        $galleryStylesheet = file_get_contents(resource_path('css/components/gallery.scss'));
         $galleryTemplate = file_get_contents(resource_path('views/livewire/partials/feed-attachments-gallery.blade.php'));
 
         $this->assertStringContainsString('feed-gallery-file-meta', $galleryTemplate);
         $this->assertStringContainsString('feed-gallery-file-action', $galleryTemplate);
-        $this->assertMatchesRegularExpression('/\\.feed-gallery-file-card\\s*\\{[^}]*flex-direction:\\s*column;/s', $stylesheet);
-        $this->assertMatchesRegularExpression('/\\.feed-gallery-file-card \\.feed-file-icon\\s*\\{[^}]*width:\\s*84px;/s', $stylesheet);
+        $this->assertMatchesRegularExpression('/\\.feed-gallery-file-card\\s*\\{[^}]*flex-direction:\\s*column;/s', $galleryStylesheet);
+        $this->assertMatchesRegularExpression('/\\.feed-gallery-file-card \\.feed-file-icon\\s*\\{[^}]*width:\\s*84px;/s', $galleryStylesheet);
     }
 
     public function test_post_gallery_requests_small_images_for_thumbnail_strip(): void

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\FeedItemProjector;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -71,11 +72,20 @@ class FeedPost extends Model
             $post->user_id = null;
         });
 
+        static::created(function (FeedPost $post): void {
+            app(FeedItemProjector::class)->projectFeedPostCreated($post);
+        });
+
         static::deleted(function (FeedPost $post): void {
             Bookmark::query()
                 ->where('bookmarkable_type', self::class)
                 ->where('bookmarkable_id', $post->id)
                 ->update(['original_deleted' => true]);
+
+            app(FeedItemProjector::class)->deleteForSource(
+                FeedItem::SOURCE_FEED_POST,
+                (string) $post->id,
+            );
         });
     }
 
@@ -140,7 +150,7 @@ class FeedPost extends Model
         $friendIds ??= $user->friendIds();
 
         return match ($tab) {
-            'all' => $query->where('visibility', self::VISIBILITY_PUBLIC),
+            'all' => $query->visibleTo($user, $friendIds),
             'mine' => $query->where('user_id', $user->id),
             default => $query->where(function (Builder $query) use ($user, $friendIds) {
                 $query->where('user_id', $user->id)

@@ -12,3 +12,6 @@ Schedule::command('chat:prune')->daily();
 Schedule::command('chat:delete-expired-files')->hourly();
 Schedule::command('polls:reconcile')->hourly();
 Schedule::command('status:canary')->weekly();
+Schedule::command('communities:expire-posts')->hourly();
+Schedule::command('communities:expire-direct-invites')->hourly();
+Schedule::command('communities:cleanup-file-blobs')->daily();
