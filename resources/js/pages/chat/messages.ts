@@ -342,7 +342,7 @@ function renderGroupPanel(data: ParticipantsResponse): void {
                     <button type="button" data-invite-type="single_use">одноразовая 24ч</button>
                 </div>
             </div>` : ""}
-        <button type="button" class="group-leave-btn" id="groupLeaveBtn">выйти из группы</button>
+        <div class="group-leave-btn-wrapper"><button type="button" class="group-leave-btn" id="groupLeaveBtn">Покинуть группу</button></div>
     `;
     window.chatSidePanelOnConversationChange?.();
 }

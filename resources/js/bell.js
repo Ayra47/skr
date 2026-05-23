@@ -114,7 +114,18 @@ function buildPopover() {
     const remaining = Math.max(0, bellItems.length - 3);
 
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'position:absolute;top:44px;right:0;width:360px;z-index:200;';
+    const btn = document.getElementById('nav-bell-btn');
+    const btnRect = btn?.getBoundingClientRect() ?? { top: 0, right: 0, bottom: 0 };
+
+    wrap.style.cssText = `position:fixed;width:360px;z-index:200;${
+        btnRect.bottom + 360 + 44 > window.innerHeight
+            ? `bottom:${window.innerHeight - btnRect.top + 10}px;`
+            : `top:${btnRect.bottom + 10}px;`
+    }${
+        btnRect.right > window.innerWidth / 2
+            ? `right:${window.innerWidth - btnRect.right}px;`
+            : `left:${btnRect.left}px;`
+    }`;
     wrap.innerHTML = `
         <div style="
             background:#0f1218;border:1px solid #272b36;border-radius:14px;
@@ -186,11 +197,9 @@ function onOutside(e) {
 }
 
 function openPopover() {
-    const btn = document.getElementById('nav-bell-btn');
-    if (!btn) { return; }
+    if (popoverEl) { return; }
     popoverEl = buildPopover();
-    btn.style.position = 'relative';
-    btn.appendChild(popoverEl);
+    document.body.appendChild(popoverEl);
 
     const readAll = popoverEl.querySelector('#bell-readall');
     if (readAll) {

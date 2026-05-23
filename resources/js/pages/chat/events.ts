@@ -846,7 +846,7 @@ export function bindEvents(): void {
         }
     }
     document.getElementById("chatAvatar")?.addEventListener("click", goToPartnerProfile);
-    document.getElementById("chatPartnerName")?.closest(".chat-header-info")?.addEventListener("click", goToPartnerProfile);
+    // document.getElementById("chatPartnerName")?.closest(".chat-header-info")?.addEventListener("click", goToPartnerProfile);
 
     // Chat more menu
     const chatMoreBtn = document.getElementById("chatMoreBtn") as HTMLButtonElement;
