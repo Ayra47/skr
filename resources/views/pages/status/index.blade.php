@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Состояние сервиса — skr</title>
     <script>window.Laravel = { userId: @json(Auth::id()) };</script>
+    @include('partials.accent-style')
     @vite(['resources/js/pages/status.js'])
 </head>
 

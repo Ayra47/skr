@@ -1,5 +1,6 @@
 @php
     $profileSettingsPayload = [
+        'accent_color' => $profileSettings->accent_color ?? '#5bbeff',
         'show_shared_chats' => $profileSettings->show_shared_chats ?? true,
         'show_shared_groups' => $profileSettings->show_shared_groups ?? true,
         'profile_access' => $profileSettings->profile_access ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
@@ -18,6 +19,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>skr — Настройки</title>
+    @include('partials.accent-style')
     <script>
         window.Laravel = {
             userId: @json(Auth::id()),
@@ -459,6 +461,23 @@
                                     <span class="soon-tag">скоро</span>
                                 </div>
                             </button>
+                        </div>
+
+                        <div class="accent-picker">
+                            <p class="card-sub" style="margin-top:18px;">Основной цвет</p>
+                            <div class="accent-swatches" id="accentSwatches">
+                                <button class="accent-swatch" data-color="#5bbeff" title="Синий" style="background:#5bbeff;"></button>
+                                <button class="accent-swatch" data-color="#a78bfa" title="Фиолетовый" style="background:#a78bfa;"></button>
+                                <button class="accent-swatch" data-color="#6dd49a" title="Зелёный" style="background:#6dd49a;"></button>
+                                <button class="accent-swatch" data-color="#e8a656" title="Золотой" style="background:#e8a656;"></button>
+                                <button class="accent-swatch" data-color="#f19ca2" title="Розовый" style="background:#f19ca2;"></button>
+                                <button class="accent-swatch" data-color="#e87b6d" title="Красный" style="background:#e87b6d;"></button>
+                                <label class="accent-swatch accent-swatch-custom" title="Свой цвет">
+                                    <input type="color" id="accentColorCustom" style="opacity:0;width:0;height:0;position:absolute;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+                                </label>
+                            </div>
+                            <div class="form-msg" id="accentMsg"></div>
                         </div>
                     </section>
 

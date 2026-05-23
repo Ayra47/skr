@@ -36,7 +36,7 @@
     font-weight: 700;
     background: linear-gradient(135deg, var(--accent), var(--accent-deep));
     font-family: var(--font-serif);
-    box-shadow: inset 0 1px rgba(255, 255, 255, 0.32), 0 10px 28px rgba(91, 190, 255, 0.16);
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.32), 0 10px 28px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 .app-links {
@@ -70,7 +70,7 @@
 .app-links a.active {
     color: var(--accent);
     background: var(--accent-soft);
-    border-color: rgba(91, 190, 255, 0.25);
+    border-color: color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 .bell-btn {
@@ -99,7 +99,7 @@
 
     &--active {
         background: var(--accent-soft);
-        border-color: rgba(91, 190, 255, 0.3);
+        border-color: color-mix(in srgb, var(--accent) 30%, transparent);
         color: var(--accent);
     }
 }
@@ -128,7 +128,7 @@
 
     &--active {
         background: var(--accent-soft);
-        border-color: rgba(91, 190, 255, 0.3);
+        border-color: color-mix(in srgb, var(--accent) 30%, transparent);
         color: var(--accent);
     }
 }
@@ -168,7 +168,7 @@
     overflow: hidden;
     flex-shrink: 0;
     color: #e8e8ec;
-    background: linear-gradient(135deg, rgba(91, 190, 255, 0.28), rgba(91, 190, 255, 0.08));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 28%, transparent), color-mix(in srgb, var(--accent) 8%, transparent));
     font: inherit;
     font-size: 13px;
     font-weight: 500;

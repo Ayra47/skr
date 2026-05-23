@@ -1,5 +1,6 @@
 import "../../css/pages/status.scss";
 import "../app";
+import { initAccentOnLoad } from "../utils/accent.js";
 
 document.addEventListener('DOMContentLoaded', () => {
     // Copy canary signature
@@ -119,3 +120,5 @@ function escHtml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
 }
+
+initAccentOnLoad();

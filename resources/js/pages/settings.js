@@ -1,5 +1,6 @@
 import "../../css/pages/settings.scss";
 import "../app";
+import { applyAccentColor } from "../utils/accent.js";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const AUTH_USER_ID = window.Laravel.userId;
@@ -959,6 +960,44 @@ function initPagination() {
     });
 }
 
+function initAccentColor() {
+    const swatches = document.getElementById('accentSwatches');
+    const customInput = document.getElementById('accentColorCustom');
+    const msg = document.getElementById('accentMsg');
+    if (!swatches) { return; }
+
+    const current = window.Laravel.profileSettings?.accent_color ?? '#5bbeff';
+
+    function markActive(color) {
+        swatches.querySelectorAll('.accent-swatch[data-color]').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.color === color);
+        });
+    }
+
+    applyAccentColor(current);
+    markActive(current);
+    if (customInput) { customInput.value = current; }
+
+    swatches.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.accent-swatch[data-color]');
+        if (!btn) { return; }
+        const color = btn.dataset.color;
+        applyAccentColor(color);
+        markActive(color);
+        const data = await post('/settings/accent', { accent_color: color });
+        showMsg(msg, data.success ? 'success' : 'error', data.success ? 'Цвет сохранён' : 'Ошибка');
+    });
+
+    if (customInput) {
+        customInput.addEventListener('input', () => applyAccentColor(customInput.value));
+        customInput.addEventListener('change', async () => {
+            markActive('');
+            const data = await post('/settings/accent', { accent_color: customInput.value });
+            showMsg(msg, data.success ? 'success' : 'error', data.success ? 'Цвет сохранён' : 'Ошибка');
+        });
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initNav();
     initAvatar();
@@ -972,5 +1011,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initTwoFactor();
     initNotifications();
     initProfileVisibility();
+    initAccentColor();
     initPagination();
 });

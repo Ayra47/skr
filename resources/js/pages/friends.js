@@ -1,6 +1,7 @@
 import "../../css/pages/friends.scss";
 import "../app";
 import QRCode from "qrcode";
+import { initAccentOnLoad } from "../utils/accent.js";
 
 // ── invite card ──────────────────────────────────────────────────────────────
 
@@ -411,3 +412,5 @@ if (window.Echo && window.Echo.private) {
         location.reload();
     });
 }
+
+initAccentOnLoad();

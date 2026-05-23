@@ -437,6 +437,19 @@ class SettingsController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function updateAccentColor(Request $request): JsonResponse
+    {
+        $request->validate([
+            'accent_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
+        ]);
+
+        auth()->user()->profileSetting()->updateOrCreate([], [
+            'accent_color' => $request->accent_color,
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
     public function heartbeat(): JsonResponse
     {
         auth()->user()->update(['last_seen_at' => now()]);

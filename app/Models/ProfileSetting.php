@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'user_id',
     'bio',
+    'accent_color',
     'show_shared_chats',
     'show_shared_groups',
     'profile_access',

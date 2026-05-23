@@ -39,8 +39,8 @@
 
     /* Primary accent (blue) */
     --accent: #5bbeff;
-    --accent-deep: #2f7fd0;
-    --accent-soft: rgba(91, 190, 255, 0.11);
+    --accent-deep: color-mix(in srgb, var(--accent) 55%, #000 45%);
+    --accent-soft: color-mix(in srgb, var(--accent) 11%, transparent);
 
     /* Blue palette */
     --blue-primary: #5bbeff;

@@ -7,6 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="vapid-public-key" content="{{ config('app.vapid_public_key') }}">
     <title>Сообщения · skr</title>
+    @include('partials.accent-style')
     @vite(['resources/js/pages/chat.js'])
 
     <script>

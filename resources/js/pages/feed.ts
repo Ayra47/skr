@@ -2,9 +2,11 @@ import "../../css/pages/feed.scss";
 import "../app";
 import { initBookmarkToggle } from "../bookmark-toggle";
 import { initPoll } from "../poll";
+import { initAccentOnLoad } from "../utils/accent.js";
 
 initBookmarkToggle();
 initPoll();
+initAccentOnLoad();
 
 type AttachmentPreview = {
     file: File;
