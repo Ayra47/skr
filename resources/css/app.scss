@@ -7,24 +7,86 @@
 }
 
 :root {
+    /* Background layers */
     --bg: #05070b;
+    --bg-darker: #030407;
     --panel: rgba(12, 15, 23, 0.86);
     --panel-2: rgba(18, 23, 35, 0.82);
     --panel-3: #1b2230;
+    --panel-light: #0f1218;
+    --panel-medium: #13161e;
     --surface: rgba(16, 20, 31, 0.86);
-    --hover: rgba(255, 255, 255, 0.055);
-    --border: rgba(255, 255, 255, 0.075);
+
+    /* Text colors */
     --text: #f4f6fb;
+    --text-light: #e8e8ec;
     --text-dim: #aab2c4;
     --text-mute: #687187;
     --text-muted: #687187;
     --text-secondary: #c5cad6;
+    --text-tertiary: #8a8f9c;
+    --text-on-light: #1a1206;
+
+    /* Borders & Overlays */
+    --border: rgba(255, 255, 255, 0.075);
+    --border-2: rgba(255, 255, 255, 0.06);
+    --border-subtle: #1c2029;
+    --border-secondary: #272b36;
+    --hover: rgba(255, 255, 255, 0.055);
+    --bg-overlay: rgba(0, 0, 0, 0.5);
+    --bg-overlay-dark: rgba(0, 0, 0, 0.65);
+    --bg-overlay-heavy: rgba(0, 0, 0, 0.92);
+
+    /* Primary accent (blue) */
     --accent: #5bbeff;
     --accent-deep: #2f7fd0;
     --accent-soft: rgba(91, 190, 255, 0.11);
-    --border-2: rgba(255, 255, 255, 0.06);
-    --danger: #e87b6d;
+
+    /* Blue palette */
+    --blue-primary: #5bbeff;
+    --blue-light: #72caff;
+    --blue-accent: #60a5fa;
+    --blue-soft: #8ab4f8;
+    --blue-pale: #d8efff;
+    --blue-pale-2: #9bd8ff;
+    --blue-pale-3: #8ccfff;
+
+    /* Green/Success palette */
     --green: #61d394;
+    --success: #6dd49a;
+    --success-dark: #112018;
+    --success-soft: rgba(109, 212, 154, 0.1);
+    --success-soft-2: rgba(109, 212, 154, 0.3);
+
+    /* Red/Danger palette */
+    --danger: #e87b6d;
+    --danger-alt: #e05555;
+    --danger-strong: #e74c3c;
+    --error-red: #f87171;
+    --danger-soft: rgba(224, 108, 125, 0.1);
+    --danger-soft-2: rgba(224, 108, 125, 0.3);
+
+    /* Gold/Warning/Orange palette */
+    --warning: #e8a656;
+    --gold-primary: #e8a656;
+    --gold-dark: #c8853a;
+    --gold-light: #f0b468;
+    --gold-muted: #c8aa72;
+    --gold-soft: rgba(232, 166, 86, 0.1);
+    --gold-soft-2: rgba(232, 166, 86, 0.3);
+
+    /* Purple palette */
+    --purple-accent: #a78bfa;
+
+    /* Pink palette */
+    --pink-accent: #f19ca2;
+    --pink-soft: #f5b7bc;
+    --pink-pale: #9ce4bd;
+
+    /* Neutral gray palette */
+    --gray-accent: #8a8f9c;
+
+    /* Fonts */
     --font: "Inter", system-ui, sans-serif;
     --font-mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
     --font-serif: "Fraunces", serif;
@@ -33,9 +95,9 @@
 body {
     font-family: var(--font);
     background:
-        radial-gradient(circle at 18% 0%, rgba(91, 190, 255, 0.13), transparent 34%),
+        radial-gradient(circle at 18% 0%, var(--accent-soft), transparent 34%),
         radial-gradient(circle at 82% 8%, rgba(97, 211, 148, 0.06), transparent 28%),
-        linear-gradient(180deg, #080a10 0%, #05070b 58%, #030407 100%);
+        linear-gradient(180deg, #080a10 0%, var(--bg) 58%, var(--bg-darker) 100%);
     color: var(--text);
     min-height: 100vh;
     align-items: center;

@@ -733,7 +733,7 @@ body {
     }
 }
 .ctx-item--danger {
-    color: var(--danger-alt);
+    color: #e05555;
 }
 .reply-preview-bar {
     display: flex;
@@ -964,8 +964,8 @@ body {
         background: var(--hover);
     }
     &--danger {
-        color: var(--danger-alt);
-        border-color: var(--danger-alt);
+        color: #e55;
+        border-color: #e55;
         &:hover {
             background: rgba(238, 85, 85, 0.08);
         }
@@ -1024,7 +1024,7 @@ body {
 }
 .delete-msg-btn--all {
     background: rgba(224, 85, 85, 0.15);
-    color: var(--danger-alt);
+    color: #e05555;
     border: 1px solid rgba(224, 85, 85, 0.25);
 }
 .delete-msg-btn--me {
@@ -1256,7 +1256,7 @@ body {
 }
 .send-btn.active {
     background: linear-gradient(180deg, var(--accent), var(--accent-deep));
-    color: var(--panel-light);
+    color: #061426;
     cursor: pointer;
     box-shadow: 0 6px 18px rgba(91, 190, 255, 0.25);
 }
@@ -1664,7 +1664,7 @@ body {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: var(--danger-strong);
+    background: #e74c3c;
     flex-shrink: 0;
     animation: loc-pulse 1.4s ease-in-out infinite;
 }
@@ -1692,7 +1692,7 @@ body {
     border-radius: 5px;
     border: 1px solid rgba(231, 76, 60, 0.4);
     background: transparent;
-    color: var(--danger-strong);
+    color: #e74c3c;
     cursor: pointer;
     white-space: nowrap;
     transition: background 0.12s;
@@ -2045,7 +2045,7 @@ body {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: var(--success);
+    background: #4ade80;
     flex-shrink: 0;
     box-shadow: 0 0 6px rgba(74, 222, 128, 0.6);
 }
@@ -2179,7 +2179,7 @@ body {
 }
 .modal-error {
     font-size: 12px;
-    color: var(--danger);
+    color: #e86a5b;
     min-height: 16px;
     margin-top: -6px;
 }
@@ -2201,7 +2201,7 @@ body:has(.chat-layout) {
             rgba(138, 180, 248, 0.055),
             transparent 31%
         ),
-        linear-gradient(180deg, var(--bg) 0%, #05070b 55%, #030407 100%);
+        linear-gradient(180deg, #080a10 0%, #05070b 55%, #030407 100%);
 }
 
 .chat-layout {
@@ -2254,7 +2254,7 @@ body:has(.chat-layout) {
     height: 38px;
     border: 1px solid rgba(91, 190, 255, 0.4);
     border-radius: 13px;
-    color: var(--panel-light);
+    color: #061426;
     background: linear-gradient(145deg, var(--accent), var(--accent-deep));
     box-shadow:
         inset 0 1px rgba(255, 255, 255, 0.35),
@@ -2413,7 +2413,7 @@ body:has(.chat-layout) {
         rgba(91, 190, 255, 0.08)
     );
     border-color: rgba(91, 190, 255, 0.22);
-    color: var(--blue-pale);
+    color: #d8efff;
     box-shadow: inset 0 1px rgba(255, 255, 255, 0.08);
 }
 
@@ -2433,7 +2433,7 @@ body:has(.chat-layout) {
     bottom: 1px;
     width: 10px;
     height: 10px;
-    border-color: var(--panel-light);
+    border-color: #0b0f18;
     z-index: 2;
     overflow: visible;
 }
@@ -2560,7 +2560,7 @@ body:has(.chat-layout) {
 }
 
 .chat-header-e2e {
-    color: var(--blue-pale-2);
+    color: #9bd8ff;
     border-color: rgba(91, 190, 255, 0.25);
     background: rgba(91, 190, 255, 0.08);
 }
@@ -2592,7 +2592,7 @@ body:has(.chat-layout) {
 .typing-indicator {
     min-height: 30px;
     padding: 6px 28px 0;
-    color: var(--blue-pale-3);
+    color: #8ccfff;
 }
 
 .messages-area {
@@ -2683,8 +2683,8 @@ body:has(.chat-layout) {
 }
 
 .send-btn.active {
-    color: var(--panel-light);
-    background: linear-gradient(180deg, var(--blue-light), var(--accent-deep));
+    color: #061426;
+    background: linear-gradient(180deg, #72caff, #2f8fda);
     box-shadow: 0 10px 26px rgba(91, 190, 255, 0.25);
 }
 
@@ -2713,7 +2713,7 @@ body:has(.chat-layout) {
 }
 
 .empty-lock-box {
-    color: var(--blue-pale);
+    color: #d8efff;
     background: linear-gradient(
         145deg,
         rgba(91, 190, 255, 0.22),
@@ -2872,7 +2872,7 @@ body:has(.chat-layout) {
     font-family: var(--font);
     font-weight: 500;
     background: linear-gradient(180deg, var(--accent), var(--accent-deep));
-    color: var(--panel-light);
+    color: #061426;
     border: none;
     border-radius: 9px;
     padding: 9px 20px;
@@ -3214,7 +3214,7 @@ svg[hidden] {
     bottom: 1px;
     width: 10px;
     height: 10px;
-    border: 2px solid var(--panel-light);
+    border: 2px solid #0b0f18;
     border-radius: 50%;
     background: var(--green);
     z-index: 2;
@@ -3395,7 +3395,7 @@ svg[hidden] {
     }
 
     span {
-        color: var(--blue-soft);
+        color: #9fcaff;
         font-family: var(--font-mono);
         font-size: 13px;
         letter-spacing: 0.02em;
@@ -3510,7 +3510,7 @@ svg[hidden] {
 
 /* ─── Final redesign corrections after legacy group/mobile rules ─────── */
 .modal-btn-primary {
-    color: var(--panel-light);
+    color: #061426;
 }
 
 .modal-input:focus,
@@ -3546,7 +3546,7 @@ svg[hidden] {
         border-color 0.16s ease;
 
     &:hover {
-        color: var(--danger-soft-2);
+        color: #ffd6d4;
         background: rgba(239, 130, 125, 0.13);
         border-color: rgba(239, 130, 125, 0.32);
     }
@@ -3564,7 +3564,7 @@ svg[hidden] {
         rgba(91, 190, 255, 0.08)
     );
     border-color: rgba(91, 190, 255, 0.22);
-    color: var(--blue-pale);
+    color: #d8efff;
     overflow: visible;
 }
 
@@ -3722,7 +3722,7 @@ svg[hidden] {
 }
 
 .section-tab.is-active .section-icon {
-    color: var(--blue-pale);
+    color: #eaf8ff;
     background:
         radial-gradient(
             circle at 34% 18%,
@@ -3818,7 +3818,7 @@ svg[hidden] {
 .utility-tab:hover .utility-icon,
 .sidebar-footer .bell-btn:hover .utility-icon,
 .sidebar-footer .profile-menu-toggle:hover .utility-icon {
-    color: var(--blue-pale);
+    color: #dff6ff;
     border-color: rgba(126, 203, 255, 0.12);
     background: rgba(92, 200, 255, 0.055);
 }
@@ -3840,8 +3840,8 @@ svg[hidden] {
     display: inline-grid;
     place-items: center;
     border-radius: 999px;
-    color: var(--panel-light);
-    background: linear-gradient(180deg, var(--blue-pale-2), var(--blue-accent) 66%, var(--accent-deep));
+    color: #061426;
+    background: linear-gradient(180deg, #d7f4ff, #59c5ff 66%, #2d86d4);
     border: 2px solid rgba(8, 13, 21, 0.92);
     box-shadow: 0 6px 16px rgba(92, 200, 255, 0.22);
     font-size: 9px;

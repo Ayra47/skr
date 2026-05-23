@@ -293,7 +293,7 @@ body {
     &.danger {
         background: transparent;
         border: 1px solid rgba(232, 123, 109, 0.4);
-        color: #e87b6d;
+        color: var(--danger);
         font-weight: 600;
     }
 }

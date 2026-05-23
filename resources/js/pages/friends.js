@@ -30,7 +30,7 @@ function remainingSeconds() {
 function buildRingSvg(remaining) {
     const pct     = Math.max(0, remaining / CODE_TTL);
     const expired = remaining <= 0;
-    const color   = (!expired && remaining < 30) ? '#e87b6d' : (expired ? '#e87b6d' : '#E8A656');
+    const color   = (!expired && remaining < 30) ? 'var(--danger)' : (expired ? 'var(--danger)' : 'var(--gold-primary)');
     const offset  = RING_C * (1 - pct);
     return `
         <svg width="84" height="84" style="transform:rotate(-90deg);display:block;">
@@ -102,7 +102,7 @@ function updateRing() {
     const remaining = remainingSeconds();
     const expired   = remaining <= 0;
     const pct       = Math.max(0, remaining / CODE_TTL);
-    const color     = (!expired && remaining < 30) ? '#e87b6d' : (expired ? '#e87b6d' : '#E8A656');
+    const color     = (!expired && remaining < 30) ? 'var(--danger)' : (expired ? 'var(--danger)' : 'var(--gold-primary)');
 
     const progress = document.getElementById('ringProgress');
     const timeEl   = document.getElementById('ringTime');
@@ -137,7 +137,7 @@ async function showQrModal(code) {
     const dataUrl = await QRCode.toDataURL(url, {
         width: 240,
         margin: 2,
-        color: { dark: '#e8e8ec', light: '#13161e' },
+        color: { dark: 'var(--text-light)', light: 'var(--panel-medium)' },
     });
 
     const backdrop = document.createElement('div');

@@ -18,7 +18,7 @@ class LoginUserProvider implements UserProvider
     {
         $user = User::find($identifier);
 
-        if (!$user) {
+        if (! $user) {
             return null;
         }
 
@@ -33,7 +33,7 @@ class LoginUserProvider implements UserProvider
 
     public function retrieveByCredentials(array $credentials): ?Authenticatable
     {
-        if (!isset($credentials['login'])) {
+        if (! isset($credentials['login'])) {
             return null;
         }
 

@@ -550,7 +550,7 @@ function initProfile() {
                 title: 'Отвязать email?',
                 body: `На ${email} будет отправлено письмо с подтверждением. Email будет удалён только после перехода по ссылке.`,
                 okLabel: 'Отправить письмо',
-                okStyle: 'background:rgba(220,60,60,.15);color:#e05555;border-color:rgba(220,60,60,.3);',
+                okStyle: 'background:rgba(var(--danger-alt-rgb, 224 85 85), 0.15);color:var(--danger-alt);border-color:rgba(var(--danger-alt-rgb, 224 85 85), 0.3);',
                 iconSvg: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/><path d="M3 7l9 6 9-6"/></svg>',
             });
             if (!confirmed) { return; }
@@ -732,7 +732,7 @@ function initTwoFactor() {
                 title: 'Включить двухфакторную аутентификацию?',
                 body: 'При каждом входе на вашу почту будет отправляться код подтверждения.',
                 okLabel: 'Включить',
-                okStyle: 'background:rgba(109,212,154,.15);color:#6dd49a;border-color:rgba(109,212,154,.3);',
+                okStyle: 'background:var(--success-soft);color:var(--success);border-color:var(--success-soft-2);',
                 iconSvg: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
             });
             if (!confirmed) { return; }

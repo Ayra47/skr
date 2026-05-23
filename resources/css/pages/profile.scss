@@ -78,7 +78,7 @@ body {
 }
 
 .profile-avatar-large span.online {
-    background: #6dd49a;
+    background: var(--success);
 }
 
 .profile-hero-main {
@@ -139,7 +139,7 @@ body {
 }
 
 .profile-presence.online i {
-    background: #6dd49a;
+    background: var(--success);
     box-shadow: 0 0 8px rgba(109, 212, 154, 0.55);
 }
 

@@ -230,7 +230,7 @@ body {
 }
 
 .feed-upload-progress.done .feed-upload-progress-track span {
-    background: linear-gradient(90deg, #6dd49a, #9be1bb);
+    background: linear-gradient(90deg, var(--success), #9be1bb);
 }
 
 .feed-upload-progress.error .feed-upload-progress-track span {
@@ -458,12 +458,12 @@ body {
     font-weight: 600;
 
     &:hover {
-        color: #a78bfa;
+        color: var(--purple-accent);
         border-color: rgba(167, 139, 250, 0.36);
     }
 
     &.active {
-        color: #a78bfa;
+        color: var(--purple-accent);
         background: rgba(167, 139, 250, 0.1);
         border-color: rgba(167, 139, 250, 0.4);
     }
@@ -496,12 +496,12 @@ body {
     font-weight: 600;
 
     &:hover {
-        color: #60a5fa;
+        color: var(--blue-accent);
         border-color: rgba(96, 165, 250, 0.36);
     }
 
     &.active {
-        color: #60a5fa;
+        color: var(--blue-accent);
         background: rgba(96, 165, 250, 0.08);
         border-color: rgba(96, 165, 250, 0.4);
     }
@@ -525,7 +525,7 @@ body {
     gap: 7px;
     font-size: 0.82rem;
     font-weight: 700;
-    color: #60a5fa;
+    color: var(--blue-accent);
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
@@ -577,7 +577,7 @@ body {
     flex-shrink: 0;
 
     &:hover {
-        color: #f87171;
+        color: var(--error-red);
         border-color: rgba(248, 113, 113, 0.4);
     }
 }
@@ -598,7 +598,7 @@ body {
     align-self: flex-start;
 
     &:hover {
-        color: #60a5fa;
+        color: var(--blue-accent);
         border-color: rgba(96, 165, 250, 0.4);
     }
 }
@@ -746,7 +746,7 @@ body {
     color: var(--text-mute);
 
     &.expired {
-        color: #f87171;
+        color: var(--error-red);
     }
 }
 
@@ -824,9 +824,9 @@ body {
     z-index: 1;
 
     .selected & {
-        border-color: #60a5fa;
+        border-color: var(--blue-accent);
         background: rgba(96, 165, 250, 0.15);
-        color: #60a5fa;
+        color: var(--blue-accent);
     }
 }
 
@@ -877,7 +877,7 @@ body {
     text-underline-offset: 2px;
 
     &:hover {
-        color: #f87171;
+        color: var(--error-red);
     }
 }
 
@@ -965,7 +965,7 @@ body {
     border: 1px solid rgba(167, 139, 250, 0.4);
     border-radius: 5px;
     padding: 1px 6px;
-    color: #a78bfa;
+    color: var(--purple-accent);
     background: rgba(167, 139, 250, 0.08);
 }
 
@@ -977,7 +977,7 @@ body {
 .feed-avatar.whisper {
     background: rgba(167, 139, 250, 0.12);
     border-color: rgba(167, 139, 250, 0.3);
-    color: #a78bfa;
+    color: var(--purple-accent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -995,7 +995,7 @@ body {
 }
 
 .feed-privacy-badge.public {
-    color: #6dd49a;
+    color: var(--success);
     border-color: rgba(109, 212, 154, 0.28);
     background: rgba(109, 212, 154, 0.08);
 }
@@ -1014,9 +1014,9 @@ body {
 }
 
 .community-feed-avatar {
-    color: #112018;
+    color: var(--success-dark);
     border-color: rgba(109, 212, 154, 0.34);
-    background: linear-gradient(135deg, #6dd49a, #e8a656);
+    background: linear-gradient(135deg, var(--success), var(--gold-primary));
     font-weight: 800;
 }
 
@@ -1135,7 +1135,7 @@ body {
 }
 
 .feed-reaction-btn.active-up {
-    color: #6dd49a;
+    color: var(--success);
     border-color: rgba(109, 212, 154, 0.26);
     background: rgba(109, 212, 154, 0.08);
 }
@@ -1322,7 +1322,7 @@ body {
 }
 
 .feed-comment-vote.active-up {
-    color: #6dd49a;
+    color: var(--success);
     border-color: rgba(109, 212, 154, 0.26);
     background: rgba(109, 212, 154, 0.08);
 }

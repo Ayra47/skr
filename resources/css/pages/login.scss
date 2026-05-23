@@ -255,7 +255,7 @@ input:focus {
 
     &.active {
         background: rgba(232,166,86,.12);
-        color: #e8a656;
+        color: var(--gold-primary);
     }
 
     &:hover:not(.active) {
@@ -278,5 +278,5 @@ input:focus {
     margin-bottom: 18px;
 
     svg { flex-shrink: 0; margin-top: 2px; }
-    strong { color: #e8a656; }
+    strong { color: var(--gold-primary); }
 }

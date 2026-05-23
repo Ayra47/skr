@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ChatFile extends Model
 {
@@ -22,7 +23,7 @@ class ChatFile extends Model
         'created_at' => 'datetime',
     ];
 
-    public function conversation(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function conversation(): BelongsTo
     {
         return $this->belongsTo(Conversation::class);
     }

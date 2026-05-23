@@ -255,7 +255,7 @@
         cursor: pointer;
 
         &.active {
-            color: #1a1206;
+            color: var(--text-on-light);
             background: var(--accent);
         }
     }
@@ -365,10 +365,10 @@
 .s-btn-primary {
     border: none;
     background: linear-gradient(180deg, var(--accent), var(--accent-deep));
-    color: #1a1206;
+    color: var(--text-on-light);
     font-weight: 600;
     box-shadow: 0 8px 22px rgba(232, 166, 86, 0.20);
-    &:hover { background: linear-gradient(180deg, #f0b468, var(--accent)); color: #1a1206; }
+    &:hover { background: linear-gradient(180deg, var(--gold-light), var(--accent)); color: var(--text-on-light); }
 }
 
 .s-btn-ghost {
@@ -474,13 +474,13 @@
     border-radius: 50%;
     border: 2px solid #0f1218;
     background: var(--accent);
-    color: #1a1206;
+    color: var(--text-on-light);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: background 0.15s;
-    &:hover { background: #f0b468; }
+    &:hover { background: var(--gold-light); }
 }
 
 .profile-meta { flex: 1; padding-top: 6px; }
@@ -838,7 +838,7 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #6dd49a;
+    background: var(--success);
     box-shadow: 0 0 8px rgba(109, 212, 154, 0.6);
     flex-shrink: 0;
 
@@ -867,7 +867,7 @@
     height: 6px;
     border-radius: 50%;
     flex-shrink: 0;
-    &.ok { background: #6dd49a; }
+    &.ok { background: var(--success); }
     &.fail { background: var(--danger); }
     &.key { background: var(--accent); }
 }
@@ -949,7 +949,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #1a1206;
+    color: var(--text-on-light);
     flex-shrink: 0;
 }
 
@@ -988,13 +988,13 @@
     flex-wrap: wrap;
 
     &.email-status-ok {
-        color: #6dd49a;
+        color: var(--success);
         background: rgba(109, 212, 154, 0.08);
         border-color: rgba(109, 212, 154, 0.20);
     }
 
     &.email-status-pending {
-        color: #c8aa72;
+        color: var(--gold-muted);
         background: rgba(232, 166, 86, 0.07);
         border-color: rgba(232, 166, 86, 0.20);
     }
@@ -1180,7 +1180,7 @@
 .modal-btn-primary {
     border: 0;
     background: linear-gradient(180deg, var(--accent), var(--accent-deep));
-    color: #1a1206;
+    color: var(--text-on-light);
 
     &:disabled {
         cursor: not-allowed;

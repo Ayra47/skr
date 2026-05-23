@@ -48,7 +48,11 @@
                         </svg>
                     </button>
                 </div>
-                <div class="sidebar-search">
+            </div>
+
+
+            <div class="sidebar-wrapper">
+                 <div class="sidebar-search">
                     <svg class="sidebar-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8" />
@@ -56,7 +60,11 @@
                     </svg>
                     <input type="text" placeholder="поиск">
                 </div>
-                <div class="sidebar-filters">
+            </div>
+
+
+                <div class="sidebar-wrapper">
+                    <div class="sidebar-filters">
                     <button class="sidebar-filter-btn active" data-filter="all">все</button>
                     <button class="sidebar-filter-btn" data-filter="direct">личные</button>
                     <button class="sidebar-filter-btn" data-filter="group">группы</button>
@@ -64,7 +72,7 @@
                         <button class="export-btn" id="groupRequestsBtn" type="button" style="display:none">приглашения</button>
                     @endif
                 </div>
-            </div>
+                </div>
 
             <div class="conversation-list" id="conversationList">
                 @forelse($conversations as $conv)
