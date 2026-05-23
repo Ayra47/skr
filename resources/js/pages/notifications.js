@@ -1,6 +1,7 @@
 import "../../css/pages/notifications.scss";
 import "../app";
 import { initAccentOnLoad } from "../utils/accent.js";
+import { initThemeOnLoad } from "../utils/theme.js";
 
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 
@@ -258,4 +259,5 @@ if (document.readyState === 'loading') {
     init();
 }
 
+initThemeOnLoad();
 initAccentOnLoad();

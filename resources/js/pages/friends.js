@@ -2,6 +2,7 @@ import "../../css/pages/friends.scss";
 import "../app";
 import QRCode from "qrcode";
 import { initAccentOnLoad } from "../utils/accent.js";
+import { initThemeOnLoad } from "../utils/theme.js";
 
 // ── invite card ──────────────────────────────────────────────────────────────
 
@@ -413,4 +414,5 @@ if (window.Echo && window.Echo.private) {
     });
 }
 
+initThemeOnLoad();
 initAccentOnLoad();

@@ -10,6 +10,7 @@ import { loadStoragePreference } from "./chat/storage";
 import { hydrateConversationPreviews, openConversation, startChatWithFriend } from "./chat/messages";
 import { initWebSocket } from "./chat/websocket";
 import { initAccentOnLoad } from "../utils/accent.js";
+import { initThemeOnLoad } from "../utils/theme.js";
 
 (async () => {
     await IDB.open();
@@ -62,4 +63,5 @@ import { initAccentOnLoad } from "../utils/accent.js";
     }
 })();
 
+initThemeOnLoad();
 initAccentOnLoad();

@@ -87,7 +87,7 @@ export function initWebSocket(): void {
             e.message_ids.forEach((id) => {
                 const status = document.getElementById("status-" + id);
                 if (status) {
-                    status.innerHTML = '<span style="color:#5b606d">✓✓</span>';
+                    status.innerHTML = '<span style="color:var(--text-muted)">✓✓</span>';
                 }
             });
         })
@@ -95,7 +95,7 @@ export function initWebSocket(): void {
             e.message_ids.forEach((id) => {
                 const status = document.getElementById("status-" + id);
                 if (status) {
-                    status.innerHTML = '<span style="color:#E8A656">✓✓</span>';
+                    status.innerHTML = '<span style="color:var(--warning)">✓✓</span>';
                 }
             });
         })

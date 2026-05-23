@@ -1212,12 +1212,12 @@ export function getStatusIcon(
     readAt: string | null,
 ): string {
     if (readAt) {
-        return '<span style="color:#E8A656">✓✓</span>';
+        return '<span style="color:var(--warning)">✓✓</span>';
     }
     if (deliveredAt) {
-        return '<span style="color:#5b606d">✓✓</span>';
+        return '<span style="color:var(--text-muted)">✓✓</span>';
     }
-    return '<span style="color:#272b36">✓</span>';
+    return '<span style="color:var(--text-mute)">✓</span>';
 }
 
 export function markVisibleMessagesRead(): void {

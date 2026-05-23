@@ -145,6 +145,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings/notifications', [SettingsController::class, 'getNotificationPrefs'])->name('settings.notifications.get');
     Route::post('/settings/notifications', [SettingsController::class, 'updateNotificationPrefs'])->name('settings.notifications.update');
     Route::post('/settings/accent', [SettingsController::class, 'updateAccentColor'])->name('settings.accent.update');
+    Route::post('/settings/theme', [SettingsController::class, 'updateTheme'])->name('settings.theme.update');
     Route::post('/ping', [SettingsController::class, 'heartbeat'])->name('ping');
     Route::post('/push/subscription', [PushSubscriptionController::class, 'store'])->name('push.subscription.store');
     Route::delete('/push/subscription', [PushSubscriptionController::class, 'destroy'])->name('push.subscription.destroy');

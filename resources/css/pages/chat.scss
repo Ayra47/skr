@@ -204,7 +204,7 @@ body {
     margin-bottom: 2px;
 }
 .conversation-item:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--overlay-3);
 }
 .conversation-item.active {
     background: var(--accent-soft);
@@ -253,7 +253,7 @@ body {
     box-shadow: none;
 }
 .online-dot.online::before {
-    background: rgba(85, 214, 166, 0.18);
+    background: color-mix(in srgb, var(--success) 18%, transparent);
 }
 .conv-info {
     flex: 1;
@@ -407,7 +407,7 @@ body {
 
         &:hover {
             opacity: 0.8;
-            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 0 2px var(--overlay-12);
         }
     }
 }
@@ -445,7 +445,7 @@ body {
         color 0.15s;
 
     &:hover {
-        background: rgba(255, 255, 255, 0.06);
+        background: var(--overlay-6);
         color: var(--text);
     }
 }
@@ -457,8 +457,8 @@ body {
     color: var(--green);
     padding: 3px 8px;
     border-radius: 999px;
-    background: rgba(109, 212, 154, 0.08);
-    border: 1px solid rgba(109, 212, 154, 0.2);
+    background: color-mix(in srgb, var(--success) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--success) 20%, transparent);
     margin-left: 4px;
 }
 .key-change-warn {
@@ -525,7 +525,7 @@ body {
     flex-shrink: 0;
 
     &:hover {
-        background: rgba(255, 255, 255, 0.06);
+        background: var(--overlay-6);
         color: var(--text);
     }
     &:disabled {
@@ -630,7 +630,7 @@ body {
     background: linear-gradient(
         180deg,
         color-mix(in srgb, var(--accent) 16%, transparent),
-        rgba(200, 133, 58, 0.1)
+        color-mix(in srgb, var(--gold-dark) 10%, transparent)
     );
     border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
     border-radius: 14px 14px 4px 14px;
@@ -793,7 +793,7 @@ body {
 .forward-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--bg-overlay);
     z-index: 1000;
     display: flex;
     align-items: center;
@@ -896,11 +896,11 @@ body {
     margin-bottom: 5px;
     border-left: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--overlay-4);
     cursor: pointer;
     transition: background 0.15s;
     &:hover {
-        background: rgba(255, 255, 255, 0.08);
+        background: var(--overlay-8);
     }
 }
 .reply-quote-alias {
@@ -967,7 +967,7 @@ body {
         color: var(--danger-alt);
         border-color: var(--danger-alt);
         &:hover {
-            background: rgba(238, 85, 85, 0.08);
+            background: color-mix(in srgb, var(--danger-alt) 8%, transparent);
         }
     }
 }
@@ -975,7 +975,7 @@ body {
 .delete-msg-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--bg-overlay);
     z-index: 1000;
     display: flex;
     align-items: center;
@@ -1023,9 +1023,9 @@ body {
     }
 }
 .delete-msg-btn--all {
-    background: rgba(224, 85, 85, 0.15);
+    background: color-mix(in srgb, var(--danger-alt) 15%, transparent);
     color: var(--danger-alt);
-    border: 1px solid rgba(224, 85, 85, 0.25);
+    border: 1px solid color-mix(in srgb, var(--danger-alt) 25%, transparent);
 }
 .delete-msg-btn--me {
     background: var(--panel-3);
@@ -1103,7 +1103,7 @@ body {
 .edit-history-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--bg-overlay);
     z-index: 1000;
     display: flex;
     align-items: center;
@@ -1494,7 +1494,7 @@ body {
         }
 
         &:hover {
-            background: rgba(232, 123, 109, 0.08);
+            background: color-mix(in srgb, var(--danger) 8%, transparent);
             color: var(--danger);
         }
     }
@@ -1556,7 +1556,7 @@ body {
     position: fixed;
     inset: 0;
     z-index: 1000;
-    background: rgba(0, 0, 0, 0.92);
+    background: var(--bg-overlay-heavy);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1569,7 +1569,7 @@ body {
     right: 20px;
     background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-dim);
     font-size: 22px;
     cursor: pointer;
     line-height: 1;
@@ -1578,7 +1578,7 @@ body {
     transition: color 0.15s;
 
     &:hover {
-        color: #fff;
+        color: var(--text);
     }
 }
 .lightbox-img-wrap {
@@ -1606,8 +1606,8 @@ body {
 }
 .lightbox-dl-btn {
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--overlay-12);
+    color: var(--text-secondary);
     font-size: 13px;
     padding: 6px 16px;
     border-radius: 8px;
@@ -1617,8 +1617,8 @@ body {
         color 0.15s;
 
     &:hover:not(:disabled) {
-        border-color: rgba(255, 255, 255, 0.5);
-        color: #fff;
+        border-color: var(--overlay-12);
+        color: var(--text);
     }
     &:disabled {
         opacity: 0.5;
@@ -1690,7 +1690,7 @@ body {
     font-size: 11px;
     padding: 3px 8px;
     border-radius: 5px;
-    border: 1px solid rgba(231, 76, 60, 0.4);
+    border: 1px solid color-mix(in srgb, var(--danger-strong) 40%, transparent);
     background: transparent;
     color: var(--danger-strong);
     cursor: pointer;
@@ -1699,7 +1699,7 @@ body {
     flex-shrink: 0;
 
     &:hover:not(:disabled) {
-        background: rgba(231, 76, 60, 0.1);
+        background: color-mix(in srgb, var(--danger-strong) 10%, transparent);
     }
     &:disabled {
         opacity: 0.5;
@@ -1874,7 +1874,7 @@ body {
     gap: 8px;
     padding: 10px 12px;
     border-top: 1px solid var(--border);
-    background: rgba(8, 11, 18, 0.96);
+    background: var(--panel-solid);
 }
 
 .chat-side-panel-tab {
@@ -1918,7 +1918,7 @@ body {
         position: fixed;
         inset: 0;
         z-index: 999;
-        background: rgba(0, 0, 0, 0.45);
+        background: var(--bg-overlay);
         opacity: 0;
         pointer-events: none;
         transition: opacity 0.2s ease;
@@ -1997,7 +1997,7 @@ body {
 .empty-lock-box {
     width: 110px;
     height: 110px;
-    background: linear-gradient(160deg, #2a2316 0%, #1c1a14 100%);
+    background: linear-gradient(160deg, var(--panel-3) 0%, var(--panel-medium) 100%);
     border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
     border-radius: 28px;
     display: flex;
@@ -2047,7 +2047,7 @@ body {
     border-radius: 50%;
     background: var(--success);
     flex-shrink: 0;
-    box-shadow: 0 0 6px rgba(74, 222, 128, 0.6);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--success) 60%, transparent);
 }
 .empty-shortcuts {
     display: flex;
@@ -2090,7 +2090,7 @@ body {
     font-size: 11px;
     color: var(--text-mute);
     padding: 6px 14px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--overlay-3);
     border: 1px solid var(--border);
     border-radius: 999px;
 }
@@ -2109,7 +2109,7 @@ body {
 .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--bg-overlay-dark);
     backdrop-filter: blur(4px);
     z-index: 400;
     display: flex;
@@ -2198,10 +2198,10 @@ body:has(.chat-layout) {
         ),
         radial-gradient(
             circle at 86% 10%,
-            rgba(138, 180, 248, 0.055),
+            color-mix(in srgb, var(--accent) 6%, transparent),
             transparent 31%
         ),
-        linear-gradient(180deg, var(--bg) 0%, #05070b 55%, #030407 100%);
+        linear-gradient(180deg, var(--bg) 0%, var(--bg) 55%, var(--bg-darker) 100%);
 }
 
 .chat-layout {
@@ -2210,10 +2210,10 @@ body:has(.chat-layout) {
     margin: 14px auto;
     display: flex;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.085);
+    border: 1px solid var(--overlay-8);
     border-radius: 22px;
     background:
-        linear-gradient(180deg, rgba(13, 17, 27, 0.78), rgba(5, 7, 11, 0.94)),
+        linear-gradient(180deg, color-mix(in srgb, var(--panel-light) 78%, transparent), color-mix(in srgb, var(--bg) 94%, transparent)),
         radial-gradient(
             circle at 58% 18%,
             color-mix(in srgb, var(--accent) 8%, transparent),
@@ -2227,11 +2227,11 @@ body:has(.chat-layout) {
     width: 340px;
     background: linear-gradient(
         180deg,
-        rgba(14, 17, 27, 0.96),
-        rgba(9, 11, 18, 0.94)
+        color-mix(in srgb, var(--panel-light) 96%, transparent),
+        color-mix(in srgb, var(--bg) 94%, transparent)
     );
-    border-right-color: rgba(255, 255, 255, 0.08);
-    box-shadow: inset -1px 0 rgba(255, 255, 255, 0.026);
+    border-right-color: var(--overlay-8);
+    box-shadow: inset -1px 0 var(--overlay-3);
     backdrop-filter: blur(22px);
 }
 
@@ -2244,8 +2244,8 @@ body:has(.chat-layout) {
 
     background: linear-gradient(
         180deg,
-        rgba(220, 238, 255, 0.04),
-        rgba(255, 255, 255, 0.008)
+        color-mix(in srgb, var(--accent) 4%, transparent),
+        var(--overlay-1)
     );
 }
 
@@ -2257,7 +2257,7 @@ body:has(.chat-layout) {
     color: var(--panel-light);
     background: linear-gradient(145deg, var(--accent), var(--accent-deep));
     box-shadow:
-        inset 0 1px rgba(255, 255, 255, 0.35),
+        inset 0 1px var(--overlay-12),
         0 12px 30px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
@@ -2280,8 +2280,8 @@ body:has(.chat-layout) {
 .composer-btn,
 .msg-search-nav,
 .msg-search-close {
-    border: 1px solid rgba(255, 255, 255, 0.075);
-    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid var(--border);
+    background: var(--overlay-35);
     color: var(--text-mute);
     border-radius: 12px;
 }
@@ -2298,7 +2298,7 @@ body:has(.chat-layout) {
 .msg-search-close:hover {
     color: var(--text);
     border-color: color-mix(in srgb, var(--accent) 25%, transparent);
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--overlay-6);
 }
 
 .sidebar-search {
@@ -2312,9 +2312,9 @@ body:has(.chat-layout) {
 
 .sidebar-search input {
     height: 44px;
-    border-color: rgba(255, 255, 255, 0.085);
+    border-color: var(--overlay-8);
     border-radius: 14px;
-    background: rgba(255, 255, 255, 0.035);
+    background: var(--overlay-35);
     padding-left: 38px;
     color: var(--text);
 }
@@ -2342,7 +2342,7 @@ body:has(.chat-layout) {
 
 .sidebar-filter-btn:hover {
     color: var(--text-dim);
-    background: rgba(255, 255, 255, 0.035);
+    background: var(--overlay-35);
 }
 
 .sidebar-filter-btn.active {
@@ -2381,7 +2381,7 @@ body:has(.chat-layout) {
 }
 
 .conversation-item:hover {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--overlay-4);
 }
 
 .conversation-item.active {
@@ -2414,7 +2414,7 @@ body:has(.chat-layout) {
     );
     border-color: color-mix(in srgb, var(--accent) 22%, transparent);
     color: var(--blue-pale);
-    box-shadow: inset 0 1px rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px var(--overlay-8);
 }
 
 .conv-avatar {
@@ -2445,7 +2445,7 @@ body:has(.chat-layout) {
 
 .online-dot.online::before {
     inset: -4px;
-    background: rgba(85, 214, 166, 0.16);
+    background: color-mix(in srgb, var(--success) 16%, transparent);
 }
 
 .conv-name {
@@ -2461,17 +2461,17 @@ body:has(.chat-layout) {
 .sidebar-footer {
     margin: 0 10px 12px;
     padding: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.075);
+    border: 1px solid var(--border);
     border-radius: 18px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--overlay-3);
 }
 
 .settings-row select,
 .export-btn,
 .modal-input,
 .modal-textarea {
-    border-color: rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--overlay-8);
+    background: var(--overlay-4);
 }
 
 .export-btn:hover {
@@ -2481,14 +2481,14 @@ body:has(.chat-layout) {
 
 .chat-pane {
     background:
-        linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.014) 1px, transparent 1px),
+        linear-gradient(var(--overlay-2) 1px, transparent 1px),
+        linear-gradient(90deg, var(--overlay-2) 1px, transparent 1px),
         radial-gradient(
             circle at 50% 20%,
             color-mix(in srgb, var(--accent) 8%, transparent),
             transparent 33%
         ),
-        #06090e;
+        var(--bg);
     background-size:
         42px 42px,
         42px 42px,
@@ -2499,8 +2499,8 @@ body:has(.chat-layout) {
 .chat-header {
     min-height: 76px;
     padding: 0 22px;
-    background: rgba(9, 13, 21, 0.82);
-    border-bottom-color: rgba(255, 255, 255, 0.075);
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    border-bottom-color: var(--border);
     backdrop-filter: blur(18px);
 }
 
@@ -2544,7 +2544,7 @@ body:has(.chat-layout) {
     margin-right: 6px;
     border-radius: 999px;
     background: var(--green);
-    box-shadow: 0 0 7px rgba(97, 211, 148, 0.75);
+    box-shadow: 0 0 7px color-mix(in srgb, var(--success) 75%, transparent);
     vertical-align: 1px;
 }
 
@@ -2567,8 +2567,8 @@ body:has(.chat-layout) {
 
 .key-change-warn {
     color: #aeb8c9;
-    border-color: rgba(255, 255, 255, 0.085);
-    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--overlay-8);
+    background: var(--overlay-4);
     text-transform: none;
     letter-spacing: 0;
 }
@@ -2585,8 +2585,8 @@ body:has(.chat-layout) {
 .msg-search-bar,
 .pin-bar,
 .key-warning {
-    background: rgba(12, 16, 25, 0.92);
-    border-color: rgba(255, 255, 255, 0.075);
+    background: var(--panel-wash-2);
+    border-color: var(--border);
 }
 
 .typing-indicator {
@@ -2611,8 +2611,8 @@ body:has(.chat-layout) {
 .message-bubble.own {
     background: linear-gradient(
         180deg,
-        rgba(45, 124, 177, 0.42),
-        rgba(22, 74, 108, 0.36)
+        var(--bubble-own-1),
+        var(--bubble-own-2)
     );
     border-color: color-mix(in srgb, var(--accent) 24%, transparent);
     border-radius: 16px 16px 6px 16px;
@@ -2621,10 +2621,10 @@ body:has(.chat-layout) {
 .message-bubble.other {
     background: linear-gradient(
         180deg,
-        rgba(26, 31, 45, 0.92),
-        rgba(20, 24, 36, 0.9)
+        var(--bubble-other-1),
+        var(--bubble-other-2)
     );
-    border-color: rgba(255, 255, 255, 0.075);
+    border-color: var(--border);
     border-radius: 16px 16px 16px 6px;
 }
 
@@ -2635,8 +2635,8 @@ body:has(.chat-layout) {
 .system-message,
 .e2e-notice {
     color: var(--text-mute);
-    background: rgba(255, 255, 255, 0.035);
-    border: 1px solid rgba(255, 255, 255, 0.075);
+    background: var(--overlay-35);
+    border: 1px solid var(--border);
     border-radius: 999px;
 }
 
@@ -2644,18 +2644,18 @@ body:has(.chat-layout) {
     padding: 14px 24px 18px;
     background: linear-gradient(
         180deg,
-        rgba(6, 9, 14, 0),
-        rgba(6, 9, 14, 0.96) 24%
+        transparent,
+        var(--panel-solid) 24%
     );
-    border-top-color: rgba(255, 255, 255, 0.06);
+    border-top-color: var(--overlay-6);
 }
 
 .composer-box {
     min-height: 62px;
     align-items: center;
-    border-color: rgba(255, 255, 255, 0.075);
+    border-color: var(--border);
     border-radius: 18px;
-    background: rgba(16, 20, 31, 0.92);
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
     box-shadow: 0 18px 54px rgba(0, 0, 0, 0.28);
 }
 
@@ -2679,7 +2679,7 @@ body:has(.chat-layout) {
     width: 40px;
     height: 40px;
     border-radius: 13px;
-    background: rgba(255, 255, 255, 0.055);
+    background: var(--overlay-55);
 }
 
 .send-btn.active {
@@ -2713,7 +2713,7 @@ body:has(.chat-layout) {
 }
 
 .empty-lock-box {
-    color: var(--blue-pale);
+    color: var(--accent);
     background: linear-gradient(
         145deg,
         color-mix(in srgb, var(--accent) 22%, transparent),
@@ -2726,8 +2726,8 @@ body:has(.chat-layout) {
 
 .empty-badge,
 .empty-shortcut kbd {
-    background: rgba(255, 255, 255, 0.035);
-    border-color: rgba(255, 255, 255, 0.075);
+    background: var(--overlay-35);
+    border-color: var(--border);
 }
 
 .ctx-menu,
@@ -2737,8 +2737,8 @@ body:has(.chat-layout) {
 .modal-box,
 .chat-more-menu,
 .attach-menu {
-    background: rgba(13, 17, 27, 0.98);
-    border-color: rgba(255, 255, 255, 0.085);
+    background: color-mix(in srgb, var(--panel-light) 98%, transparent);
+    border-color: var(--overlay-8);
     box-shadow: 0 20px 58px rgba(0, 0, 0, 0.42);
 }
 
@@ -3073,7 +3073,7 @@ svg[hidden] {
 
     &:hover {
         color: var(--accent);
-        background: rgba(255, 255, 255, 0.045);
+        background: var(--overlay-5);
     }
 }
 
@@ -3092,7 +3092,7 @@ svg[hidden] {
             color-mix(in srgb, var(--accent) 26%, transparent),
             transparent 36%
         ),
-        linear-gradient(145deg, rgba(27, 58, 88, 0.9), rgba(16, 27, 46, 0.95));
+        linear-gradient(145deg, var(--reply-bg-1), var(--reply-bg-2));
     color: var(--text);
     font-size: 32px;
     font-weight: 800;
@@ -3111,7 +3111,7 @@ svg[hidden] {
     justify-content: center;
     border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
     border-radius: 13px;
-    background: rgba(9, 14, 24, 0.86);
+    background: var(--panel-wash-2);
     color: var(--text);
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
 }
@@ -3119,15 +3119,15 @@ svg[hidden] {
 .group-leave-btn-wrapper {
     padding: 12px;
     border-radius: 20px;
-    border: 1px solid rgba(190, 215, 244, 0.1);
-    border-color: rgba(239, 130, 125, 0.12);
+    border: 1px solid color-mix(in srgb, var(--accent) 10%, transparent);
+    border-color: color-mix(in srgb, var(--danger) 12%, transparent);
     background:
         linear-gradient(
             180deg,
-            rgba(239, 130, 125, 0.04),
-            rgba(255, 255, 255, 0.012)
+            color-mix(in srgb, var(--danger) 4%, transparent),
+            var(--overlay-1)
         ),
-        rgba(8, 12, 20, 0.58);
+        var(--panel-veil);
 }
 
 .group-panel-section {
@@ -3137,7 +3137,7 @@ svg[hidden] {
     padding: 16px;
     border: 1px solid var(--border);
     border-radius: 18px;
-    background: rgba(255, 255, 255, 0.025);
+    background: var(--overlay-3);
 }
 
 .group-panel-section-head {
@@ -3182,7 +3182,7 @@ svg[hidden] {
     padding: 10px;
     border: 1px solid var(--border);
     border-radius: 14px;
-    background: rgba(255, 255, 255, 0.025);
+    background: var(--overlay-3);
     cursor: pointer;
     overflow: visible;
 }
@@ -3195,8 +3195,8 @@ svg[hidden] {
     border: 1px solid var(--border-2);
     background: linear-gradient(
         145deg,
-        rgba(28, 63, 96, 0.9),
-        rgba(20, 32, 53, 0.95)
+        var(--reply-bg-1),
+        var(--reply-bg-2)
     );
     color: var(--text);
     display: flex;
@@ -3227,7 +3227,7 @@ svg[hidden] {
     inset: -4px;
     z-index: -1;
     border-radius: 50%;
-    background: rgba(85, 214, 166, 0.16);
+    background: color-mix(in srgb, var(--success) 16%, transparent);
 }
 
 .group-member-meta {
@@ -3284,7 +3284,7 @@ svg[hidden] {
     padding: 8px;
     border: 1px solid var(--border-2);
     border-radius: 12px;
-    background: rgba(12, 16, 25, 0.98);
+    background: var(--panel-solid);
     box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
 
     &:empty {
@@ -3339,7 +3339,7 @@ svg[hidden] {
     padding: 0 12px;
     border: 1px solid var(--border-2);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.035);
+    background: var(--overlay-35);
     color: var(--text-dim);
     font-size: 13px;
     white-space: nowrap;
@@ -3354,7 +3354,7 @@ svg[hidden] {
     padding: 12px;
     border: 1px solid var(--border);
     border-radius: 18px;
-    background: rgba(255, 255, 255, 0.025);
+    background: var(--overlay-3);
 }
 
 .group-invite-card-copy-source {
@@ -3529,17 +3529,17 @@ svg[hidden] {
 .group-panel-section select,
 .group-request-row,
 .modal-phrase {
-    border-color: rgba(255, 255, 255, 0.085);
-    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--overlay-8);
+    background: var(--overlay-4);
 }
 
 .group-leave-btn {
     margin-top: auto;
     width: 100%;
     min-height: 42px;
-    background: rgba(239, 130, 125, 0.07);
-    color: rgba(255, 160, 155, 0.88);
-    border: 1px solid rgba(239, 130, 125, 0.2);
+    background: color-mix(in srgb, var(--danger) 7%, transparent);
+    color: var(--danger);
+    border: 1px solid color-mix(in srgb, var(--danger) 20%, transparent);
     border-radius: 11px;
     transition:
         color 0.16s ease,
@@ -3547,14 +3547,14 @@ svg[hidden] {
 
     &:hover {
         color: var(--danger-soft-2);
-        background: rgba(239, 130, 125, 0.13);
-        border-color: rgba(239, 130, 125, 0.32);
+        background: color-mix(in srgb, var(--danger) 13%, transparent);
+        border-color: color-mix(in srgb, var(--danger) 32%, transparent);
     }
 }
 
 .group-panel {
-    border-bottom-color: rgba(255, 255, 255, 0.075);
-    background: rgba(12, 16, 25, 0.92);
+    border-bottom-color: var(--border);
+    background: var(--panel-wash-2);
 }
 
 .group-member-avatar {
@@ -3613,15 +3613,15 @@ svg[hidden] {
 .chat-security-panel {
     margin-bottom: 9px;
     padding: 9px;
-    border: 1px solid rgba(185, 211, 242, 0.07);
+    border: 1px solid color-mix(in srgb, var(--accent) 8%, transparent);
     border-radius: 16px;
     background:
         linear-gradient(
             180deg,
-            rgba(224, 240, 255, 0.032),
-            rgba(147, 177, 216, 0.014)
+            color-mix(in srgb, var(--accent) 3%, transparent),
+            color-mix(in srgb, var(--accent) 2%, transparent)
         ),
-        rgba(7, 12, 20, 0.42);
+        var(--bg-fade);
 }
 
 .section-dock {
@@ -3638,7 +3638,7 @@ svg[hidden] {
     place-items: center;
     align-content: center;
     gap: 5px;
-    color: rgba(188, 204, 226, 0.62);
+    color: var(--sidebar-text);
     text-decoration: none;
     border-radius: 16px;
     border: 1px solid transparent;
@@ -3661,13 +3661,13 @@ svg[hidden] {
     background:
         linear-gradient(
             180deg,
-            rgba(235, 248, 255, 0.058),
-            rgba(123, 160, 204, 0.02)
+            color-mix(in srgb, var(--accent) 6%, transparent),
+            color-mix(in srgb, var(--accent) 2%, transparent)
         ),
-        rgba(13, 19, 31, 0.42);
-    border: 1px solid rgba(190, 215, 244, 0.06);
+        var(--sidebar-bg);
+    border: 1px solid color-mix(in srgb, var(--accent) 7%, transparent);
     box-shadow:
-        inset 0 1px rgba(255, 255, 255, 0.07),
+        inset 0 1px var(--overlay-6),
         inset 0 -1px rgba(0, 0, 0, 0.16);
 }
 
@@ -3691,25 +3691,25 @@ svg[hidden] {
 }
 
 .section-tab:hover {
-    color: rgba(236, 247, 255, 0.92);
-    background: rgba(218, 233, 255, 0.045);
-    border-color: rgba(190, 215, 244, 0.075);
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 7%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 18%, transparent);
     transform: translateY(-1px);
 }
 
 .section-tab:hover .section-icon {
-    border-color: color-mix(in srgb, var(--accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 22%, transparent);
     background:
         linear-gradient(
             180deg,
-            rgba(235, 248, 255, 0.095),
-            color-mix(in srgb, var(--accent) 4%, transparent)
+            color-mix(in srgb, var(--accent) 10%, transparent),
+            color-mix(in srgb, var(--accent) 5%, transparent)
         ),
-        rgba(18, 27, 42, 0.52);
+        var(--panel-veil);
 }
 
 .section-tab.is-active {
-    color: rgba(244, 250, 255, 0.98);
+    color: var(--sidebar-text-strong);
     background:
         radial-gradient(
             circle at 50% 0%,
@@ -3718,7 +3718,7 @@ svg[hidden] {
         ),
         color-mix(in srgb, var(--accent) 6%, transparent);
     border-color: color-mix(in srgb, var(--accent) 16%, transparent);
-    box-shadow: inset 0 1px rgba(255, 255, 255, 0.07);
+    box-shadow: inset 0 1px var(--overlay-6);
 }
 
 .section-tab.is-active .section-icon {
@@ -3726,7 +3726,7 @@ svg[hidden] {
     background:
         radial-gradient(
             circle at 34% 18%,
-            rgba(235, 248, 255, 0.44),
+            color-mix(in srgb, var(--accent) 44%, transparent),
             transparent 30%
         ),
         linear-gradient(
@@ -3738,14 +3738,14 @@ svg[hidden] {
     border-color: color-mix(in srgb, var(--accent) 24%, transparent);
     box-shadow:
         0 10px 22px color-mix(in srgb, var(--accent) 14%, transparent),
-        inset 0 1px rgba(255, 255, 255, 0.32),
-        inset 0 -1px rgba(7, 32, 59, 0.22);
+        inset 0 1px var(--overlay-12),
+        inset 0 -1px color-mix(in srgb, var(--bg) 22%, transparent);
 }
 
 .utility-dock {
     margin-top: 8px;
     padding-top: 8px;
-    border-top: 1px solid rgba(185, 211, 242, 0.065);
+    border-top: 1px solid color-mix(in srgb, var(--accent) 8%, transparent);
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
@@ -3761,7 +3761,7 @@ svg[hidden] {
     align-items: center;
     justify-content: center;
     gap: 6px;
-    color: rgba(184, 201, 223, 0.58);
+    color: var(--text-muted);
     text-decoration: none;
     border-radius: 14px;
     border: 1px solid transparent;
@@ -3794,8 +3794,8 @@ svg[hidden] {
     display: grid;
     place-items: center;
     border-radius: 10px;
-    background: rgba(214, 232, 255, 0.035);
-    border: 1px solid rgba(190, 215, 244, 0.045);
+    background: color-mix(in srgb, var(--accent) 4%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 5%, transparent);
     overflow: visible;
 }
 
@@ -3809,22 +3809,22 @@ svg[hidden] {
 .utility-tab:hover,
 .sidebar-footer .bell-btn:hover,
 .sidebar-footer .profile-menu-toggle:hover {
-    color: rgba(235, 247, 255, 0.86);
-    background: rgba(218, 233, 255, 0.04);
-    border-color: rgba(190, 215, 244, 0.065);
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 6%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 18%, transparent);
     transform: translateY(-1px);
 }
 
 .utility-tab:hover .utility-icon,
 .sidebar-footer .bell-btn:hover .utility-icon,
 .sidebar-footer .profile-menu-toggle:hover .utility-icon {
-    color: var(--blue-pale);
-    border-color: color-mix(in srgb, var(--accent) 12%, transparent);
-    background: color-mix(in srgb, var(--accent) 6%, transparent);
+    color: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 20%, transparent);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .utility-tab.is-active {
-    color: rgba(244, 250, 255, 0.98);
+    color: var(--sidebar-text-strong);
     background: color-mix(in srgb, var(--accent) 6%, transparent);
     border-color: color-mix(in srgb, var(--accent) 16%, transparent);
 }
@@ -3842,7 +3842,7 @@ svg[hidden] {
     border-radius: 999px;
     color: var(--panel-light);
     background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 60%, #fff), var(--accent) 66%, var(--accent-deep));
-    border: 2px solid rgba(8, 13, 21, 0.92);
+    border: 2px solid var(--panel-solid);
     box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 22%, transparent);
     font-size: 9px;
     font-weight: 800;

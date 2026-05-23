@@ -450,6 +450,19 @@ class SettingsController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function updateTheme(Request $request): JsonResponse
+    {
+        $request->validate([
+            'theme' => ['required', 'in:dark,light'],
+        ]);
+
+        auth()->user()->profileSetting()->updateOrCreate([], [
+            'theme' => $request->theme,
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
     public function heartbeat(): JsonResponse
     {
         auth()->user()->update(['last_seen_at' => now()]);

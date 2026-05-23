@@ -19,8 +19,8 @@ body {
     inset: 0;
     pointer-events: none;
     background:
-        radial-gradient(circle at 20% 18%, rgba(232, 166, 86, 0.11), transparent 32%),
-        radial-gradient(circle at 86% 20%, rgba(86, 140, 232, 0.08), transparent 28%);
+        radial-gradient(circle at 20% 18%, color-mix(in srgb, var(--warning) 11%, transparent), transparent 32%),
+        radial-gradient(circle at 86% 20%, color-mix(in srgb, var(--blue-soft) 8%, transparent), transparent 28%);
     z-index: 0;
 }
 
@@ -55,7 +55,7 @@ body {
     padding: 4px;
     border: 1px solid var(--border);
     border-radius: 13px;
-    background: rgba(15, 18, 24, 0.78);
+    background: var(--panel-wash);
     margin-bottom: 22px;
 }
 
@@ -84,7 +84,7 @@ body {
 
 .feed-tab.active {
     color: var(--accent);
-    background: rgba(232, 166, 86, 0.11);
+    background: color-mix(in srgb, var(--warning) 11%, transparent);
 }
 
 .feed-community-search {
@@ -95,7 +95,7 @@ body {
         height: 38px;
         border: 1px solid var(--border);
         border-radius: 10px;
-        background: rgba(15, 18, 24, 0.78);
+        background: var(--panel-wash);
         color: var(--text);
         font: inherit;
         font-size: 0.9rem;
@@ -104,16 +104,16 @@ body {
     }
 
     input:focus {
-        border-color: rgba(232, 166, 86, 0.38);
-        box-shadow: 0 0 0 4px rgba(232, 166, 86, 0.06);
+        border-color: color-mix(in srgb, var(--warning) 38%, transparent);
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--warning) 6%, transparent);
     }
 }
 
 .feed-composer,
 .feed-post,
 .feed-empty {
-    background: rgba(15, 18, 24, 0.86);
-    border: 1px solid #1c2029;
+    background: var(--panel-wash-2);
+    border: 1px solid var(--border-subtle);
     border-radius: 16px;
 }
 
@@ -123,8 +123,8 @@ body {
 }
 
 .feed-composer:focus-within {
-    border-color: rgba(232, 166, 86, 0.34);
-    box-shadow: 0 0 0 4px rgba(232, 166, 86, 0.06);
+    border-color: color-mix(in srgb, var(--warning) 34%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--warning) 6%, transparent);
 }
 
 .feed-composer-row,
@@ -146,7 +146,7 @@ body {
     color: var(--text);
     font-weight: 700;
     background: linear-gradient(135deg, oklch(0.34 0.05 180), oklch(0.2 0.03 230));
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--overlay-6);
 }
 
 .feed-avatar img {
@@ -217,7 +217,7 @@ body {
     height: 6px;
     overflow: hidden;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--overlay-8);
 }
 
 .feed-upload-progress-track span {
@@ -283,10 +283,10 @@ body {
     z-index: 1;
     width: 28px;
     height: 28px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: 1px solid var(--overlay-12);
     border-radius: 999px;
     color: var(--text);
-    background: rgba(8, 10, 15, 0.82);
+    background: var(--panel-haze-2);
     transform: translateY(-50%);
     cursor: pointer;
 }
@@ -324,10 +324,10 @@ body {
     width: 42px;
     height: 52px;
     border-radius: 10px;
-    border: 1px solid rgba(232, 166, 86, 0.26);
+    border: 1px solid color-mix(in srgb, var(--warning) 26%, transparent);
     background:
-        linear-gradient(135deg, transparent 0 26px, rgba(232, 166, 86, 0.12) 26px) top right / 24px 24px no-repeat,
-        rgba(232, 166, 86, 0.08);
+        linear-gradient(135deg, transparent 0 26px, color-mix(in srgb, var(--warning) 12%, transparent) 26px) top right / 24px 24px no-repeat,
+        color-mix(in srgb, var(--warning) 8%, transparent);
 }
 
 .feed-attachment-preview button {
@@ -336,10 +336,10 @@ body {
     right: 5px;
     width: 24px;
     height: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--overlay-12);
     border-radius: 999px;
     color: var(--text);
-    background: rgba(8, 10, 15, 0.72);
+    background: var(--panel-haze);
     cursor: pointer;
     font-size: 1.2rem;
     line-height: 1;
@@ -347,7 +347,7 @@ body {
 }
 
 .feed-attachment-preview button:hover {
-    border-color: rgba(232, 166, 86, 0.34);
+    border-color: color-mix(in srgb, var(--warning) 34%, transparent);
     color: var(--accent);
 }
 
@@ -358,7 +358,7 @@ body {
     flex-wrap: wrap;
     padding-top: 13px;
     margin-top: 10px;
-    border-top: 1px solid #1c2029;
+    border-top: 1px solid var(--border-subtle);
 }
 
 .feed-file-button input,
@@ -389,7 +389,7 @@ body {
 
 .feed-file-button span:hover {
     color: var(--accent);
-    border-color: rgba(232, 166, 86, 0.36);
+    border-color: color-mix(in srgb, var(--warning) 36%, transparent);
 }
 
 .feed-visibility-toggle,
@@ -432,7 +432,7 @@ body {
     border: 0;
     color: #1a1206;
     background: linear-gradient(180deg, var(--accent), var(--accent-deep));
-    box-shadow: 0 8px 18px rgba(232, 166, 86, 0.16);
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--warning) 16%, transparent);
 }
 
 .feed-submit:disabled {
@@ -459,13 +459,13 @@ body {
 
     &:hover {
         color: var(--purple-accent);
-        border-color: rgba(167, 139, 250, 0.36);
+        border-color: color-mix(in srgb, var(--purple-accent) 36%, transparent);
     }
 
     &.active {
         color: var(--purple-accent);
-        background: rgba(167, 139, 250, 0.1);
-        border-color: rgba(167, 139, 250, 0.4);
+        background: color-mix(in srgb, var(--purple-accent) 10%, transparent);
+        border-color: color-mix(in srgb, var(--purple-accent) 40%, transparent);
     }
 }
 
@@ -474,7 +474,7 @@ body {
     align-items: center;
     gap: 8px;
     margin-top: 11px;
-    color: rgb(91, 96, 109);
+    color: var(--text-muted);
     font-size: 0.82rem;
     font-weight: 600;
 }
@@ -497,23 +497,23 @@ body {
 
     &:hover {
         color: var(--blue-accent);
-        border-color: rgba(96, 165, 250, 0.36);
+        border-color: color-mix(in srgb, var(--blue-accent) 36%, transparent);
     }
 
     &.active {
         color: var(--blue-accent);
-        background: rgba(96, 165, 250, 0.08);
-        border-color: rgba(96, 165, 250, 0.4);
+        background: color-mix(in srgb, var(--blue-accent) 8%, transparent);
+        border-color: color-mix(in srgb, var(--blue-accent) 40%, transparent);
     }
 }
 
 // ── Poll composer ────────────────────────────────────────────────────────────
 .feed-poll-composer {
     margin-top: 14px;
-    border: 1px solid rgba(96, 165, 250, 0.22);
+    border: 1px solid color-mix(in srgb, var(--blue-accent) 22%, transparent);
     border-radius: 14px;
     padding: 14px 16px;
-    background: rgba(96, 165, 250, 0.04);
+    background: color-mix(in srgb, var(--blue-accent) 4%, transparent);
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -559,7 +559,7 @@ body {
 
     &:focus {
         outline: none;
-        border-color: rgba(96, 165, 250, 0.5);
+        border-color: color-mix(in srgb, var(--blue-accent) 50%, transparent);
     }
 }
 
@@ -578,7 +578,7 @@ body {
 
     &:hover {
         color: var(--error-red);
-        border-color: rgba(248, 113, 113, 0.4);
+        border-color: color-mix(in srgb, var(--error-red) 40%, transparent);
     }
 }
 
@@ -599,7 +599,7 @@ body {
 
     &:hover {
         color: var(--blue-accent);
-        border-color: rgba(96, 165, 250, 0.4);
+        border-color: color-mix(in srgb, var(--blue-accent) 40%, transparent);
     }
 }
 
@@ -662,7 +662,7 @@ body {
 
     &:focus {
         outline: none;
-        border-color: rgba(96, 165, 250, 0.5);
+        border-color: color-mix(in srgb, var(--blue-accent) 50%, transparent);
     }
 }
 
@@ -707,7 +707,7 @@ body {
 
     &:focus {
         outline: none;
-        border-color: rgba(96, 165, 250, 0.5);
+        border-color: color-mix(in srgb, var(--blue-accent) 50%, transparent);
     }
 }
 
@@ -777,12 +777,12 @@ body {
     transition: border-color 0.15s, background 0.15s;
 
     &:hover:not(:disabled):not(.show-results) {
-        border-color: rgba(96, 165, 250, 0.45);
-        background: rgba(96, 165, 250, 0.06);
+        border-color: color-mix(in srgb, var(--blue-accent) 45%, transparent);
+        background: color-mix(in srgb, var(--blue-accent) 6%, transparent);
     }
 
     &.selected {
-        border-color: rgba(96, 165, 250, 0.55);
+        border-color: color-mix(in srgb, var(--blue-accent) 55%, transparent);
         color: #93c5fd;
     }
 
@@ -799,13 +799,13 @@ body {
 .feed-poll-option-fill {
     position: absolute;
     inset: 0 auto 0 0;
-    background: rgba(96, 165, 250, 0.1);
+    background: color-mix(in srgb, var(--blue-accent) 10%, transparent);
     border-radius: 9px 0 0 9px;
     transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
 
     .selected & {
-        background: rgba(96, 165, 250, 0.16);
+        background: color-mix(in srgb, var(--blue-accent) 16%, transparent);
     }
 }
 
@@ -825,7 +825,7 @@ body {
 
     .selected & {
         border-color: var(--blue-accent);
-        background: rgba(96, 165, 250, 0.15);
+        background: color-mix(in srgb, var(--blue-accent) 15%, transparent);
         color: var(--blue-accent);
     }
 }
@@ -906,7 +906,7 @@ body {
 
 .feed-post-open-area:focus-visible {
     border-radius: 12px;
-    box-shadow: 0 0 0 3px rgba(232, 166, 86, 0.14);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--warning) 14%, transparent);
 }
 
 .feed-author {
@@ -962,11 +962,11 @@ body {
     font-size: 0.68rem;
     letter-spacing: 0.06em;
     font-weight: 800;
-    border: 1px solid rgba(167, 139, 250, 0.4);
+    border: 1px solid color-mix(in srgb, var(--purple-accent) 40%, transparent);
     border-radius: 5px;
     padding: 1px 6px;
     color: var(--purple-accent);
-    background: rgba(167, 139, 250, 0.08);
+    background: color-mix(in srgb, var(--purple-accent) 8%, transparent);
 }
 
 .feed-anon-author {
@@ -975,8 +975,8 @@ body {
 }
 
 .feed-avatar.whisper {
-    background: rgba(167, 139, 250, 0.12);
-    border-color: rgba(167, 139, 250, 0.3);
+    background: color-mix(in srgb, var(--purple-accent) 12%, transparent);
+    border-color: color-mix(in srgb, var(--purple-accent) 30%, transparent);
     color: var(--purple-accent);
     display: flex;
     align-items: center;
@@ -985,19 +985,19 @@ body {
 
 .feed-privacy-badge {
     flex: 0 0 auto;
-    border: 1px solid rgba(232, 166, 86, 0.28);
+    border: 1px solid color-mix(in srgb, var(--warning) 28%, transparent);
     color: var(--accent);
     border-radius: 999px;
     padding: 6px 10px;
     font-size: 0.78rem;
     font-weight: 700;
-    background: rgba(232, 166, 86, 0.08);
+    background: color-mix(in srgb, var(--warning) 8%, transparent);
 }
 
 .feed-privacy-badge.public {
     color: var(--success);
-    border-color: rgba(109, 212, 154, 0.28);
-    background: rgba(109, 212, 154, 0.08);
+    border-color: color-mix(in srgb, var(--success) 28%, transparent);
+    background: color-mix(in srgb, var(--success) 8%, transparent);
 }
 
 .feed-post-body {
@@ -1015,7 +1015,7 @@ body {
 
 .community-feed-avatar {
     color: var(--success-dark);
-    border-color: rgba(109, 212, 154, 0.34);
+    border-color: color-mix(in srgb, var(--success) 34%, transparent);
     background: linear-gradient(135deg, var(--success), var(--gold-primary));
     font-weight: 800;
 }
@@ -1039,9 +1039,9 @@ body {
     gap: 5px;
     margin-top: 14px;
     padding: 14px;
-    border: 1px dashed rgba(232, 166, 86, 0.28);
+    border: 1px dashed color-mix(in srgb, var(--warning) 28%, transparent);
     border-radius: 12px;
-    background: rgba(232, 166, 86, 0.06);
+    background: color-mix(in srgb, var(--warning) 6%, transparent);
 }
 
 .community-feed-placeholder strong {
@@ -1060,7 +1060,7 @@ body {
     gap: 12px;
     margin-top: 18px;
     padding-top: 16px;
-    border-top: 1px solid #1c2029;
+    border-top: 1px solid var(--border-subtle);
 }
 
 .feed-footer-right {
@@ -1086,14 +1086,14 @@ body {
     transition: 0.15s;
 
     &:hover {
-        border-color: rgba(232, 166, 86, 0.4);
-        background: rgba(232, 166, 86, 0.1);
+        border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+        background: color-mix(in srgb, var(--warning) 10%, transparent);
         color: var(--accent);
     }
 
     &--active {
-        border-color: rgba(232, 166, 86, 0.4);
-        background: rgba(232, 166, 86, 0.1);
+        border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+        background: color-mix(in srgb, var(--warning) 10%, transparent);
         color: var(--accent);
     }
 
@@ -1136,14 +1136,14 @@ body {
 
 .feed-reaction-btn.active-up {
     color: var(--success);
-    border-color: rgba(109, 212, 154, 0.26);
-    background: rgba(109, 212, 154, 0.08);
+    border-color: color-mix(in srgb, var(--success) 26%, transparent);
+    background: color-mix(in srgb, var(--success) 8%, transparent);
 }
 
 .feed-reaction-btn.active-down {
     color: var(--danger);
-    border-color: rgba(232, 123, 109, 0.26);
-    background: rgba(232, 123, 109, 0.08);
+    border-color: color-mix(in srgb, var(--danger) 26%, transparent);
+    background: color-mix(in srgb, var(--danger) 8%, transparent);
 }
 
 .feed-comments-count {
@@ -1153,8 +1153,8 @@ body {
 
 .feed-comments-count.active {
     color: var(--accent);
-    border-color: rgba(232, 166, 86, 0.32);
-    background: rgba(232, 166, 86, 0.08);
+    border-color: color-mix(in srgb, var(--warning) 32%, transparent);
+    background: color-mix(in srgb, var(--warning) 8%, transparent);
 }
 
 .feed-replies-panel {
@@ -1185,7 +1185,7 @@ body {
 
 .feed-replies-panel.open::-webkit-scrollbar-thumb {
     border-radius: 999px;
-    background: rgba(148, 163, 184, 0.28);
+    background: var(--border);
 }
 
 .feed-replies-panel.open::-webkit-scrollbar-track {
@@ -1198,9 +1198,9 @@ body {
 
 .feed-reply,
 .feed-reply-empty {
-    border: 1px solid #1c2029;
+    border: 1px solid var(--border-subtle);
     border-radius: 12px;
-    background: rgba(19, 22, 30, 0.62);
+    background: var(--panel-dim);
 }
 
 .feed-reply {
@@ -1250,10 +1250,10 @@ body {
     align-items: center;
     min-height: 20px;
     padding: 0 7px;
-    border: 1px solid rgba(232, 166, 86, 0.22);
+    border: 1px solid color-mix(in srgb, var(--warning) 22%, transparent);
     border-radius: 999px;
     color: var(--accent);
-    background: rgba(232, 166, 86, 0.08);
+    background: color-mix(in srgb, var(--warning) 8%, transparent);
     font-size: 0.72rem;
     font-weight: 700;
 }
@@ -1270,9 +1270,9 @@ body {
 .feed-comment-history {
     margin-top: 9px;
     padding: 10px 11px;
-    border-left: 2px solid rgba(232, 166, 86, 0.28);
+    border-left: 2px solid color-mix(in srgb, var(--warning) 28%, transparent);
     border-radius: 0 10px 10px 0;
-    background: rgba(232, 166, 86, 0.06);
+    background: color-mix(in srgb, var(--warning) 6%, transparent);
 }
 
 .feed-comment-history span {
@@ -1318,19 +1318,19 @@ body {
 .feed-replies-toggle:hover,
 .feed-comment-vote:hover {
     color: var(--text);
-    border-color: rgba(232, 166, 86, 0.28);
+    border-color: color-mix(in srgb, var(--warning) 28%, transparent);
 }
 
 .feed-comment-vote.active-up {
     color: var(--success);
-    border-color: rgba(109, 212, 154, 0.26);
-    background: rgba(109, 212, 154, 0.08);
+    border-color: color-mix(in srgb, var(--success) 26%, transparent);
+    background: color-mix(in srgb, var(--success) 8%, transparent);
 }
 
 .feed-comment-vote.active-down {
     color: var(--danger);
-    border-color: rgba(232, 123, 109, 0.26);
-    background: rgba(232, 123, 109, 0.08);
+    border-color: color-mix(in srgb, var(--danger) 26%, transparent);
+    background: color-mix(in srgb, var(--danger) 8%, transparent);
 }
 
 .feed-comment-vote:disabled {
@@ -1370,7 +1370,7 @@ body {
     height: 38px;
     border-radius: 10px;
     border: 1px solid var(--border);
-    background: rgba(19, 22, 30, 0.72);
+    background: var(--panel-dim-2);
     color: var(--text);
     padding: 0 12px;
     font: inherit;
@@ -1378,7 +1378,7 @@ body {
 }
 
 .feed-comment-form input:focus {
-    border-color: rgba(232, 166, 86, 0.36);
+    border-color: color-mix(in srgb, var(--warning) 36%, transparent);
 }
 
 .feed-comment-form button {
@@ -1412,7 +1412,7 @@ body {
     align-items: flex-start;
     justify-content: center;
     padding: 72px 16px 28px;
-    background: rgba(4, 6, 10, 0.68);
+    background: var(--bg-fade);
     backdrop-filter: blur(12px);
     animation: feed-modal-fade 0.16s ease;
     overflow-y: auto;
@@ -1424,7 +1424,7 @@ body {
     overflow-y: auto;
     border: 1px solid #252b36;
     border-radius: 18px;
-    background: rgba(15, 18, 24, 0.98);
+    background: var(--panel-solid);
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
     padding: 20px;
     animation: feed-modal-slide 0.18s ease;
@@ -1452,14 +1452,14 @@ body {
 
 .feed-modal-close:hover {
     color: var(--text);
-    border-color: rgba(232, 166, 86, 0.32);
+    border-color: color-mix(in srgb, var(--warning) 32%, transparent);
 }
 
 .feed-modal-comment-form {
     padding: 14px 0;
     margin-top: 18px;
-    border-top: 1px solid #1c2029;
-    border-bottom: 1px solid #1c2029;
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .feed-modal-replies {

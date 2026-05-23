@@ -1,6 +1,7 @@
 import "../../css/pages/settings.scss";
 import "../app";
 import { applyAccentColor } from "../utils/accent.js";
+import { applyTheme } from "../utils/theme.js";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const AUTH_USER_ID = window.Laravel.userId;
@@ -960,6 +961,29 @@ function initPagination() {
     });
 }
 
+function initTheme() {
+    const darkBtn  = document.querySelector('.theme-option[data-theme-value="dark"]');
+    const lightBtn = document.querySelector('.theme-option[data-theme-value="light"]');
+    if (!darkBtn || !lightBtn) { return; }
+
+    const current = window.Laravel.profileSettings?.theme ?? 'dark';
+    markTheme(current);
+
+    function markTheme(theme) {
+        darkBtn.classList.toggle('active', theme === 'dark');
+        lightBtn.classList.toggle('active', theme === 'light');
+    }
+
+    async function setTheme(theme) {
+        markTheme(theme);
+        applyTheme(theme);
+        await post('/settings/theme', { theme });
+    }
+
+    darkBtn.addEventListener('click',  () => setTheme('dark'));
+    lightBtn.addEventListener('click', () => setTheme('light'));
+}
+
 function initAccentColor() {
     const swatches = document.getElementById('accentSwatches');
     const customInput = document.getElementById('accentColorCustom');
@@ -1011,6 +1035,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initTwoFactor();
     initNotifications();
     initProfileVisibility();
+    initTheme();
     initAccentColor();
     initPagination();
 });
