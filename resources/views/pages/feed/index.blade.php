@@ -1,26 +1,32 @@
-<!DOCTYPE html>
-<html lang="ru">
+@php
+    $activeTab = request('tab', 'friends');
+@endphp
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Лента</title>
-    <script>
-        window.Laravel = {
-            userId: @json(Auth::id()),
-        };
-    </script>
-    @livewireStyles
-    @vite(['resources/js/pages/feed.ts'])
-</head>
+<x-app-shell title="Лента · skr" :vite="['resources/js/pages/feed.ts']">
+    <x-slot:sidebar>
+        <x-app-sidebar>
+            <x-slot:header>
+                <a href="{{ route('feed.index') }}" wire:navigate class="app-brand" style="text-decoration:none">
+                    <div class="app-brand-icon">s</div>
+                    <div class="app-brand-info">
+                        <p class="app-brand-name">skr feed</p>
+                        <span class="app-brand-sub">приватная лента</span>
+                    </div>
+                </a>
+                <a href="#fd-composer" class="app-icon-btn" title="Новый пост" aria-label="Новый пост">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                </a>
+            </x-slot>
 
-<body>
-    @include('components.nav')
+            <x-slot:body>
+                <x-feed.filter-shelves :active="$activeTab" />
+            </x-slot>
+        </x-app-sidebar>
+    </x-slot>
 
     <livewire:feed />
 
-    @livewireScripts
-</body>
-
-</html>
+    <x-slot:aside>
+        <x-feed.aside />
+    </x-slot>
+</x-app-shell>

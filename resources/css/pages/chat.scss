@@ -1,12 +1,5 @@
 @use "../app.scss";
-@use "../components/nav.scss";
-
-body {
-    font-family:
-        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    // background: #f0f2f5;
-    height: 100vh;
-}
+@use "../components/app-shell.scss";
 
 ::-webkit-scrollbar {
     width: 3px;
@@ -19,21 +12,7 @@ body {
     border-radius: 2px;
 }
 
-/* ─── Layout ─────────────────────────────────────────────────────────── */
-.chat-layout {
-    display: flex;
-    height: calc(100vh - 28px);
-}
-
-/* ─── Sidebar ────────────────────────────────────────────────────────── */
-.sidebar {
-    width: 320px;
-    background: var(--sidebar);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-}
+/* ─── Sidebar content ────────────────────────────────────────────────── */
 .sidebar-brand {
     display: flex;
     align-items: center;
@@ -116,7 +95,7 @@ body {
 }
 .sidebar-search {
     position: relative;
-    margin-bottom: 10px;
+    margin: 12px 0;
 }
 .sidebar-search input {
     width: 100%;
@@ -288,11 +267,6 @@ body {
     line-height: 2;
 }
 
-/* ─── Sidebar footer ─────────────────────────────────────────────────── */
-.sidebar-footer {
-    padding: 12px 14px;
-    border-top: 1px solid var(--border);
-}
 .settings-row {
     display: flex;
     align-items: center;
@@ -1807,7 +1781,11 @@ body {
 
 // ─── Emoji panel (desktop: inline flex column, mobile: bottom sheet) ──────────
 .emoji-panel {
+    align-self: stretch;
     width: 0;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
     overflow: hidden;
     flex-shrink: 0;
     border-left: 0px solid var(--border);
@@ -1826,11 +1804,14 @@ body {
         display: block;
         width: 352px;
         height: 100%;
+        max-height: 100%;
     }
 
     .emoji-picker-host {
         min-height: 0;
         flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
     &--open {
@@ -1865,7 +1846,8 @@ body {
 }
 
 .chat-side-panel-view--emoji {
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .chat-side-panel-tabs {
@@ -2204,36 +2186,6 @@ body:has(.chat-layout) {
         linear-gradient(180deg, var(--bg) 0%, var(--bg) 55%, var(--bg-darker) 100%);
 }
 
-.chat-layout {
-    height: calc(100vh - 28px);
-    width: min(100% - 40px, 1660px);
-    margin: 14px auto;
-    display: flex;
-    overflow: hidden;
-    border: 1px solid var(--overlay-8);
-    border-radius: 22px;
-    background:
-        linear-gradient(180deg, color-mix(in srgb, var(--panel-light) 78%, transparent), color-mix(in srgb, var(--bg) 94%, transparent)),
-        radial-gradient(
-            circle at 58% 18%,
-            color-mix(in srgb, var(--accent) 8%, transparent),
-            transparent 30%
-        );
-    box-shadow: 0 28px 90px rgba(0, 0, 0, 0.52);
-    isolation: isolate;
-}
-
-.sidebar {
-    width: 340px;
-    background: linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--panel-light) 96%, transparent),
-        color-mix(in srgb, var(--bg) 94%, transparent)
-    );
-    border-right-color: var(--overlay-8);
-    box-shadow: inset -1px 0 var(--overlay-3);
-    backdrop-filter: blur(22px);
-}
 
 .sidebar-header {
     padding: 16px;
@@ -2299,10 +2251,6 @@ body:has(.chat-layout) {
     color: var(--text);
     border-color: color-mix(in srgb, var(--accent) 25%, transparent);
     background: var(--overlay-6);
-}
-
-.sidebar-search {
-    margin-bottom: 12px;
 }
 
 .sidebar-wrapper {
@@ -2456,14 +2404,6 @@ body:has(.chat-layout) {
 .conv-preview,
 .conv-time {
     color: var(--text-mute);
-}
-
-.sidebar-footer {
-    margin: 0 10px 12px;
-    padding: 12px;
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    background: var(--overlay-3);
 }
 
 .settings-row select,
@@ -3596,18 +3536,15 @@ svg[hidden] {
 }
 
 /* ─── Sidebar-owned navigation, matching Chat.html structure ─────────── */
-.chat-layout.chat-shell {
-    height: calc(100vh - 28px);
+// Chat overrides: app-scroll is a passthrough — chat manages its own scrolling internally
+.app-scroll {
+    overflow: hidden;
+}
+
+.chat-pane {
+    height: 100%;
     display: flex;
-}
-
-.chat-sidebar {
-    width: 382px;
-    max-width: 382px;
-}
-
-.chat-main {
-    min-width: 0;
+    flex-direction: column;
 }
 
 .chat-security-panel {
@@ -3624,266 +3561,8 @@ svg[hidden] {
         var(--bg-fade);
 }
 
-.section-dock {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 7px;
-}
-
-.section-tab {
-    position: relative;
-    min-width: 0;
-    height: 64px;
-    display: grid;
-    place-items: center;
-    align-content: center;
-    gap: 5px;
-    color: var(--sidebar-text);
-    text-decoration: none;
-    border-radius: 16px;
-    border: 1px solid transparent;
-    background: transparent;
-    transition:
-        color 0.18s ease,
-        background 0.18s ease,
-        border-color 0.18s ease,
-        box-shadow 0.18s ease,
-        transform 0.18s ease;
-}
-
-.section-icon {
-    position: relative;
-    width: 35px;
-    height: 35px;
-    display: grid;
-    place-items: center;
-    border-radius: 14px;
-    background:
-        linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--accent) 6%, transparent),
-            color-mix(in srgb, var(--accent) 2%, transparent)
-        ),
-        var(--sidebar-bg);
-    border: 1px solid color-mix(in srgb, var(--accent) 7%, transparent);
-    box-shadow:
-        inset 0 1px var(--overlay-6),
-        inset 0 -1px rgba(0, 0, 0, 0.16);
-}
-
-.section-icon svg,
-.utility-icon svg {
-    width: 18px;
-    height: 18px;
-    display: block;
-    stroke-width: 1.72;
-}
-
-.section-label {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 10px;
-    line-height: 1;
-    font-weight: 620;
-    letter-spacing: 0;
-}
-
-.section-tab:hover {
-    color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 7%, transparent);
-    border-color: color-mix(in srgb, var(--accent) 18%, transparent);
-    transform: translateY(-1px);
-}
-
-.section-tab:hover .section-icon {
-    border-color: color-mix(in srgb, var(--accent) 22%, transparent);
-    background:
-        linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--accent) 10%, transparent),
-            color-mix(in srgb, var(--accent) 5%, transparent)
-        ),
-        var(--panel-veil);
-}
-
-.section-tab.is-active {
-    color: var(--sidebar-text-strong);
-    background:
-        radial-gradient(
-            circle at 50% 0%,
-            color-mix(in srgb, var(--accent) 13%, transparent),
-            transparent 64%
-        ),
-        color-mix(in srgb, var(--accent) 6%, transparent);
-    border-color: color-mix(in srgb, var(--accent) 16%, transparent);
-    box-shadow: inset 0 1px var(--overlay-6);
-}
-
-.section-tab.is-active .section-icon {
-    color: color-mix(in srgb, var(--accent) 20%, #fff);
-    background:
-        radial-gradient(
-            circle at 34% 18%,
-            color-mix(in srgb, var(--accent) 44%, transparent),
-            transparent 30%
-        ),
-        linear-gradient(
-            145deg,
-            color-mix(in srgb, var(--accent) 96%, transparent),
-            color-mix(in srgb, var(--accent) 60%, #000 40%) 64%,
-            color-mix(in srgb, var(--accent) 30%, #000 70%)
-        );
-    border-color: color-mix(in srgb, var(--accent) 24%, transparent);
-    box-shadow:
-        0 10px 22px color-mix(in srgb, var(--accent) 14%, transparent),
-        inset 0 1px var(--overlay-12),
-        inset 0 -1px color-mix(in srgb, var(--bg) 22%, transparent);
-}
-
-.utility-dock {
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid color-mix(in srgb, var(--accent) 8%, transparent);
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
-}
-
-.utility-tab,
-.sidebar-footer .bell-btn,
-.sidebar-footer .profile-menu-toggle {
-    min-width: 0;
-    width: 100%;
-    height: 38px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    color: var(--text-muted);
-    text-decoration: none;
-    border-radius: 14px;
-    border: 1px solid transparent;
-    background: transparent;
-    font: inherit;
-    font-size: 10.4px;
-    font-weight: 610;
-    letter-spacing: 0;
-    cursor: pointer;
-    padding: 0 6px;
-    transition:
-        color 0.18s ease,
-        background 0.18s ease,
-        border-color 0.18s ease,
-        transform 0.18s ease;
-}
-
-.utility-tab > span:last-child {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.utility-icon {
-    position: relative;
-    width: 24px;
-    height: 24px;
-    flex: 0 0 24px;
-    display: grid;
-    place-items: center;
-    border-radius: 10px;
-    background: color-mix(in srgb, var(--accent) 4%, transparent);
-    border: 1px solid color-mix(in srgb, var(--accent) 5%, transparent);
-    overflow: visible;
-}
-
-.utility-icon img {
-    width: 100%;
-    height: 100%;
-    border-radius: inherit;
-    object-fit: cover;
-}
-
-.utility-tab:hover,
-.sidebar-footer .bell-btn:hover,
-.sidebar-footer .profile-menu-toggle:hover {
-    color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 6%, transparent);
-    border-color: color-mix(in srgb, var(--accent) 18%, transparent);
-    transform: translateY(-1px);
-}
-
-.utility-tab:hover .utility-icon,
-.sidebar-footer .bell-btn:hover .utility-icon,
-.sidebar-footer .profile-menu-toggle:hover .utility-icon {
-    color: var(--accent);
-    border-color: color-mix(in srgb, var(--accent) 20%, transparent);
-    background: color-mix(in srgb, var(--accent) 8%, transparent);
-}
-
-.utility-tab.is-active {
-    color: var(--sidebar-text-strong);
-    background: color-mix(in srgb, var(--accent) 6%, transparent);
-    border-color: color-mix(in srgb, var(--accent) 16%, transparent);
-}
-
-.section-count,
-.sidebar-footer .bell-badge {
-    position: absolute;
-    top: -6px;
-    right: -7px;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
-    display: inline-grid;
-    place-items: center;
-    border-radius: 999px;
-    color: var(--panel-light);
-    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 60%, #fff), var(--accent) 66%, var(--accent-deep));
-    border: 2px solid var(--panel-solid);
-    box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 22%, transparent);
-    font-size: 9px;
-    font-weight: 800;
-    line-height: 1;
-}
-
-.chat-profile-menu {
-    min-width: 0;
-}
-
-.chat-profile-menu .profile-menu {
-    top: auto;
-    right: 0;
-    bottom: calc(100% + 10px);
-    z-index: 260;
-}
-
-.chat-profile-menu .profile-menu-toggle {
-    border-radius: 14px;
-}
-
-@media (max-width: 980px) {
-    .chat-layout.chat-shell {
-        height: calc(100vh - 20px);
-    }
-}
-
 @media (max-width: 720px) {
-    .chat-layout.chat-shell {
-        height: 100dvh;
-    }
-
-    .chat-sidebar {
-        width: 92px;
-        max-width: 92px;
-    }
-
-    .chat-security-panel,
-    .section-dock,
-    .utility-dock,
-    .sidebar-footer {
+    .chat-security-panel {
         display: none;
     }
 }

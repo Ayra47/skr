@@ -9,11 +9,21 @@ class ChatSidePanelAssetsTest extends TestCase
     public function test_chat_exposes_side_panel_info_and_emoji_tabs(): void
     {
         $template = file_get_contents(resource_path('views/pages/chat/index.blade.php'));
+        $shell = file_get_contents(resource_path('views/components/app-shell.blade.php'));
+        $shellStyles = file_get_contents(resource_path('css/components/app-shell.scss'));
         $script = file_get_contents(resource_path('js/pages/chat/emoji.ts'));
         $messages = file_get_contents(resource_path('js/pages/chat/messages.ts'));
         $events = file_get_contents(resource_path('js/pages/chat/events.ts'));
 
         $this->assertStringContainsString('id="chatSidePanel"', $template);
+        $this->assertStringContainsString('has-panel', $shell);
+        $this->assertStringContainsString('&.has-panel', $shellStyles);
+        $this->assertStringContainsString('grid-template-columns: 1fr 3fr auto', $shellStyles);
+        $this->assertStringContainsString('min-height: 100dvh;', $shellStyles);
+        $this->assertStringContainsString('align-self: stretch;', file_get_contents(resource_path('css/pages/chat.scss')));
+        $this->assertStringContainsString('min-height: 0;', file_get_contents(resource_path('css/pages/chat.scss')));
+        $this->assertStringContainsString('overflow-y: auto;', file_get_contents(resource_path('css/pages/chat.scss')));
+        $this->assertStringNotContainsString('panel.style.overflow = "visible"', $script);
         $this->assertStringNotContainsString('id="groupManageBtn"', $template);
         $this->assertStringContainsString('data-latest-payload', $template);
         $this->assertStringNotContainsString('зашифровано', $template);

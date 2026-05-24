@@ -29,13 +29,6 @@ export function initEmojiPicker(): void {
         if (isMobile()) {
             backdrop.classList.add("emoji-backdrop--open");
         }
-        panel.addEventListener(
-            "transitionend",
-            () => {
-                panel.style.overflow = "visible";
-            },
-            { once: true },
-        );
         isOpen = true;
         sessionStorage.setItem(STORAGE_KEY, "1");
     }

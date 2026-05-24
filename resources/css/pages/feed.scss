@@ -1,97 +1,140 @@
 @use "../app.scss";
-@use "../components/nav.scss";
+@use "../components/app-shell.scss";
 @use "../components/gallery.scss";
 
-body {
-    align-items: stretch;
-    justify-content: flex-start;
-    overflow-x: hidden;
+// ── Filter shelves (feed-specific sidebar body) ────────────────────────────
+.fd-shelves {
+    flex: 1;
+    padding: 12px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    overflow-y: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar { display: none; }
 }
 
-.feed-root {
-    min-height: calc(100vh - 64px);
-    padding: 44px 18px 72px;
-    position: relative;
-}
-
-.feed-glow {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background:
-        radial-gradient(circle at 20% 18%, color-mix(in srgb, var(--warning) 11%, transparent), transparent 32%),
-        radial-gradient(circle at 86% 20%, color-mix(in srgb, var(--blue-soft) 8%, transparent), transparent 28%);
-    z-index: 0;
-}
-
-.feed-inner {
-    max-width: 720px;
-    margin: 0 auto;
-    position: relative;
-    z-index: 1;
-}
-
-.feed-header {
-    margin-bottom: 22px;
-}
-
-.feed-header h1 {
-    font-size: 2.1rem;
-    line-height: 1.05;
+.fd-shelves-label {
+    font-size: 0.68rem;
     font-weight: 700;
-    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--sidebar-text);
+    padding: 2px 8px 8px;
 }
 
-.feed-header p {
-    color: var(--text-dim);
-    margin-top: 10px;
-    font-size: 0.95rem;
-}
-
-.feed-tabs {
-    display: inline-flex;
+.fd-shelf {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 34px 1fr;
     align-items: center;
-    gap: 4px;
-    padding: 4px;
-    border: 1px solid var(--border);
-    border-radius: 13px;
-    background: var(--panel-wash);
-    margin-bottom: 22px;
-}
-
-.feed-tab {
-    min-width: 96px;
-    height: 36px;
-    border: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 9px;
-    color: var(--text-dim);
-    text-decoration: none;
+    gap: 10px;
+    padding: 9px 8px;
+    border-radius: 14px;
+    border: 1px solid transparent;
     background: transparent;
-    font: inherit;
-    font-weight: 600;
+    color: var(--sidebar-text);
+    text-align: left;
     cursor: pointer;
-    transition:
-        color 0.16s,
-        background 0.16s;
+    font: inherit;
+    transition: color 0.16s, background 0.16s, border-color 0.16s;
+
+    &:hover {
+        color: var(--sidebar-text-strong);
+        background: color-mix(in srgb, var(--accent) 6%, transparent);
+        border-color: color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+
+    &.is-active {
+        color: var(--sidebar-text-strong);
+        background:
+            radial-gradient(
+                circle at 50% 0%,
+                color-mix(in srgb, var(--accent) 14%, transparent),
+                transparent 64%
+            ),
+            color-mix(in srgb, var(--accent) 7%, transparent);
+        border-color: color-mix(in srgb, var(--accent) 18%, transparent);
+
+        .fd-shelf-icon {
+            color: color-mix(in srgb, var(--accent) 20%, #fff);
+            background:
+                radial-gradient(
+                    circle at 34% 18%,
+                    color-mix(in srgb, var(--accent) 44%, transparent),
+                    transparent 30%
+                ),
+                linear-gradient(
+                    145deg,
+                    color-mix(in srgb, var(--accent) 96%, transparent),
+                    color-mix(in srgb, var(--accent) 60%, #000 40%) 64%,
+                    color-mix(in srgb, var(--accent) 30%, #000 70%)
+                );
+            border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+            box-shadow:
+                0 8px 20px color-mix(in srgb, var(--accent) 16%, transparent),
+                inset 0 1px var(--overlay-12);
+        }
+    }
 }
 
-.feed-tab:hover {
-    color: var(--text);
+.fd-shelf-icon {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    background:
+        linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--accent) 6%, transparent),
+            color-mix(in srgb, var(--accent) 2%, transparent)
+        ),
+        var(--sidebar-bg);
+    border: 1px solid color-mix(in srgb, var(--accent) 8%, transparent);
+    box-shadow: inset 0 1px var(--overlay-6);
+    transition: all 0.16s;
+    flex-shrink: 0;
 }
 
-.feed-tab.active {
-    color: var(--accent);
-    background: color-mix(in srgb, var(--warning) 11%, transparent);
+.fd-shelf-text {
+    min-width: 0;
 }
 
-.feed-community-search {
-    margin: -8px 0 18px;
+.fd-shelf-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: inherit;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.fd-shelf-meta {
+    font-size: 0.7rem;
+    color: var(--sidebar-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+}
+
+// ── Feed center content ────────────────────────────────────────────────────
+.fd-content {
+    max-width: 660px;
+    margin: 0 auto;
+    padding: 20px 20px 40px;
+    width: 100%;
+}
+
+// ── Community search ────────────────────────────────────────────────────────
+.fd-community-search {
+    margin-bottom: 16px;
 
     input {
-        width: min(420px, 100%);
+        width: 100%;
         height: 38px;
         border: 1px solid var(--border);
         border-radius: 10px;
@@ -101,12 +144,133 @@ body {
         font-size: 0.9rem;
         padding: 0 12px;
         outline: none;
-    }
 
-    input:focus {
-        border-color: color-mix(in srgb, var(--warning) 38%, transparent);
-        box-shadow: 0 0 0 4px color-mix(in srgb, var(--warning) 6%, transparent);
+        &::placeholder { color: var(--text-mute); }
+
+        &:focus {
+            border-color: color-mix(in srgb, var(--accent) 38%, transparent);
+            box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 6%, transparent);
+        }
     }
+}
+
+// ── Posts list ─────────────────────────────────────────────────────────────
+.fd-posts {
+    display: grid;
+    gap: 14px;
+}
+
+// ── Right panel (inside .app-aside) ─────────────────────────────────────────
+.fd-right-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.fd-right-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--sidebar-text);
+    margin-bottom: 2px;
+}
+
+.fd-friend-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 6px 8px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    text-decoration: none;
+    color: var(--text-dim);
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+    &:hover {
+        background: color-mix(in srgb, var(--accent) 6%, transparent);
+        border-color: color-mix(in srgb, var(--accent) 14%, transparent);
+        color: var(--text);
+    }
+}
+
+.fd-friend-avatar {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text);
+    background: linear-gradient(135deg, oklch(0.34 0.05 180), oklch(0.2 0.03 230));
+    border: 1px solid var(--overlay-6);
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+}
+
+.fd-friend-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
+    font-weight: 500;
+}
+
+.fd-friend-dot {
+    width: 8px;
+    height: 8px;
+    flex: 0 0 8px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.2s;
+
+    &.online {
+        background: var(--success);
+        box-shadow: 0 0 6px color-mix(in srgb, var(--success) 50%, transparent);
+    }
+}
+
+.fd-soon-block {
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px dashed var(--border);
+    color: var(--text-mute);
+    font-size: 0.78rem;
+    font-style: italic;
+    text-align: center;
+}
+
+.fd-security-strip {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-size: 0.68rem;
+    color: var(--sidebar-text);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+}
+
+.fd-security-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    flex-shrink: 0;
+    box-shadow: 0 0 5px color-mix(in srgb, var(--success) 60%, transparent);
 }
 
 .feed-composer,
@@ -1486,22 +1650,34 @@ body {
     }
 }
 
-@media (max-width: 640px) {
-    .feed-root {
-        padding-inline: 12px;
+@media (max-width: 720px) {
+    .fd-shelves {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding: 8px 10px;
+        gap: 6px;
     }
 
-    .feed-header h1 {
-        font-size: 1.7rem;
+    .fd-shelves-label {
+        display: none;
     }
 
-    .feed-tabs {
-        width: 100%;
+    .fd-shelf {
+        grid-template-columns: auto;
+        justify-items: center;
+        gap: 4px;
+        padding: 8px 12px;
+        flex-shrink: 0;
+        width: auto;
     }
 
-    .feed-tab {
-        flex: 1;
-        min-width: 0;
+    .fd-shelf-meta {
+        display: none;
+    }
+
+    .fd-content {
+        padding: 14px 14px 32px;
     }
 
     .feed-composer-row,
