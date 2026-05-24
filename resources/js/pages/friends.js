@@ -32,7 +32,7 @@ function remainingSeconds() {
 function buildRingSvg(remaining) {
     const pct     = Math.max(0, remaining / CODE_TTL);
     const expired = remaining <= 0;
-    const color   = (!expired && remaining < 30) ? 'var(--danger)' : (expired ? 'var(--danger)' : 'var(--gold-primary)');
+    const color   = (!expired && remaining < 30) ? 'var(--danger)' : (expired ? 'var(--danger)' : 'var(--accent)');
     const offset  = RING_C * (1 - pct);
     return `
         <svg width="84" height="84" style="transform:rotate(-90deg);display:block;">
@@ -104,7 +104,7 @@ function updateRing() {
     const remaining = remainingSeconds();
     const expired   = remaining <= 0;
     const pct       = Math.max(0, remaining / CODE_TTL);
-    const color     = (!expired && remaining < 30) ? 'var(--danger)' : (expired ? 'var(--danger)' : 'var(--gold-primary)');
+    const color     = (!expired && remaining < 30) ? 'var(--danger)' : (expired ? 'var(--danger)' : 'var(--accent)');
 
     const progress = document.getElementById('ringProgress');
     const timeEl   = document.getElementById('ringTime');

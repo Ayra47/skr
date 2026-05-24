@@ -11,8 +11,8 @@ let activeFilter = 'all';
 
 // ─── Type config ──────────────────────────────────────────────────────────────
 const TYPE_CFG = {
-    security: { color: 'var(--gold-primary)', bg: 'var(--gold-soft)', border: 'var(--gold-soft-2)', icon: '<path d="M12 3l8 3v6c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V6l8-3z"/>' },
-    key:      { color: 'var(--gold-primary)', bg: 'var(--gold-soft)', border: 'var(--gold-soft-2)', icon: '<circle cx="8" cy="15" r="4"/><path d="M10.8 12.2L20 3"/><path d="M16 7l3 3"/>' },
+    security: { color: 'var(--accent)', bg: 'color-mix(in srgb, var(--accent) 10%, transparent)', border: 'color-mix(in srgb, var(--accent) 22%, transparent)', icon: '<path d="M12 3l8 3v6c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V6l8-3z"/>' },
+    key:      { color: 'var(--accent)', bg: 'color-mix(in srgb, var(--accent) 10%, transparent)', border: 'color-mix(in srgb, var(--accent) 22%, transparent)', icon: '<circle cx="8" cy="15" r="4"/><path d="M10.8 12.2L20 3"/><path d="M16 7l3 3"/>' },
     friend:   { color: 'var(--blue-soft)', bg: 'rgba(var(--blue-soft-rgb, 138 180 248), 0.1)', border: 'rgba(var(--blue-soft-rgb, 138 180 248), 0.3)', icon: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/>' },
     reaction: { color: 'var(--error-red)', bg: 'rgba(var(--error-red-rgb, 248 113 113), 0.1)', border: 'rgba(var(--error-red-rgb, 248 113 113), 0.3)', icon: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 1 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/>' },
     reply:    { color: 'var(--success)', bg: 'var(--success-soft)', border: 'var(--success-soft-2)', icon: '<path d="M21 11.5a8.4 8.4 0 0 1-7.6 8.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 8-8h.5a8.5 8.5 0 0 1 8 8z"/>' },

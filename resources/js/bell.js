@@ -24,15 +24,15 @@ const TYPE_META = {
         icon: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
     },
     security: {
-        color: 'var(--gold-primary)',
-        bg: 'var(--gold-soft)',
-        border: 'var(--gold-soft-2)',
+        color: 'var(--accent)',
+        bg: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+        border: 'color-mix(in srgb, var(--accent) 22%, transparent)',
         icon: '<path d="M12 3l8 3v6c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V6l8-3z"/>',
     },
     key: {
-        color: 'var(--gold-primary)',
-        bg: 'var(--gold-soft)',
-        border: 'var(--gold-soft-2)',
+        color: 'var(--accent)',
+        bg: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+        border: 'color-mix(in srgb, var(--accent) 22%, transparent)',
         icon: '<circle cx="8" cy="15" r="4"/><path d="M10.8 12.2L20 3"/><path d="M16 7l3 3"/>',
     },
     friend: {
@@ -81,11 +81,11 @@ function renderRow(item) {
     return `
         <div style="
             position:relative; display:flex; gap:12px; padding:12px 14px;
-            background:${item.unread ? 'rgba(var(--gold-primary-rgb, 232 166 86), 0.025)' : 'transparent'};
+            background:${item.unread ? 'color-mix(in srgb, var(--accent) 4%, transparent)' : 'transparent'};
             border-bottom:1px solid var(--border);
         ">
             ${item.unread ? `<span style="position:absolute;left:-1px;top:14px;width:3px;height:18px;
-                border-radius:0 3px 3px 0;background:var(--gold-primary);"></span>` : ''}
+                border-radius:0 3px 3px 0;background:var(--accent);"></span>` : ''}
             <span style="
                 width:30px;height:30px;border-radius:8px;flex-shrink:0;
                 background:${m.bg};border:1px solid ${m.border};color:${m.color};
@@ -137,8 +137,9 @@ function buildPopover() {
             ">
                 <span style="font-size:13px;font-weight:600;color:var(--text-light);">Уведомления</span>
                 ${unreadCount ? `<span style="
-                    font-size:10px;color:var(--gold-primary);padding:2px 7px;
-                    background:var(--gold-soft);border:1px solid var(--gold-soft-2);
+                    font-size:10px;color:var(--accent);padding:2px 7px;
+                    background:color-mix(in srgb, var(--accent) 10%, transparent);
+                    border:1px solid color-mix(in srgb, var(--accent) 22%, transparent);
                     border-radius:999px;">${unreadCount} новых</span>` : ''}
                 <button id="bell-readall" ${unreadCount ? '' : 'disabled'} style="
                     margin-left:auto;height:26px;padding:0 10px;border-radius:6px;
@@ -169,7 +170,7 @@ function buildPopover() {
             <a href="/notifications" style="
                 display:flex;align-items:center;justify-content:center;gap:8px;
                 padding:13px;border-top:1px solid var(--border-subtle);
-                background:var(--panel-medium);color:var(--gold-primary);
+                background:var(--panel-medium);color:var(--accent);
                 font-size:13px;font-weight:500;text-decoration:none;font-family:inherit;
             ">
                 Все уведомления${remaining > 0 ? ` · ещё ${remaining}` : ''}
