@@ -239,7 +239,7 @@ class SettingsController extends Controller
         $filename = 'avatars/'.Str::uuid().'.webp';
         $encoded = (new ImageManager(new GdDriver))
             ->decode($request->file('avatar')->getRealPath())
-            ->cover(32, 32)
+            ->cover(128, 128)
             ->encode(new WebpEncoder(80));
         Storage::disk('public')->put($filename, (string) $encoded);
 
@@ -433,6 +433,32 @@ class SettingsController extends Controller
             ['user_id' => $user->id],
             $validated,
         );
+
+        return response()->json(['success' => true]);
+    }
+
+    public function updateAccentColor(Request $request): JsonResponse
+    {
+        $request->validate([
+            'accent_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
+        ]);
+
+        auth()->user()->profileSetting()->updateOrCreate([], [
+            'accent_color' => $request->accent_color,
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function updateTheme(Request $request): JsonResponse
+    {
+        $request->validate([
+            'theme' => ['required', 'in:dark,light'],
+        ]);
+
+        auth()->user()->profileSetting()->updateOrCreate([], [
+            'theme' => $request->theme,
+        ]);
 
         return response()->json(['success' => true]);
     }

@@ -22,7 +22,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Auth::provider('login', function ($app, array $config) {
-            return new LoginUserProvider();
+            return new LoginUserProvider;
         });
     }
 }

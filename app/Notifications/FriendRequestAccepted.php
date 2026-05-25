@@ -3,16 +3,15 @@
 namespace App\Notifications;
 
 use App\Models\User;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Notification;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Notifications\Notification;
 
 class FriendRequestAccepted extends Notification implements ShouldBroadcast
 {
-    use Queueable, InteractsWithSockets;
+    use InteractsWithSockets, Queueable;
 
     public function __construct(
         public User $receiver
@@ -35,7 +34,7 @@ class FriendRequestAccepted extends Notification implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('user.' . $this->receiver->id),
+            new PrivateChannel('user.'.$this->receiver->id),
         ];
     }
 

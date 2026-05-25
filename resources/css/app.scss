@@ -7,25 +7,200 @@
 }
 
 :root {
-    --bg: #0c0e14;
-    --panel: rgba(18, 21, 28, 0.78);
-    --panel-2: #161922;
-    --border: #272b36;
-    --text: #e8e8ec;
-    --text-dim: #8a8f9c;
-    --text-mute: #6c7280;
-    --accent: #e8a656;
-    --accent-deep: #c8853a;
-    --accent-soft: rgba(232, 166, 86, 0.1);
+    /* Background layers */
+    --bg: #05070b;
+    --bg-darker: #030407;
+    --bg-top: #080a10;
+    --panel: rgba(12, 15, 23, 0.86);
+    --panel-2: rgba(18, 23, 35, 0.82);
+    --panel-3: #1b2230;
+    --panel-light: #0f1218;
+    --panel-medium: #13161e;
+    --surface: rgba(16, 20, 31, 0.86);
+
+    /* Text colors */
+    --text: #f4f6fb;
+    --text-light: #e8e8ec;
+    --text-dim: #aab2c4;
+    --text-mute: #687187;
+    --text-muted: #687187;
+    --text-secondary: #c5cad6;
+    --text-tertiary: #8a8f9c;
+    --text-on-light: #1a1206;
+
+    /* Borders & Overlays */
+    --border: rgba(255, 255, 255, 0.075);
     --border-2: rgba(255, 255, 255, 0.06);
+    --border-subtle: #1c2029;
+    --border-secondary: #272b36;
+    --hover: rgba(255, 255, 255, 0.055);
+    --bg-overlay: rgba(0, 0, 0, 0.5);
+    --bg-overlay-dark: rgba(0, 0, 0, 0.65);
+    --bg-overlay-heavy: rgba(0, 0, 0, 0.92);
+
+    /* White overlays (dark theme) — used for subtle borders/hovers on dark panels */
+    --overlay-1:  rgba(255, 255, 255, 0.008);
+    --overlay-2:  rgba(255, 255, 255, 0.018);
+    --overlay-3:  rgba(255, 255, 255, 0.03);
+    --overlay-4:  rgba(255, 255, 255, 0.04);
+    --overlay-5:  rgba(255, 255, 255, 0.05);
+    --overlay-6:  rgba(255, 255, 255, 0.06);
+    --overlay-8:  rgba(255, 255, 255, 0.08);
+    --overlay-12: rgba(255, 255, 255, 0.12);
+    --overlay-35: rgba(255, 255, 255, 0.035);
+    --overlay-55: rgba(255, 255, 255, 0.055);
+
+    /* Semi-transparent panel backgrounds (dark-specific) */
+    --panel-wash:   rgba(15, 18, 24, 0.78);
+    --panel-wash-2: rgba(15, 18, 24, 0.86);
+    --panel-solid:  rgba(15, 18, 24, 0.98);
+    --panel-haze:   rgba(8, 10, 15, 0.72);
+    --panel-haze-2: rgba(8, 10, 15, 0.82);
+    --panel-veil:   rgba(12, 14, 20, 0.55);
+    --panel-dim:    rgba(19, 22, 30, 0.62);
+    --panel-dim-2:  rgba(19, 22, 30, 0.72);
+    --bg-fade:      rgba(4, 6, 10, 0.68);
+
+    /* Chat message bubble backgrounds */
+    --bubble-own-1:   color-mix(in srgb, var(--accent) 28%, transparent);
+    --bubble-own-2:   color-mix(in srgb, var(--accent) 16%, transparent);
+    --bubble-other-1: rgba(26, 31, 45, 0.92);
+    --bubble-other-2: rgba(20, 24, 36, 0.9);
+    --reply-bg-1:     rgba(27, 58, 88, 0.9);
+    --reply-bg-2:     rgba(16, 27, 46, 0.95);
+
+    /* Chat sidebar navigation text */
+    --sidebar-text:        rgba(188, 204, 226, 0.62);
+    --sidebar-text-2:      rgba(236, 247, 255, 0.92);
+    --sidebar-text-strong: rgba(244, 250, 255, 0.98);
+    --sidebar-bg:          rgba(13, 19, 31, 0.42);
+
+    /* Primary accent (blue) */
+    --accent: #5bbeff;
+    --accent-deep: color-mix(in srgb, var(--accent) 55%, #000 45%);
+    --accent-soft: color-mix(in srgb, var(--accent) 11%, transparent);
+
+    /* Blue palette */
+    --blue-primary: #5bbeff;
+    --blue-light: #72caff;
+    --blue-accent: #60a5fa;
+    --blue-soft: #8ab4f8;
+    --blue-pale: #d8efff;
+    --blue-pale-2: #9bd8ff;
+    --blue-pale-3: #8ccfff;
+
+    /* Green/Success palette */
+    --green: #61d394;
+    --success: #6dd49a;
+    --success-dark: #112018;
+    --success-soft: rgba(109, 212, 154, 0.1);
+    --success-soft-2: rgba(109, 212, 154, 0.3);
+
+    /* Red/Danger palette */
     --danger: #e87b6d;
+    --danger-alt: #e05555;
+    --danger-strong: #e74c3c;
+    --error-red: #f87171;
+    --danger-soft: rgba(224, 108, 125, 0.1);
+    --danger-soft-2: rgba(224, 108, 125, 0.3);
+
+    /* Gold/Warning/Orange palette */
+    --warning: #e8a656;
+    --gold-primary: #e8a656;
+    --gold-dark: #c8853a;
+    --gold-light: #f0b468;
+    --gold-muted: #c8aa72;
+    --gold-soft: rgba(232, 166, 86, 0.1);
+    --gold-soft-2: rgba(232, 166, 86, 0.3);
+
+    /* Purple palette */
+    --purple-accent: #a78bfa;
+    --purple-light:  #c4b5fd;
+
+    /* Pink palette */
+    --pink-accent: #f19ca2;
+    --pink-soft: #f5b7bc;
+    --pink-pale: #9ce4bd;
+
+    /* Neutral gray palette */
+    --gray-accent: #8a8f9c;
+
+    /* Fonts */
     --font: "Inter", system-ui, sans-serif;
+    --font-mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
     --font-serif: "Fraunces", serif;
+}
+
+[data-theme="light"] {
+    --bg:              #f5f6fa;
+    --bg-darker:       #ebebf0;
+    --bg-top:          #eef0f5;
+    --panel:           rgba(255, 255, 255, 0.88);
+    --panel-2:         rgba(248, 249, 252, 0.9);
+    --panel-3:         #e8eaf0;
+    --panel-light:     #f0f2f7;
+    --panel-medium:    #e8eaf0;
+    --surface:         rgba(255, 255, 255, 0.9);
+
+    --text:            #0f1117;
+    --text-light:      #1a1d26;
+    --text-dim:        #5a6174;
+    --text-mute:       #8a91a0;
+    --text-muted:      #8a91a0;
+    --text-secondary:  #3a3f50;
+    --text-tertiary:   #6a6f7c;
+
+    --border:          rgba(0, 0, 0, 0.09);
+    --border-2:        rgba(0, 0, 0, 0.07);
+    --border-subtle:   #d8dae2;
+    --border-secondary: #cdd0da;
+    --hover:           rgba(0, 0, 0, 0.05);
+    --bg-overlay:      rgba(0, 0, 0, 0.25);
+    --bg-overlay-dark: rgba(0, 0, 0, 0.45);
+    --bg-overlay-heavy: rgba(0, 0, 0, 0.75);
+
+    --overlay-1:  rgba(0, 0, 0, 0.006);
+    --overlay-2:  rgba(0, 0, 0, 0.01);
+    --overlay-3:  rgba(0, 0, 0, 0.022);
+    --overlay-4:  rgba(0, 0, 0, 0.03);
+    --overlay-5:  rgba(0, 0, 0, 0.04);
+    --overlay-6:  rgba(0, 0, 0, 0.045);
+    --overlay-8:  rgba(0, 0, 0, 0.06);
+    --overlay-12: rgba(0, 0, 0, 0.09);
+    --overlay-35: rgba(0, 0, 0, 0.025);
+    --overlay-55: rgba(0, 0, 0, 0.04);
+
+    --success-soft:  rgba(109, 212, 154, 0.12);
+    --danger-soft:   rgba(224, 108, 125, 0.12);
+    --gold-soft:     rgba(232, 166, 86, 0.12);
+
+    --panel-wash:   rgba(240, 242, 247, 0.88);
+    --panel-wash-2: rgba(240, 242, 247, 0.95);
+    --panel-solid:  rgba(240, 242, 247, 0.99);
+    --panel-haze:   rgba(245, 246, 250, 0.82);
+    --panel-haze-2: rgba(245, 246, 250, 0.9);
+    --panel-veil:   rgba(248, 249, 252, 0.72);
+    --panel-dim:    rgba(248, 249, 252, 0.88);
+    --panel-dim-2:  rgba(248, 249, 252, 0.92);
+    --bg-fade:      rgba(245, 246, 250, 0.78);
+
+    --bubble-other-1: rgba(255, 255, 255, 0.95);
+    --bubble-other-2: rgba(248, 249, 252, 0.9);
+    --reply-bg-1:     rgba(220, 235, 255, 0.85);
+    --reply-bg-2:     rgba(210, 228, 252, 0.9);
+
+    --sidebar-text:        var(--text-muted);
+    --sidebar-text-2:      var(--text-secondary);
+    --sidebar-text-strong: var(--text);
+    --sidebar-bg:          rgba(248, 249, 252, 0.88);
 }
 
 body {
     font-family: var(--font);
-    background: var(--bg);
+    background:
+        radial-gradient(circle at 18% 0%, var(--accent-soft), transparent 34%),
+        radial-gradient(circle at 82% 8%, rgba(97, 211, 148, 0.06), transparent 28%),
+        linear-gradient(180deg, var(--bg-top) 0%, var(--bg) 58%, var(--bg-darker) 100%);
     color: var(--text);
     min-height: 100vh;
     align-items: center;

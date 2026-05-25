@@ -432,7 +432,7 @@ export function bindEvents(): void {
             (document.getElementById("messagesArea") as HTMLElement).style.display = "none";
             (document.getElementById("chatHeader") as HTMLElement).style.display = "none";
             (document.getElementById("inputArea") as HTMLElement).style.display = "none";
-            document.getElementById("emojiPanel")?.classList.remove("emoji-panel--open");
+            window.closeChatSidePanel?.();
             document.querySelector(".emoji-backdrop")?.classList.remove("emoji-backdrop--open");
             closeMsgSearch();
             (window as any).currentConvId = null;
@@ -553,28 +553,121 @@ export function bindEvents(): void {
         openConversation(data.conversation_id, 0, title, "group");
     });
 
-    document.getElementById("groupManageBtn")?.addEventListener("click", async () => {
-        const panel = document.getElementById("groupPanel") as HTMLElement;
-        panel.style.display = panel.style.display === "block" ? "none" : "block";
-        await refreshCurrentGroupPanel();
-    });
-
-    document.getElementById("chatAvatar")?.addEventListener("click", () => {
-        if (
-            state.currentConversationType !== "group" ||
-            !["owner", "admin"].includes(state.currentUserRole ?? "")
-        ) {
+    async function openChatHeaderInfoPanel(): Promise<void> {
+        if (!state.currentConvId) {
             return;
         }
 
-        (document.getElementById("groupAvatarInput") as HTMLInputElement | null)?.click();
+        await refreshCurrentGroupPanel();
+        await window.openChatSidePanel?.("info");
+    }
+
+    document.getElementById("chatHeader")?.addEventListener("click", async (e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest(".chat-header-tools")) {
+            return;
+        }
+
+        await openChatHeaderInfoPanel();
     });
+
+    function toggleMemberActionPopup(row: HTMLElement): void {
+        const actions = row.querySelector<HTMLElement>(".group-member-actions");
+        if (!actions || !actions.querySelector("button")) {
+            return;
+        }
+
+        const wasOpen = row.classList.contains("group-member-row--actions-open");
+        document.querySelectorAll<HTMLElement>(".group-member-row--actions-open").forEach((openRow) => {
+            openRow.classList.remove("group-member-row--actions-open", "group-member-row--actions-above");
+        });
+
+        if (wasOpen) {
+            return;
+        }
+
+        const panelBounds = document
+            .querySelector<HTMLElement>(".chat-side-panel-view--info")
+            ?.getBoundingClientRect();
+        const rowBounds = row.getBoundingClientRect();
+        const availableBelow = (panelBounds?.bottom ?? window.innerHeight) - rowBounds.bottom;
+
+        row.classList.toggle("group-member-row--actions-above", availableBelow < 104);
+        row.classList.add("group-member-row--actions-open");
+    }
+
+    function setGroupTitleEditMode(isEditing: boolean): void {
+        const wrap = document.querySelector<HTMLElement>(".group-title-inline");
+        const display = document.getElementById("groupTitleDisplay") as HTMLElement | null;
+        const input = document.getElementById("groupTitleInput") as HTMLInputElement | null;
+        const editIcon = document.querySelector<SVGElement>(".group-title-edit-icon");
+        const saveIcon = document.querySelector<SVGElement>(".group-title-save-icon");
+        if (!wrap || !display || !input || !editIcon || !saveIcon) {
+            return;
+        }
+
+        wrap.dataset.editing = isEditing ? "true" : "false";
+        display.hidden = isEditing;
+        input.hidden = !isEditing;
+        editIcon.toggleAttribute("hidden", isEditing);
+        saveIcon.toggleAttribute("hidden", !isEditing);
+        editIcon.style.display = isEditing ? "none" : "";
+        saveIcon.style.display = isEditing ? "" : "none";
+
+        if (isEditing) {
+            input.value = display.textContent?.trim() ?? "";
+            input.focus();
+            input.select();
+        }
+    }
+
+    async function saveGroupTitle(): Promise<void> {
+        if (!state.currentConvId) {
+            return;
+        }
+
+        const input = document.getElementById("groupTitleInput") as HTMLInputElement | null;
+        const title = input?.value.trim() ?? "";
+        if (!input || !title) {
+            return;
+        }
+
+        const data = await patch<{ success: boolean; title: string }>(`/chat/${state.currentConvId}/group`, { title });
+        if (!data.success) {
+            return;
+        }
+
+        state.currentPartnerLogin = data.title;
+        document.getElementById("chatPartnerName")!.textContent = data.title;
+        const item = document.querySelector<HTMLElement>(`[data-conv-id="${state.currentConvId}"]`);
+        if (item) {
+            item.dataset.partnerLogin = data.title;
+            item.querySelector(".conv-name")!.textContent = data.title;
+        }
+
+        const display = document.getElementById("groupTitleDisplay");
+        if (display) {
+            display.textContent = data.title;
+        }
+        setGroupTitleEditMode(false);
+    }
 
     document.getElementById("groupPanel")?.addEventListener("click", async (e) => {
         const target = e.target as HTMLElement;
 
         if (target.id === "groupPanelClose") {
-            (document.getElementById("groupPanel") as HTMLElement).style.display = "none";
+            window.closeChatSidePanel?.();
+            return;
+        }
+
+        if (target.id === "groupInviteToggle") {
+            document.getElementById("groupInviteFriendRow")?.classList.toggle("is-open");
+            return;
+        }
+
+        const memberRow = target.closest<HTMLElement>(".group-member-row");
+        if (memberRow && !target.closest(".group-member-actions")) {
+            toggleMemberActionPopup(memberRow);
             return;
         }
 
@@ -588,27 +681,17 @@ export function bindEvents(): void {
             return;
         }
 
-        if (target.id === "groupRenameBtn" && state.currentConvId) {
-            const input = document.getElementById("groupTitleInput") as HTMLInputElement;
-            const title = input.value.trim();
-            if (!title) {
-                return;
-            }
-            const data = await patch<{ success: boolean; title: string }>(`/chat/${state.currentConvId}/group`, { title });
-            if (data.success) {
-                state.currentPartnerLogin = data.title;
-                document.getElementById("chatPartnerName")!.textContent = data.title;
-                const item = document.querySelector<HTMLElement>(`[data-conv-id="${state.currentConvId}"]`);
-                if (item) {
-                    item.dataset.partnerLogin = data.title;
-                    item.querySelector(".conv-name")!.textContent = data.title;
-                }
-                await refreshCurrentGroupPanel();
+        if (target.closest("#groupTitleEditBtn")) {
+            const isEditing = document.querySelector<HTMLElement>(".group-title-inline")?.dataset.editing === "true";
+            if (isEditing) {
+                await saveGroupTitle();
+            } else {
+                setGroupTitleEditMode(true);
             }
             return;
         }
 
-        if (target.id === "groupAvatarBtn") {
+        if (target.closest("#groupAvatarBtn")) {
             (document.getElementById("groupAvatarInput") as HTMLInputElement | null)?.click();
             return;
         }
@@ -664,6 +747,23 @@ export function bindEvents(): void {
         }
     });
 
+    document.getElementById("groupPanel")?.addEventListener("keydown", async (e) => {
+        const target = e.target as HTMLElement;
+        if (target.id !== "groupTitleInput") {
+            return;
+        }
+
+        if (e.key === "Enter") {
+            e.preventDefault();
+            await saveGroupTitle();
+        }
+
+        if (e.key === "Escape") {
+            e.preventDefault();
+            setGroupTitleEditMode(false);
+        }
+    });
+
     document.getElementById("groupPanel")?.addEventListener("change", async (e) => {
         const target = e.target as HTMLInputElement;
         if (target.id !== "groupAvatarInput" || !state.currentConvId || !target.files?.[0]) {
@@ -696,19 +796,23 @@ export function bindEvents(): void {
             if (headerAvatar) {
                 headerAvatar.innerHTML = `<img src="${data.avatar_url}" alt="" class="avatar-img">`;
             }
+            const groupInfoAvatar = document.getElementById("groupAvatarBtn");
+            if (groupInfoAvatar) {
+                groupInfoAvatar.innerHTML = `<img src="${data.avatar_url}" alt="" class="avatar-img">`;
+            }
             showNotification("фото группы обновлено");
         }
     });
 
-    (document.getElementById("storageSelect") as HTMLSelectElement).addEventListener(
+    document.getElementById("storageSelect")?.addEventListener(
         "change",
         (e) => updateStoragePreference((e.target as HTMLSelectElement).value),
     );
 
-    document.getElementById("exportHistoryBtn")!.addEventListener("click", exportHistoryToFile);
-    document.getElementById("importFileInput")!.addEventListener("change", importHistoryFromFile);
-    document.getElementById("importTriggerBtn")!.addEventListener("click", () => {
-        (document.getElementById("importFileInput") as HTMLInputElement).click();
+    document.getElementById("exportHistoryBtn")?.addEventListener("click", exportHistoryToFile);
+    document.getElementById("importFileInput")?.addEventListener("change", importHistoryFromFile);
+    document.getElementById("importTriggerBtn")?.addEventListener("click", () => {
+        (document.getElementById("importFileInput") as HTMLInputElement | null)?.click();
     });
 
     const input = document.getElementById("messageInput") as HTMLTextAreaElement;
@@ -721,7 +825,7 @@ export function bindEvents(): void {
     input.addEventListener("input", updateSendBtn);
 
     document.getElementById("sendBtn")!.addEventListener("click", sendMessage);
-    document.getElementById("setupBackupBtn")!.addEventListener("click", setupKeyBackup);
+    document.getElementById("setupBackupBtn")?.addEventListener("click", setupKeyBackup);
 
     // Attach menu (Фото / Файл)
     const attachBtn = document.getElementById("attachBtn") as HTMLButtonElement;
@@ -742,7 +846,7 @@ export function bindEvents(): void {
         }
     }
     document.getElementById("chatAvatar")?.addEventListener("click", goToPartnerProfile);
-    document.getElementById("chatPartnerName")?.closest(".chat-header-info")?.addEventListener("click", goToPartnerProfile);
+    // document.getElementById("chatPartnerName")?.closest(".chat-header-info")?.addEventListener("click", goToPartnerProfile);
 
     // Chat more menu
     const chatMoreBtn = document.getElementById("chatMoreBtn") as HTMLButtonElement;

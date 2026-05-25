@@ -2,9 +2,13 @@ import "../../css/pages/feed.scss";
 import "../app";
 import { initBookmarkToggle } from "../bookmark-toggle";
 import { initPoll } from "../poll";
+import { initAccentOnLoad } from "../utils/accent.js";
+import { initThemeOnLoad } from "../utils/theme.js";
 
 initBookmarkToggle();
 initPoll();
+initThemeOnLoad();
+initAccentOnLoad();
 
 type AttachmentPreview = {
     file: File;
@@ -249,7 +253,10 @@ window.addEventListener("feed-post-created", () => {
 });
 
 document.addEventListener("livewire:navigated", initializeFeedControls);
-document.addEventListener("DOMContentLoaded", initializeFeedControls);
+document.addEventListener("DOMContentLoaded", () => {
+    initializeFeedControls();
+    initFriendPresence();
+});
 initializeFeedControls();
 
 function initializeFeedControls(): void {
@@ -726,4 +733,37 @@ function resetAttachmentUploadProgress(): void {
     labelElement.textContent = "Загрузка файлов";
     valueElement.textContent = "0%";
     bar.style.width = "0%";
+}
+
+type EchoPresenceMember = { id: number | string };
+
+type EchoPresenceChannel = {
+    here: (cb: (members: EchoPresenceMember[]) => void) => EchoPresenceChannel;
+    joining: (cb: (member: EchoPresenceMember) => void) => EchoPresenceChannel;
+    leaving: (cb: (member: EchoPresenceMember) => void) => EchoPresenceChannel;
+};
+
+type EchoWindow = Window & {
+    Echo?: { join: (channel: string) => EchoPresenceChannel };
+};
+
+function setFriendDot(userId: number | string, online: boolean): void {
+    const dot = document.querySelector<HTMLElement>(`[data-friend-dot="${userId}"]`);
+    dot?.classList.toggle("online", online);
+}
+
+function initFriendPresence(): void {
+    const echo = (window as EchoWindow).Echo;
+    if (!echo) { return; }
+
+    echo.join("presence-chat")
+        .here((members) => {
+            members.forEach((m) => setFriendDot(m.id, true));
+        })
+        .joining((member) => {
+            setFriendDot(member.id, true);
+        })
+        .leaving((member) => {
+            setFriendDot(member.id, false);
+        });
 }

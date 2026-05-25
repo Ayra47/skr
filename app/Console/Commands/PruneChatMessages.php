@@ -7,7 +7,6 @@ use App\Models\Message;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 
 #[Signature('chat:prune')]
 #[Description('Delete expired messages (older than 3 months) and enforce 10k per conversation limit')]

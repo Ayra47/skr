@@ -50,6 +50,20 @@ class ChatController extends Controller
             ->get()
             ->sortByDesc(fn ($c) => optional($c->latestMessage)->created_at);
 
+        $latestPreviews = $conversations->mapWithKeys(function (Conversation $conversation) use ($user) {
+            $message = $conversation->latestMessage;
+
+            return [
+                $conversation->id => [
+                    'payload' => $message && $message->type !== Message::TYPE_SYSTEM
+                        ? $this->payloadForUser($message, $user->id)
+                        : '',
+                    'sender_id' => $message?->sender_id,
+                    'type' => $message?->type,
+                ],
+            ];
+        });
+
         $allFriends = $user->friends->merge($user->friendOf)->unique('id');
 
         $convPartnerIds = $conversations
@@ -68,7 +82,7 @@ class ChatController extends Controller
             ->latest()
             ->get();
 
-        return view('pages.chat.index', compact('conversations', 'friendsWithoutConv', 'allFriends', 'hasPublicKey', 'hasKeyBackup', 'pendingJoinRequests'));
+        return view('pages.chat.index', compact('conversations', 'friendsWithoutConv', 'allFriends', 'hasPublicKey', 'hasKeyBackup', 'pendingJoinRequests', 'latestPreviews'));
     }
 
     public function storePublicKey(Request $request): JsonResponse
@@ -308,7 +322,7 @@ class ChatController extends Controller
         $filename = 'group_avatars/'.Str::uuid().'.webp';
         $encoded = (new ImageManager(new GdDriver))
             ->decode($request->file('avatar')->getRealPath())
-            ->cover(32, 32)
+            ->cover(360, 360)
             ->encode(new WebpEncoder(80));
         Storage::disk('public')->put($filename, (string) $encoded);
 

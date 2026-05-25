@@ -2,6 +2,8 @@ import "../../css/pages/bookmarks.scss";
 import "../app";
 import { initBookmarkToggle } from "../bookmark-toggle";
 import { initGallery } from "../gallery";
+import { initAccentOnLoad } from "../utils/accent.js";
+import { initThemeOnLoad } from "../utils/theme.js";
 
 initBookmarkToggle();
 initGallery();
@@ -26,3 +28,6 @@ function setupInfiniteScroll() {
 
 document.addEventListener('DOMContentLoaded', setupInfiniteScroll);
 document.addEventListener('livewire:update', setupInfiniteScroll);
+
+initThemeOnLoad();
+initAccentOnLoad();

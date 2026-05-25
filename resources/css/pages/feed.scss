@@ -1,119 +1,283 @@
 @use "../app.scss";
-@use "../components/nav.scss";
+@use "../components/app-shell.scss";
 @use "../components/gallery.scss";
 
-body {
-    align-items: stretch;
-    justify-content: flex-start;
-    overflow-x: hidden;
+// ── Filter shelves (feed-specific sidebar body) ────────────────────────────
+.fd-shelves {
+    flex: 1;
+    padding: 12px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    overflow-y: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar { display: none; }
 }
 
-.feed-root {
-    min-height: calc(100vh - 64px);
-    padding: 44px 18px 72px;
-    position: relative;
-}
-
-.feed-glow {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background:
-        radial-gradient(circle at 20% 18%, rgba(232, 166, 86, 0.11), transparent 32%),
-        radial-gradient(circle at 86% 20%, rgba(86, 140, 232, 0.08), transparent 28%);
-    z-index: 0;
-}
-
-.feed-inner {
-    max-width: 720px;
-    margin: 0 auto;
-    position: relative;
-    z-index: 1;
-}
-
-.feed-header {
-    margin-bottom: 22px;
-}
-
-.feed-header h1 {
-    font-size: 2.1rem;
-    line-height: 1.05;
+.fd-shelves-label {
+    font-size: 0.68rem;
     font-weight: 700;
-    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--sidebar-text);
+    padding: 2px 8px 8px;
 }
 
-.feed-header p {
-    color: var(--text-dim);
-    margin-top: 10px;
-    font-size: 0.95rem;
-}
-
-.feed-tabs {
-    display: inline-flex;
+.fd-shelf {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 34px 1fr;
     align-items: center;
-    gap: 4px;
-    padding: 4px;
-    border: 1px solid var(--border);
-    border-radius: 13px;
-    background: rgba(15, 18, 24, 0.78);
-    margin-bottom: 22px;
-}
-
-.feed-tab {
-    min-width: 96px;
-    height: 36px;
-    border: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 9px;
-    color: var(--text-dim);
-    text-decoration: none;
+    gap: 10px;
+    padding: 9px 8px;
+    border-radius: 14px;
+    border: 1px solid transparent;
     background: transparent;
-    font: inherit;
-    font-weight: 600;
+    color: var(--sidebar-text);
+    text-align: left;
     cursor: pointer;
-    transition:
-        color 0.16s,
-        background 0.16s;
+    font: inherit;
+    transition: color 0.16s, background 0.16s, border-color 0.16s;
+
+    &:hover {
+        color: var(--sidebar-text-strong);
+        background: color-mix(in srgb, var(--accent) 6%, transparent);
+        border-color: color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+
+    &.is-active {
+        color: var(--sidebar-text-strong);
+        background:
+            radial-gradient(
+                circle at 50% 0%,
+                color-mix(in srgb, var(--accent) 14%, transparent),
+                transparent 64%
+            ),
+            color-mix(in srgb, var(--accent) 7%, transparent);
+        border-color: color-mix(in srgb, var(--accent) 18%, transparent);
+
+        .fd-shelf-icon {
+            color: color-mix(in srgb, var(--accent) 20%, #fff);
+            background:
+                radial-gradient(
+                    circle at 34% 18%,
+                    color-mix(in srgb, var(--accent) 44%, transparent),
+                    transparent 30%
+                ),
+                linear-gradient(
+                    145deg,
+                    color-mix(in srgb, var(--accent) 96%, transparent),
+                    color-mix(in srgb, var(--accent) 60%, #000 40%) 64%,
+                    color-mix(in srgb, var(--accent) 30%, #000 70%)
+                );
+            border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+            box-shadow:
+                0 8px 20px color-mix(in srgb, var(--accent) 16%, transparent),
+                inset 0 1px var(--overlay-12);
+        }
+    }
 }
 
-.feed-tab:hover {
-    color: var(--text);
+.fd-shelf-icon {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    background:
+        linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--accent) 6%, transparent),
+            color-mix(in srgb, var(--accent) 2%, transparent)
+        ),
+        var(--sidebar-bg);
+    border: 1px solid color-mix(in srgb, var(--accent) 8%, transparent);
+    box-shadow: inset 0 1px var(--overlay-6);
+    transition: all 0.16s;
+    flex-shrink: 0;
 }
 
-.feed-tab.active {
-    color: var(--accent);
-    background: rgba(232, 166, 86, 0.11);
+.fd-shelf-text {
+    min-width: 0;
 }
 
-.feed-community-search {
-    margin: -8px 0 18px;
+.fd-shelf-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: inherit;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.fd-shelf-meta {
+    font-size: 0.7rem;
+    color: var(--sidebar-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+}
+
+// ── Feed center content ────────────────────────────────────────────────────
+.fd-content {
+    max-width: 660px;
+    margin: 0 auto;
+    padding: 20px 20px 40px;
+    width: 100%;
+}
+
+// ── Community search ────────────────────────────────────────────────────────
+.fd-community-search {
+    margin-bottom: 16px;
 
     input {
-        width: min(420px, 100%);
+        width: 100%;
         height: 38px;
         border: 1px solid var(--border);
         border-radius: 10px;
-        background: rgba(15, 18, 24, 0.78);
+        background: var(--panel-wash);
         color: var(--text);
         font: inherit;
         font-size: 0.9rem;
         padding: 0 12px;
         outline: none;
-    }
 
-    input:focus {
-        border-color: rgba(232, 166, 86, 0.38);
-        box-shadow: 0 0 0 4px rgba(232, 166, 86, 0.06);
+        &::placeholder { color: var(--text-mute); }
+
+        &:focus {
+            border-color: color-mix(in srgb, var(--accent) 38%, transparent);
+            box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 6%, transparent);
+        }
     }
+}
+
+// ── Posts list ─────────────────────────────────────────────────────────────
+.fd-posts {
+    display: grid;
+    gap: 14px;
+}
+
+// ── Right panel (inside .app-aside) ─────────────────────────────────────────
+.fd-right-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.fd-right-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--sidebar-text);
+    margin-bottom: 2px;
+}
+
+.fd-friend-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 6px 8px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    text-decoration: none;
+    color: var(--text-dim);
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+    &:hover {
+        background: color-mix(in srgb, var(--accent) 6%, transparent);
+        border-color: color-mix(in srgb, var(--accent) 14%, transparent);
+        color: var(--text);
+    }
+}
+
+.fd-friend-avatar {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text);
+    background: linear-gradient(135deg, oklch(0.34 0.05 180), oklch(0.2 0.03 230));
+    border: 1px solid var(--overlay-6);
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+}
+
+.fd-friend-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
+    font-weight: 500;
+}
+
+.fd-friend-dot {
+    width: 8px;
+    height: 8px;
+    flex: 0 0 8px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.2s;
+
+    &.online {
+        background: var(--success);
+        box-shadow: 0 0 6px color-mix(in srgb, var(--success) 50%, transparent);
+    }
+}
+
+.fd-soon-block {
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px dashed var(--border);
+    color: var(--text-mute);
+    font-size: 0.78rem;
+    font-style: italic;
+    text-align: center;
+}
+
+.fd-security-strip {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-size: 0.68rem;
+    color: var(--sidebar-text);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+}
+
+.fd-security-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    flex-shrink: 0;
+    box-shadow: 0 0 5px color-mix(in srgb, var(--success) 60%, transparent);
 }
 
 .feed-composer,
 .feed-post,
 .feed-empty {
-    background: rgba(15, 18, 24, 0.86);
-    border: 1px solid #1c2029;
+    background: var(--panel-wash-2);
+    border: 1px solid var(--border-subtle);
     border-radius: 16px;
 }
 
@@ -123,8 +287,8 @@ body {
 }
 
 .feed-composer:focus-within {
-    border-color: rgba(232, 166, 86, 0.34);
-    box-shadow: 0 0 0 4px rgba(232, 166, 86, 0.06);
+    border-color: color-mix(in srgb, var(--warning) 34%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--warning) 6%, transparent);
 }
 
 .feed-composer-row,
@@ -146,7 +310,7 @@ body {
     color: var(--text);
     font-weight: 700;
     background: linear-gradient(135deg, oklch(0.34 0.05 180), oklch(0.2 0.03 230));
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--overlay-6);
 }
 
 .feed-avatar img {
@@ -217,7 +381,7 @@ body {
     height: 6px;
     overflow: hidden;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--overlay-8);
 }
 
 .feed-upload-progress-track span {
@@ -230,7 +394,7 @@ body {
 }
 
 .feed-upload-progress.done .feed-upload-progress-track span {
-    background: linear-gradient(90deg, #6dd49a, #9be1bb);
+    background: linear-gradient(90deg, var(--success), #9be1bb);
 }
 
 .feed-upload-progress.error .feed-upload-progress-track span {
@@ -283,10 +447,10 @@ body {
     z-index: 1;
     width: 28px;
     height: 28px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: 1px solid var(--overlay-12);
     border-radius: 999px;
     color: var(--text);
-    background: rgba(8, 10, 15, 0.82);
+    background: var(--panel-haze-2);
     transform: translateY(-50%);
     cursor: pointer;
 }
@@ -324,10 +488,10 @@ body {
     width: 42px;
     height: 52px;
     border-radius: 10px;
-    border: 1px solid rgba(232, 166, 86, 0.26);
+    border: 1px solid color-mix(in srgb, var(--warning) 26%, transparent);
     background:
-        linear-gradient(135deg, transparent 0 26px, rgba(232, 166, 86, 0.12) 26px) top right / 24px 24px no-repeat,
-        rgba(232, 166, 86, 0.08);
+        linear-gradient(135deg, transparent 0 26px, color-mix(in srgb, var(--warning) 12%, transparent) 26px) top right / 24px 24px no-repeat,
+        color-mix(in srgb, var(--warning) 8%, transparent);
 }
 
 .feed-attachment-preview button {
@@ -336,10 +500,10 @@ body {
     right: 5px;
     width: 24px;
     height: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--overlay-12);
     border-radius: 999px;
     color: var(--text);
-    background: rgba(8, 10, 15, 0.72);
+    background: var(--panel-haze);
     cursor: pointer;
     font-size: 1.2rem;
     line-height: 1;
@@ -347,7 +511,7 @@ body {
 }
 
 .feed-attachment-preview button:hover {
-    border-color: rgba(232, 166, 86, 0.34);
+    border-color: color-mix(in srgb, var(--warning) 34%, transparent);
     color: var(--accent);
 }
 
@@ -358,7 +522,7 @@ body {
     flex-wrap: wrap;
     padding-top: 13px;
     margin-top: 10px;
-    border-top: 1px solid #1c2029;
+    border-top: 1px solid var(--border-subtle);
 }
 
 .feed-file-button input,
@@ -389,7 +553,7 @@ body {
 
 .feed-file-button span:hover {
     color: var(--accent);
-    border-color: rgba(232, 166, 86, 0.36);
+    border-color: color-mix(in srgb, var(--warning) 36%, transparent);
 }
 
 .feed-visibility-toggle,
@@ -432,7 +596,7 @@ body {
     border: 0;
     color: #1a1206;
     background: linear-gradient(180deg, var(--accent), var(--accent-deep));
-    box-shadow: 0 8px 18px rgba(232, 166, 86, 0.16);
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--warning) 16%, transparent);
 }
 
 .feed-submit:disabled {
@@ -458,14 +622,14 @@ body {
     font-weight: 600;
 
     &:hover {
-        color: #a78bfa;
-        border-color: rgba(167, 139, 250, 0.36);
+        color: var(--purple-accent);
+        border-color: color-mix(in srgb, var(--purple-accent) 36%, transparent);
     }
 
     &.active {
-        color: #a78bfa;
-        background: rgba(167, 139, 250, 0.1);
-        border-color: rgba(167, 139, 250, 0.4);
+        color: var(--purple-accent);
+        background: color-mix(in srgb, var(--purple-accent) 10%, transparent);
+        border-color: color-mix(in srgb, var(--purple-accent) 40%, transparent);
     }
 }
 
@@ -474,7 +638,7 @@ body {
     align-items: center;
     gap: 8px;
     margin-top: 11px;
-    color: rgb(91, 96, 109);
+    color: var(--text-muted);
     font-size: 0.82rem;
     font-weight: 600;
 }
@@ -496,24 +660,24 @@ body {
     font-weight: 600;
 
     &:hover {
-        color: #60a5fa;
-        border-color: rgba(96, 165, 250, 0.36);
+        color: var(--blue-accent);
+        border-color: color-mix(in srgb, var(--blue-accent) 36%, transparent);
     }
 
     &.active {
-        color: #60a5fa;
-        background: rgba(96, 165, 250, 0.08);
-        border-color: rgba(96, 165, 250, 0.4);
+        color: var(--blue-accent);
+        background: color-mix(in srgb, var(--blue-accent) 8%, transparent);
+        border-color: color-mix(in srgb, var(--blue-accent) 40%, transparent);
     }
 }
 
 // ── Poll composer ────────────────────────────────────────────────────────────
 .feed-poll-composer {
     margin-top: 14px;
-    border: 1px solid rgba(96, 165, 250, 0.22);
+    border: 1px solid color-mix(in srgb, var(--blue-accent) 22%, transparent);
     border-radius: 14px;
     padding: 14px 16px;
-    background: rgba(96, 165, 250, 0.04);
+    background: color-mix(in srgb, var(--blue-accent) 4%, transparent);
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -525,7 +689,7 @@ body {
     gap: 7px;
     font-size: 0.82rem;
     font-weight: 700;
-    color: #60a5fa;
+    color: var(--blue-accent);
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
@@ -559,7 +723,7 @@ body {
 
     &:focus {
         outline: none;
-        border-color: rgba(96, 165, 250, 0.5);
+        border-color: color-mix(in srgb, var(--blue-accent) 50%, transparent);
     }
 }
 
@@ -577,8 +741,8 @@ body {
     flex-shrink: 0;
 
     &:hover {
-        color: #f87171;
-        border-color: rgba(248, 113, 113, 0.4);
+        color: var(--error-red);
+        border-color: color-mix(in srgb, var(--error-red) 40%, transparent);
     }
 }
 
@@ -598,8 +762,8 @@ body {
     align-self: flex-start;
 
     &:hover {
-        color: #60a5fa;
-        border-color: rgba(96, 165, 250, 0.4);
+        color: var(--blue-accent);
+        border-color: color-mix(in srgb, var(--blue-accent) 40%, transparent);
     }
 }
 
@@ -662,7 +826,7 @@ body {
 
     &:focus {
         outline: none;
-        border-color: rgba(96, 165, 250, 0.5);
+        border-color: color-mix(in srgb, var(--blue-accent) 50%, transparent);
     }
 }
 
@@ -707,7 +871,7 @@ body {
 
     &:focus {
         outline: none;
-        border-color: rgba(96, 165, 250, 0.5);
+        border-color: color-mix(in srgb, var(--blue-accent) 50%, transparent);
     }
 }
 
@@ -746,7 +910,7 @@ body {
     color: var(--text-mute);
 
     &.expired {
-        color: #f87171;
+        color: var(--error-red);
     }
 }
 
@@ -777,12 +941,12 @@ body {
     transition: border-color 0.15s, background 0.15s;
 
     &:hover:not(:disabled):not(.show-results) {
-        border-color: rgba(96, 165, 250, 0.45);
-        background: rgba(96, 165, 250, 0.06);
+        border-color: color-mix(in srgb, var(--blue-accent) 45%, transparent);
+        background: color-mix(in srgb, var(--blue-accent) 6%, transparent);
     }
 
     &.selected {
-        border-color: rgba(96, 165, 250, 0.55);
+        border-color: color-mix(in srgb, var(--blue-accent) 55%, transparent);
         color: #93c5fd;
     }
 
@@ -799,13 +963,13 @@ body {
 .feed-poll-option-fill {
     position: absolute;
     inset: 0 auto 0 0;
-    background: rgba(96, 165, 250, 0.1);
+    background: color-mix(in srgb, var(--blue-accent) 10%, transparent);
     border-radius: 9px 0 0 9px;
     transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
 
     .selected & {
-        background: rgba(96, 165, 250, 0.16);
+        background: color-mix(in srgb, var(--blue-accent) 16%, transparent);
     }
 }
 
@@ -824,9 +988,9 @@ body {
     z-index: 1;
 
     .selected & {
-        border-color: #60a5fa;
-        background: rgba(96, 165, 250, 0.15);
-        color: #60a5fa;
+        border-color: var(--blue-accent);
+        background: color-mix(in srgb, var(--blue-accent) 15%, transparent);
+        color: var(--blue-accent);
     }
 }
 
@@ -877,7 +1041,7 @@ body {
     text-underline-offset: 2px;
 
     &:hover {
-        color: #f87171;
+        color: var(--error-red);
     }
 }
 
@@ -906,7 +1070,7 @@ body {
 
 .feed-post-open-area:focus-visible {
     border-radius: 12px;
-    box-shadow: 0 0 0 3px rgba(232, 166, 86, 0.14);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--warning) 14%, transparent);
 }
 
 .feed-author {
@@ -962,11 +1126,11 @@ body {
     font-size: 0.68rem;
     letter-spacing: 0.06em;
     font-weight: 800;
-    border: 1px solid rgba(167, 139, 250, 0.4);
+    border: 1px solid color-mix(in srgb, var(--purple-accent) 40%, transparent);
     border-radius: 5px;
     padding: 1px 6px;
-    color: #a78bfa;
-    background: rgba(167, 139, 250, 0.08);
+    color: var(--purple-accent);
+    background: color-mix(in srgb, var(--purple-accent) 8%, transparent);
 }
 
 .feed-anon-author {
@@ -975,9 +1139,9 @@ body {
 }
 
 .feed-avatar.whisper {
-    background: rgba(167, 139, 250, 0.12);
-    border-color: rgba(167, 139, 250, 0.3);
-    color: #a78bfa;
+    background: color-mix(in srgb, var(--purple-accent) 12%, transparent);
+    border-color: color-mix(in srgb, var(--purple-accent) 30%, transparent);
+    color: var(--purple-accent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -985,19 +1149,19 @@ body {
 
 .feed-privacy-badge {
     flex: 0 0 auto;
-    border: 1px solid rgba(232, 166, 86, 0.28);
+    border: 1px solid color-mix(in srgb, var(--warning) 28%, transparent);
     color: var(--accent);
     border-radius: 999px;
     padding: 6px 10px;
     font-size: 0.78rem;
     font-weight: 700;
-    background: rgba(232, 166, 86, 0.08);
+    background: color-mix(in srgb, var(--warning) 8%, transparent);
 }
 
 .feed-privacy-badge.public {
-    color: #6dd49a;
-    border-color: rgba(109, 212, 154, 0.28);
-    background: rgba(109, 212, 154, 0.08);
+    color: var(--success);
+    border-color: color-mix(in srgb, var(--success) 28%, transparent);
+    background: color-mix(in srgb, var(--success) 8%, transparent);
 }
 
 .feed-post-body {
@@ -1014,9 +1178,9 @@ body {
 }
 
 .community-feed-avatar {
-    color: #112018;
-    border-color: rgba(109, 212, 154, 0.34);
-    background: linear-gradient(135deg, #6dd49a, #e8a656);
+    color: var(--success-dark);
+    border-color: color-mix(in srgb, var(--success) 34%, transparent);
+    background: linear-gradient(135deg, var(--success), var(--gold-primary));
     font-weight: 800;
 }
 
@@ -1039,9 +1203,9 @@ body {
     gap: 5px;
     margin-top: 14px;
     padding: 14px;
-    border: 1px dashed rgba(232, 166, 86, 0.28);
+    border: 1px dashed color-mix(in srgb, var(--warning) 28%, transparent);
     border-radius: 12px;
-    background: rgba(232, 166, 86, 0.06);
+    background: color-mix(in srgb, var(--warning) 6%, transparent);
 }
 
 .community-feed-placeholder strong {
@@ -1060,7 +1224,7 @@ body {
     gap: 12px;
     margin-top: 18px;
     padding-top: 16px;
-    border-top: 1px solid #1c2029;
+    border-top: 1px solid var(--border-subtle);
 }
 
 .feed-footer-right {
@@ -1086,14 +1250,14 @@ body {
     transition: 0.15s;
 
     &:hover {
-        border-color: rgba(232, 166, 86, 0.4);
-        background: rgba(232, 166, 86, 0.1);
+        border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+        background: color-mix(in srgb, var(--warning) 10%, transparent);
         color: var(--accent);
     }
 
     &--active {
-        border-color: rgba(232, 166, 86, 0.4);
-        background: rgba(232, 166, 86, 0.1);
+        border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+        background: color-mix(in srgb, var(--warning) 10%, transparent);
         color: var(--accent);
     }
 
@@ -1135,15 +1299,15 @@ body {
 }
 
 .feed-reaction-btn.active-up {
-    color: #6dd49a;
-    border-color: rgba(109, 212, 154, 0.26);
-    background: rgba(109, 212, 154, 0.08);
+    color: var(--success);
+    border-color: color-mix(in srgb, var(--success) 26%, transparent);
+    background: color-mix(in srgb, var(--success) 8%, transparent);
 }
 
 .feed-reaction-btn.active-down {
     color: var(--danger);
-    border-color: rgba(232, 123, 109, 0.26);
-    background: rgba(232, 123, 109, 0.08);
+    border-color: color-mix(in srgb, var(--danger) 26%, transparent);
+    background: color-mix(in srgb, var(--danger) 8%, transparent);
 }
 
 .feed-comments-count {
@@ -1153,8 +1317,8 @@ body {
 
 .feed-comments-count.active {
     color: var(--accent);
-    border-color: rgba(232, 166, 86, 0.32);
-    background: rgba(232, 166, 86, 0.08);
+    border-color: color-mix(in srgb, var(--warning) 32%, transparent);
+    background: color-mix(in srgb, var(--warning) 8%, transparent);
 }
 
 .feed-replies-panel {
@@ -1185,7 +1349,7 @@ body {
 
 .feed-replies-panel.open::-webkit-scrollbar-thumb {
     border-radius: 999px;
-    background: rgba(148, 163, 184, 0.28);
+    background: var(--border);
 }
 
 .feed-replies-panel.open::-webkit-scrollbar-track {
@@ -1198,9 +1362,9 @@ body {
 
 .feed-reply,
 .feed-reply-empty {
-    border: 1px solid #1c2029;
+    border: 1px solid var(--border-subtle);
     border-radius: 12px;
-    background: rgba(19, 22, 30, 0.62);
+    background: var(--panel-dim);
 }
 
 .feed-reply {
@@ -1250,10 +1414,10 @@ body {
     align-items: center;
     min-height: 20px;
     padding: 0 7px;
-    border: 1px solid rgba(232, 166, 86, 0.22);
+    border: 1px solid color-mix(in srgb, var(--warning) 22%, transparent);
     border-radius: 999px;
     color: var(--accent);
-    background: rgba(232, 166, 86, 0.08);
+    background: color-mix(in srgb, var(--warning) 8%, transparent);
     font-size: 0.72rem;
     font-weight: 700;
 }
@@ -1270,9 +1434,9 @@ body {
 .feed-comment-history {
     margin-top: 9px;
     padding: 10px 11px;
-    border-left: 2px solid rgba(232, 166, 86, 0.28);
+    border-left: 2px solid color-mix(in srgb, var(--warning) 28%, transparent);
     border-radius: 0 10px 10px 0;
-    background: rgba(232, 166, 86, 0.06);
+    background: color-mix(in srgb, var(--warning) 6%, transparent);
 }
 
 .feed-comment-history span {
@@ -1318,19 +1482,19 @@ body {
 .feed-replies-toggle:hover,
 .feed-comment-vote:hover {
     color: var(--text);
-    border-color: rgba(232, 166, 86, 0.28);
+    border-color: color-mix(in srgb, var(--warning) 28%, transparent);
 }
 
 .feed-comment-vote.active-up {
-    color: #6dd49a;
-    border-color: rgba(109, 212, 154, 0.26);
-    background: rgba(109, 212, 154, 0.08);
+    color: var(--success);
+    border-color: color-mix(in srgb, var(--success) 26%, transparent);
+    background: color-mix(in srgb, var(--success) 8%, transparent);
 }
 
 .feed-comment-vote.active-down {
     color: var(--danger);
-    border-color: rgba(232, 123, 109, 0.26);
-    background: rgba(232, 123, 109, 0.08);
+    border-color: color-mix(in srgb, var(--danger) 26%, transparent);
+    background: color-mix(in srgb, var(--danger) 8%, transparent);
 }
 
 .feed-comment-vote:disabled {
@@ -1370,7 +1534,7 @@ body {
     height: 38px;
     border-radius: 10px;
     border: 1px solid var(--border);
-    background: rgba(19, 22, 30, 0.72);
+    background: var(--panel-dim-2);
     color: var(--text);
     padding: 0 12px;
     font: inherit;
@@ -1378,7 +1542,7 @@ body {
 }
 
 .feed-comment-form input:focus {
-    border-color: rgba(232, 166, 86, 0.36);
+    border-color: color-mix(in srgb, var(--warning) 36%, transparent);
 }
 
 .feed-comment-form button {
@@ -1412,7 +1576,7 @@ body {
     align-items: flex-start;
     justify-content: center;
     padding: 72px 16px 28px;
-    background: rgba(4, 6, 10, 0.68);
+    background: var(--bg-fade);
     backdrop-filter: blur(12px);
     animation: feed-modal-fade 0.16s ease;
     overflow-y: auto;
@@ -1424,7 +1588,7 @@ body {
     overflow-y: auto;
     border: 1px solid #252b36;
     border-radius: 18px;
-    background: rgba(15, 18, 24, 0.98);
+    background: var(--panel-solid);
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
     padding: 20px;
     animation: feed-modal-slide 0.18s ease;
@@ -1452,14 +1616,14 @@ body {
 
 .feed-modal-close:hover {
     color: var(--text);
-    border-color: rgba(232, 166, 86, 0.32);
+    border-color: color-mix(in srgb, var(--warning) 32%, transparent);
 }
 
 .feed-modal-comment-form {
     padding: 14px 0;
     margin-top: 18px;
-    border-top: 1px solid #1c2029;
-    border-bottom: 1px solid #1c2029;
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .feed-modal-replies {
@@ -1486,22 +1650,34 @@ body {
     }
 }
 
-@media (max-width: 640px) {
-    .feed-root {
-        padding-inline: 12px;
+@media (max-width: 720px) {
+    .fd-shelves {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding: 8px 10px;
+        gap: 6px;
     }
 
-    .feed-header h1 {
-        font-size: 1.7rem;
+    .fd-shelves-label {
+        display: none;
     }
 
-    .feed-tabs {
-        width: 100%;
+    .fd-shelf {
+        grid-template-columns: auto;
+        justify-items: center;
+        gap: 4px;
+        padding: 8px 12px;
+        flex-shrink: 0;
+        width: auto;
     }
 
-    .feed-tab {
-        flex: 1;
-        min-width: 0;
+    .fd-shelf-meta {
+        display: none;
+    }
+
+    .fd-content {
+        padding: 14px 14px 32px;
     }
 
     .feed-composer-row,

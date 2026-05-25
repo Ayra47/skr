@@ -9,7 +9,7 @@ export const IDB = {
 
     async open(): Promise<void> {
         return new Promise((resolve, reject) => {
-            const req = indexedDB.open("skr_chat", 2);
+            const req = indexedDB.open("skr_chat", 3);
             req.onupgradeneeded = (e) => {
                 const db = (e.target as IDBOpenDBRequest).result;
                 if (!db.objectStoreNames.contains("keys")) {

@@ -38,6 +38,9 @@ declare global {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         Echo: any;
         emojiPanelOnChatOpen?: () => Promise<void>;
+        chatSidePanelOnConversationChange?: () => void;
+        openChatSidePanel?: (tab?: "info" | "emoji") => Promise<void>;
+        closeChatSidePanel?: () => void;
         currentConvId: number | null;
     }
 }

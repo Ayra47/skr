@@ -12,39 +12,39 @@ let popoverEl = null;
 // ─── Icon/colour map ──────────────────────────────────────────────────────────
 const TYPE_META = {
     reaction: {
-        color: '#e06c7d',
-        bg: 'rgba(224,108,125,.10)',
-        border: 'rgba(224,108,125,.30)',
+        color: 'var(--pink-accent)',
+        bg: 'rgba(var(--pink-accent-rgb, 241 156 162), 0.1)',
+        border: 'rgba(var(--pink-accent-rgb, 241 156 162), 0.3)',
         icon: '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
     },
     reply: {
-        color: '#6dd49a',
-        bg: 'rgba(109,212,154,.10)',
-        border: 'rgba(109,212,154,.30)',
+        color: 'var(--success)',
+        bg: 'var(--success-soft)',
+        border: 'var(--success-soft-2)',
         icon: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
     },
     security: {
-        color: '#e8a656',
-        bg: 'rgba(232,166,86,.10)',
-        border: 'rgba(232,166,86,.30)',
+        color: 'var(--accent)',
+        bg: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+        border: 'color-mix(in srgb, var(--accent) 22%, transparent)',
         icon: '<path d="M12 3l8 3v6c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V6l8-3z"/>',
     },
     key: {
-        color: '#e8a656',
-        bg: 'rgba(232,166,86,.10)',
-        border: 'rgba(232,166,86,.30)',
+        color: 'var(--accent)',
+        bg: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+        border: 'color-mix(in srgb, var(--accent) 22%, transparent)',
         icon: '<circle cx="8" cy="15" r="4"/><path d="M10.8 12.2L20 3"/><path d="M16 7l3 3"/>',
     },
     friend: {
-        color: '#8ab4f8',
-        bg: 'rgba(138,180,248,.10)',
-        border: 'rgba(138,180,248,.30)',
+        color: 'var(--blue-soft)',
+        bg: 'rgba(var(--blue-soft-rgb, 138 180 248), 0.1)',
+        border: 'rgba(var(--blue-soft-rgb, 138 180 248), 0.3)',
         icon: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/>',
     },
     system: {
-        color: '#8a8f9c',
-        bg: 'rgba(138,143,156,.10)',
-        border: 'rgba(138,143,156,.30)',
+        color: 'var(--text-tertiary)',
+        bg: 'rgba(var(--text-tertiary-rgb, 138 143 156), 0.1)',
+        border: 'rgba(var(--text-tertiary-rgb, 138 143 156), 0.3)',
         icon: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
     },
 };
@@ -81,11 +81,11 @@ function renderRow(item) {
     return `
         <div style="
             position:relative; display:flex; gap:12px; padding:12px 14px;
-            background:${item.unread ? 'rgba(232,166,86,.025)' : 'transparent'};
+            background:${item.unread ? 'color-mix(in srgb, var(--accent) 4%, transparent)' : 'transparent'};
             border-bottom:1px solid var(--border);
         ">
             ${item.unread ? `<span style="position:absolute;left:-1px;top:14px;width:3px;height:18px;
-                border-radius:0 3px 3px 0;background:#e8a656;"></span>` : ''}
+                border-radius:0 3px 3px 0;background:var(--accent);"></span>` : ''}
             <span style="
                 width:30px;height:30px;border-radius:8px;flex-shrink:0;
                 background:${m.bg};border:1px solid ${m.border};color:${m.color};
@@ -96,11 +96,11 @@ function renderRow(item) {
             </span>
             <div style="flex:1;min-width:0;">
                 <div style="display:flex;gap:8px;align-items:baseline;">
-                    <span style="font-size:12.5px;font-weight:500;color:#e8e8ec;
+                    <span style="font-size:12.5px;font-weight:500;color:var(--text-light);
                         overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">${item.title}</span>
-                    <span style="font-size:10.5px;color:#5b606d;flex-shrink:0;">${relativeTime(item.created_at)}</span>
+                    <span style="font-size:10.5px;color:var(--text-tertiary);flex-shrink:0;">${relativeTime(item.created_at)}</span>
                 </div>
-                <div style="font-size:11.5px;color:#8a8f9c;margin-top:2px;
+                <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:2px;
                     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.body}</div>
             </div>
         </div>
@@ -114,25 +114,37 @@ function buildPopover() {
     const remaining = Math.max(0, bellItems.length - 3);
 
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'position:absolute;top:44px;right:0;width:360px;z-index:200;';
+    const btn = document.getElementById('nav-bell-btn');
+    const btnRect = btn?.getBoundingClientRect() ?? { top: 0, right: 0, bottom: 0 };
+
+    wrap.style.cssText = `position:fixed;width:360px;z-index:200;${
+        btnRect.bottom + 360 + 44 > window.innerHeight
+            ? `bottom:${window.innerHeight - btnRect.top + 10}px;`
+            : `top:${btnRect.bottom + 10}px;`
+    }${
+        btnRect.right > window.innerWidth / 2
+            ? `right:${window.innerWidth - btnRect.right}px;`
+            : `left:${btnRect.left}px;`
+    }`;
     wrap.innerHTML = `
         <div style="
-            background:#0f1218;border:1px solid #272b36;border-radius:14px;
+            background:var(--panel-light);border:1px solid var(--border-secondary);border-radius:14px;
             box-shadow:0 24px 60px rgba(0,0,0,.6);overflow:hidden;
         ">
             <div style="
-                padding:14px 16px;border-bottom:1px solid #1c2029;
+                padding:14px 16px;border-bottom:1px solid var(--border-subtle);
                 display:flex;align-items:center;gap:10px;
             ">
-                <span style="font-size:13px;font-weight:600;color:#e8e8ec;">Уведомления</span>
+                <span style="font-size:13px;font-weight:600;color:var(--text-light);">Уведомления</span>
                 ${unreadCount ? `<span style="
-                    font-size:10px;color:#e8a656;padding:2px 7px;
-                    background:rgba(232,166,86,.10);border:1px solid rgba(232,166,86,.30);
+                    font-size:10px;color:var(--accent);padding:2px 7px;
+                    background:color-mix(in srgb, var(--accent) 10%, transparent);
+                    border:1px solid color-mix(in srgb, var(--accent) 22%, transparent);
                     border-radius:999px;">${unreadCount} новых</span>` : ''}
                 <button id="bell-readall" ${unreadCount ? '' : 'disabled'} style="
                     margin-left:auto;height:26px;padding:0 10px;border-radius:6px;
-                    border:1px solid #272b36;background:transparent;
-                    color:${unreadCount ? '#8a8f9c' : '#5b606d'};
+                    border:1px solid var(--border-secondary);background:transparent;
+                    color:${unreadCount ? 'var(--text-tertiary)' : 'var(--text-muted)'};
                     font-size:11.5px;font-family:inherit;cursor:${unreadCount ? 'pointer' : 'not-allowed'};
                     display:inline-flex;align-items:center;gap:5px;opacity:${unreadCount ? 1 : 0.5};
                 ">
@@ -143,7 +155,7 @@ function buildPopover() {
             </div>
             <div style="max-height:320px;overflow:auto;">
                 ${visible.length ? visible.map(renderRow).join('') : `
-                    <div style="padding:24px;text-align:center;font-size:12.5px;color:#5b606d;">
+                    <div style="padding:24px;text-align:center;font-size:12.5px;color:var(--text-tertiary);">
                         Нет уведомлений
                     </div>
                 `}
@@ -157,8 +169,8 @@ function buildPopover() {
             </div>
             <a href="/notifications" style="
                 display:flex;align-items:center;justify-content:center;gap:8px;
-                padding:13px;border-top:1px solid #1c2029;
-                background:#13161e;color:#e8a656;
+                padding:13px;border-top:1px solid var(--border-subtle);
+                background:var(--panel-medium);color:var(--accent);
                 font-size:13px;font-weight:500;text-decoration:none;font-family:inherit;
             ">
                 Все уведомления${remaining > 0 ? ` · ещё ${remaining}` : ''}
@@ -186,11 +198,9 @@ function onOutside(e) {
 }
 
 function openPopover() {
-    const btn = document.getElementById('nav-bell-btn');
-    if (!btn) { return; }
+    if (popoverEl) { return; }
     popoverEl = buildPopover();
-    btn.style.position = 'relative';
-    btn.appendChild(popoverEl);
+    document.body.appendChild(popoverEl);
 
     const readAll = popoverEl.querySelector('#bell-readall');
     if (readAll) {

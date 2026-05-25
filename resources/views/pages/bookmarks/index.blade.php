@@ -8,6 +8,7 @@
     <title>Закладки — skr</title>
     <script>window.Laravel = { userId: @json(Auth::id()) };</script>
     @livewireStyles
+    @include('partials.accent-style')
     @vite(['resources/js/pages/bookmarks.js'])
 </head>
 

@@ -32,7 +32,7 @@ class FriendCode extends Model
 
     public function isActive(): bool
     {
-        return !$this->is_blocked && !$this->is_used && $this->expires_at->gt(now());
+        return ! $this->is_blocked && ! $this->is_used && $this->expires_at->gt(now());
     }
 
     public function isExpired(): bool

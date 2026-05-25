@@ -135,7 +135,6 @@ class CommunityFeedRenderingTest extends TestCase
 
         Livewire::actingAs($viewer)
             ->test(Feed::class, ['tab' => 'groups'])
-            ->assertSee('Группы')
             ->assertSee('Поиск в сообществах')
             ->assertSee('needle community post body')
             ->assertSee('other community post body')

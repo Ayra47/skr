@@ -1,5 +1,7 @@
 @php
     $profileSettingsPayload = [
+        'accent_color' => $profileSettings->accent_color ?? '#5bbeff',
+        'theme' => $profileSettings->theme ?? 'dark',
         'show_shared_chats' => $profileSettings->show_shared_chats ?? true,
         'show_shared_groups' => $profileSettings->show_shared_groups ?? true,
         'profile_access' => $profileSettings->profile_access ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
@@ -8,6 +10,12 @@
         'feed_posts_count_visibility' => $profileSettings->feed_posts_count_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
         'profile_posts_visibility' => $profileSettings->profile_posts_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
         'avatar_visibility' => $profileSettings->avatar_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
+        'profile_communities_visibility' => $profileSettings->profile_communities_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
+        'community_activity_visibility' => $profileSettings->community_activity_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
+        'community_posts_profile_visibility' => $profileSettings->community_posts_profile_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
+        'community_posts_feed_visibility' => $profileSettings->community_posts_feed_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
+        'joined_communities_activity_visibility' => $profileSettings->joined_communities_activity_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
+        'community_roles_visibility' => $profileSettings->community_roles_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
     ];
 @endphp
 
@@ -18,6 +26,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>skr — Настройки</title>
+    @include('partials.accent-style')
     <script>
         window.Laravel = {
             userId: @json(Auth::id()),
@@ -328,6 +337,27 @@
                                 <button class="s-btn s-btn-ghost" id="backupCodeCloseBtn">Скрыть</button>
                             </div>
                         </div>
+
+                        <div class="s-divider"></div>
+
+                        <div class="chat-security-panel settings-chat-security-panel">
+                            <div class="settings-row">
+                                <span>хранение:</span>
+                                <select id="storageSelect">
+                                    <option value="server">сервер (3 мес.)</option>
+                                    <option value="browser">браузер</option>
+                                    <option value="device">устройство</option>
+                                </select>
+                            </div>
+                            <div id="deviceExportRow" style="display:none;" class="device-export-row">
+                                <button class="export-btn" id="exportHistoryBtn">↓ экспорт</button>
+                                <input type="file" id="importFileInput" accept=".enc" style="display:none">
+                                <button class="export-btn" id="importTriggerBtn">↑ импорт</button>
+                            </div>
+                            <div class="key-fingerprint" id="keyFingerprint"></div>
+                            <div id="chatSecurityMsg" class="form-msg" style="display:none;"></div>
+                            <button class="export-btn" id="setupBackupBtn" style="margin-top:6px;width:100%;">бэкап ключа (PIN)</button>
+                        </div>
                     </section>
 
                     {{-- ── NOTIFICATIONS ── --}}
@@ -414,7 +444,7 @@
                         </div>
                         <p class="card-sub">Тема оформления интерфейса</p>
                         <div class="theme-grid">
-                            <button class="theme-option active" disabled>
+                            <button class="theme-option" data-theme-value="dark">
                                 <div class="theme-preview theme-preview-dark"></div>
                                 <div class="theme-option-footer">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
@@ -422,12 +452,12 @@
                                     <svg class="theme-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg>
                                 </div>
                             </button>
-                            <button class="theme-option" disabled>
+                            <button class="theme-option" data-theme-value="light">
                                 <div class="theme-preview theme-preview-light"></div>
                                 <div class="theme-option-footer">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
                                     <span>Светлая</span>
-                                    <span class="soon-tag">скоро</span>
+                                    <svg class="theme-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-11"/></svg>
                                 </div>
                             </button>
                             <button class="theme-option" disabled>
@@ -438,6 +468,24 @@
                                     <span class="soon-tag">скоро</span>
                                 </div>
                             </button>
+                        </div>
+
+                        <div class="accent-picker">
+                            <p class="card-sub" style="margin-top:18px;">Основной цвет</p>
+                            <div class="accent-swatches" id="accentSwatches">
+                                <button class="accent-swatch" data-color="#5bbeff" title="Синий" style="background:#5bbeff;"></button>
+                                <button class="accent-swatch" data-color="#BB00FF" title="Фиолетовый киберпанк" style="background:#BB00FF;"></button>
+                                <button class="accent-swatch" data-color="#a78bfa" title="Фиолетовый" style="background:#a78bfa;"></button>
+                                <button class="accent-swatch" data-color="#6dd49a" title="Зелёный" style="background:#6dd49a;"></button>
+                                <button class="accent-swatch" data-color="#e8a656" title="Золотой" style="background:#e8a656;"></button>
+                                <button class="accent-swatch" data-color="#f19ca2" title="Розовый" style="background:#f19ca2;"></button>
+                                <button class="accent-swatch" data-color="#e87b6d" title="Красный" style="background:#e87b6d;"></button>
+                                <label class="accent-swatch accent-swatch-custom" title="Свой цвет">
+                                    <input type="color" id="accentColorCustom" style="opacity:0;width:0;height:0;position:absolute;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+                                </label>
+                            </div>
+                            <div class="form-msg" id="accentMsg"></div>
                         </div>
                     </section>
 
@@ -578,5 +626,32 @@
             </div>{{-- /settings-layout --}}
         </div>{{-- /settings-inner --}}
     </div>{{-- /settings-root --}}
+
+    <!-- PIN dialog -->
+    <div id="pinDialog" class="modal-overlay" style="display:none">
+        <div class="modal-box">
+            <div class="modal-title pin-dialog-title"></div>
+            <div class="modal-subtitle pin-dialog-subtitle"></div>
+            <input type="text" class="pin-input modal-input" maxlength="6" minlength="6"
+                placeholder="● ● ● ● ● ●" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+            <div class="pin-dialog-error modal-error"></div>
+            <div class="modal-actions">
+                <button class="modal-btn-secondary pin-dialog-cancel">отмена</button>
+                <button class="modal-btn-primary pin-dialog-confirm">подтвердить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recovery phrase display modal -->
+    <div id="recoveryPhraseModal" class="modal-overlay" style="display:none">
+        <div class="modal-box">
+            <div class="modal-title">фраза восстановления</div>
+            <div class="modal-subtitle">сохраните в надёжном месте. если забудете PIN — используйте эту фразу для восстановления ключа.</div>
+            <div class="recovery-phrase-text modal-phrase"></div>
+            <div class="modal-actions">
+                <button class="modal-btn-primary" id="recoveryPhraseDoneBtn">понятно, сохранил</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

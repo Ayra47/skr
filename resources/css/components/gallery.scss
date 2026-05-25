@@ -50,7 +50,7 @@
     height: 42px;
     border-radius: 999px;
     transform: translate(-50%, -50%);
-    background: rgba(8, 10, 15, 0.72);
+    background: var(--panel-haze);
 }
 
 .feed-gallery-play-badge::before {
@@ -91,10 +91,10 @@
     z-index: 1;
     width: 34px;
     height: 34px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: 1px solid var(--overlay-12);
     border-radius: 999px;
     color: var(--text);
-    background: rgba(8, 10, 15, 0.82);
+    background: var(--panel-haze-2);
     transform: translateY(-50%);
     cursor: pointer;
 }
@@ -120,8 +120,8 @@
 }
 
 .feed-gallery-thumb.active {
-    border-color: rgba(232, 166, 86, 0.42);
-    box-shadow: 0 0 0 2px rgba(232, 166, 86, 0.14);
+    border-color: color-mix(in srgb, var(--warning) 42%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--warning) 14%, transparent);
 }
 
 .feed-gallery-thumb img,
@@ -138,10 +138,10 @@
     height: 52px;
     margin: 24px auto 0;
     border-radius: 10px;
-    border: 1px solid rgba(232, 166, 86, 0.26);
+    border: 1px solid color-mix(in srgb, var(--warning) 26%, transparent);
     background:
-        linear-gradient(135deg, transparent 0 26px, rgba(232, 166, 86, 0.12) 26px) top right / 24px 24px no-repeat,
-        rgba(232, 166, 86, 0.08);
+        linear-gradient(135deg, transparent 0 26px, color-mix(in srgb, var(--warning) 12%, transparent) 26px) top right / 24px 24px no-repeat,
+        color-mix(in srgb, var(--warning) 8%, transparent);
 }
 
 .feed-post-file {
@@ -154,7 +154,7 @@
     padding: 12px;
     color: var(--text);
     text-decoration: none;
-    background: rgba(19, 22, 30, 0.74);
+    background: var(--panel-dim-2);
 }
 
 .feed-gallery-file-card {
@@ -198,10 +198,10 @@
     align-items: center;
     justify-content: center;
     padding: 0 16px;
-    border: 1px solid rgba(232, 166, 86, 0.28);
+    border: 1px solid color-mix(in srgb, var(--warning) 28%, transparent);
     border-radius: 999px;
     color: var(--accent);
-    background: rgba(232, 166, 86, 0.08);
+    background: color-mix(in srgb, var(--warning) 8%, transparent);
 }
 
 .feed-gallery-viewer {
@@ -213,7 +213,7 @@
     align-items: center;
     gap: 18px;
     padding: 28px;
-    background: rgba(5, 7, 12, 0.92);
+    background: var(--panel-solid);
 }
 
 .feed-gallery-viewer-stage {
@@ -235,10 +235,10 @@
 .feed-gallery-viewer button {
     width: 48px;
     height: 48px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: 1px solid var(--overlay-12);
     border-radius: 999px;
     color: var(--text);
-    background: rgba(15, 18, 24, 0.9);
+    background: var(--panel-wash-2);
     font-size: 2rem;
     line-height: 1;
     cursor: pointer;
@@ -268,8 +268,8 @@
     justify-content: center;
     border-radius: 10px;
     color: var(--accent);
-    border: 1px solid rgba(232, 166, 86, 0.26);
-    background: rgba(232, 166, 86, 0.08);
+    border: 1px solid color-mix(in srgb, var(--warning) 26%, transparent);
+    background: color-mix(in srgb, var(--warning) 8%, transparent);
 }
 
 .feed-post-file span:nth-child(2) {

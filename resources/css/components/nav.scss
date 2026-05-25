@@ -2,10 +2,10 @@
     position: sticky;
     top: 0;
     z-index: 50;
-    backdrop-filter: blur(14px);
-    background: rgba(12, 14, 20, 0.78);
+    backdrop-filter: blur(18px);
+    background: color-mix(in srgb, var(--bg) 72%, transparent);
     border-bottom: 1px solid var(--border);
-    padding: 0.75rem 1.25rem;
+    padding: 0.68rem 1.25rem;
 }
 
 .app-nav-inner {
@@ -32,10 +32,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #1a1206;
+    color: #061426;
     font-weight: 700;
-    background: linear-gradient(135deg, #e8a656, #c8853a);
+    background: linear-gradient(135deg, var(--accent), var(--accent-deep));
     font-family: var(--font-serif);
+    box-shadow: inset 0 1px var(--overlay-12), 0 10px 28px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 .app-links {
@@ -63,13 +64,13 @@
 
 .app-links a:hover {
     color: var(--text);
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--overlay-3);
 }
 
 .app-links a.active {
     color: var(--accent);
     background: var(--accent-soft);
-    border-color: rgba(232, 166, 86, 0.25);
+    border-color: color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 .bell-btn {
@@ -77,9 +78,9 @@
     width: 34px;
     height: 34px;
     border-radius: 8px;
-    border: 1px solid #272b36;
-    background: transparent;
-    color: #8a8f9c;
+    border: 1px solid var(--border);
+    background: var(--overlay-3);
+    color: var(--text-mute);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -92,14 +93,14 @@
     flex-shrink: 0;
 
     &:hover {
-        background: rgba(255, 255, 255, 0.03);
+        background: var(--overlay-3);
         color: #e8e8ec;
     }
 
     &--active {
-        background: rgba(232, 166, 86, 0.1);
-        border-color: rgba(232, 166, 86, 0.3);
-        color: #e8a656;
+        background: var(--accent-soft);
+        border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+        color: var(--accent);
     }
 }
 
@@ -107,9 +108,9 @@
     width: 34px;
     height: 34px;
     border-radius: 8px;
-    border: 1px solid #272b36;
-    background: transparent;
-    color: #8a8f9c;
+    border: 1px solid var(--border);
+    background: var(--overlay-3);
+    color: var(--text-mute);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -121,14 +122,14 @@
         border-color 0.15s;
 
     &:hover {
-        background: rgba(255, 255, 255, 0.03);
+        background: var(--overlay-3);
         color: #e8e8ec;
     }
 
     &--active {
-        background: rgba(232, 166, 86, 0.1);
-        border-color: rgba(232, 166, 86, 0.3);
-        color: #e8a656;
+        background: var(--accent-soft);
+        border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+        color: var(--accent);
     }
 }
 
@@ -140,15 +141,15 @@
     height: 14px;
     padding: 0 4px;
     border-radius: 7px;
-    background: #e8a656;
-    color: #1a1206;
+    background: var(--accent);
+    color: #061426;
     font-size: 9px;
     font-weight: 700;
     font-family: inherit;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid #0c0e14;
+    border: 2px solid var(--bg);
     pointer-events: none;
 }
 
@@ -160,14 +161,14 @@
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--overlay-6);
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
     flex-shrink: 0;
     color: #e8e8ec;
-    background: linear-gradient(135deg, oklch(0.32 0.04 60), oklch(0.22 0.03 30));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 28%, transparent), color-mix(in srgb, var(--accent) 8%, transparent));
     font: inherit;
     font-size: 13px;
     font-weight: 500;
@@ -189,7 +190,7 @@
     padding: 6px;
     border: 1px solid var(--border);
     border-radius: 12px;
-    background: rgba(15, 18, 24, 0.98);
+    background: color-mix(in srgb, var(--panel-light) 98%, transparent);
     box-shadow: 0 18px 46px rgba(0, 0, 0, 0.34);
 }
 
@@ -217,7 +218,7 @@
 
 .profile-menu a:hover,
 .profile-menu button:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--overlay-4);
 }
 
 .profile-menu button:disabled {
@@ -239,7 +240,7 @@
 }
 
 .profile-menu .profile-menu-logout:hover {
-    background: rgba(232, 123, 109, 0.1);
+    background: color-mix(in srgb, var(--danger) 10%, transparent);
 }
 
 .profile-menu-divider {
