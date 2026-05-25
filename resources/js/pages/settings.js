@@ -847,6 +847,12 @@ function initProfileVisibility() {
         feed_posts_count_visibility: 'everyone',
         profile_posts_visibility: 'everyone',
         avatar_visibility: 'everyone',
+        profile_communities_visibility: 'everyone',
+        community_activity_visibility: 'everyone',
+        community_posts_profile_visibility: 'everyone',
+        community_posts_feed_visibility: 'everyone',
+        joined_communities_activity_visibility: 'everyone',
+        community_roles_visibility: 'everyone',
         ...(window.Laravel.profileSettings ?? {}),
     };
     const msg = document.getElementById('profileVisibilityMsg');

@@ -23,12 +23,16 @@ class ProfileController extends Controller
         if (! $viewer->is($user)) {
             $access = $profileSetting?->profile_access ?? ProfileSetting::AUDIENCE_EVERYONE;
 
-            if ($access === ProfileSetting::AUDIENCE_FRIENDS && ! $isFriend) {
-                abort(403);
-            }
+            if ($access === ProfileSetting::AUDIENCE_NONE ||
+                ($access === ProfileSetting::AUDIENCE_FRIENDS && ! $isFriend)) {
+                $allFriends = $viewer->friends->merge($viewer->friendOf)->unique('id');
+                $allFriends->load('userKey');
 
-            if ($access === ProfileSetting::AUDIENCE_NONE) {
-                abort(403);
+                return view('pages.profile.hidden', [
+                    'profileUser' => $user,
+                    'viewer' => $viewer,
+                    'allFriends' => $allFriends,
+                ]);
             }
         }
 
@@ -120,7 +124,11 @@ class ProfileController extends Controller
             })
             ->first();
 
+        $allFriends = $viewer->friends->merge($viewer->friendOf)->unique('id');
+        $allFriends->load('userKey');
+
         return view('pages.profile.show', [
+            'allFriends' => $allFriends,
             'bio' => $user->profileSetting?->bio,
             'directConversation' => $directConversation,
             'isFriend' => $isFriend,

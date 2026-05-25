@@ -10,6 +10,12 @@
         'feed_posts_count_visibility' => $profileSettings->feed_posts_count_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
         'profile_posts_visibility' => $profileSettings->profile_posts_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
         'avatar_visibility' => $profileSettings->avatar_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
+        'profile_communities_visibility' => $profileSettings->profile_communities_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
+        'community_activity_visibility' => $profileSettings->community_activity_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
+        'community_posts_profile_visibility' => $profileSettings->community_posts_profile_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
+        'community_posts_feed_visibility' => $profileSettings->community_posts_feed_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
+        'joined_communities_activity_visibility' => $profileSettings->joined_communities_activity_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
+        'community_roles_visibility' => $profileSettings->community_roles_visibility ?? \App\Models\ProfileSetting::AUDIENCE_EVERYONE,
     ];
 @endphp
 
@@ -468,6 +474,7 @@
                             <p class="card-sub" style="margin-top:18px;">Основной цвет</p>
                             <div class="accent-swatches" id="accentSwatches">
                                 <button class="accent-swatch" data-color="#5bbeff" title="Синий" style="background:#5bbeff;"></button>
+                                <button class="accent-swatch" data-color="#BB00FF" title="Фиолетовый киберпанк" style="background:#BB00FF;"></button>
                                 <button class="accent-swatch" data-color="#a78bfa" title="Фиолетовый" style="background:#a78bfa;"></button>
                                 <button class="accent-swatch" data-color="#6dd49a" title="Зелёный" style="background:#6dd49a;"></button>
                                 <button class="accent-swatch" data-color="#e8a656" title="Золотой" style="background:#e8a656;"></button>

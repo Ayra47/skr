@@ -1,33 +1,13 @@
 @use "../app.scss";
-@use "../components/nav.scss";
 @use "./feed.scss";
 
-body {
-    align-items: stretch;
-    justify-content: flex-start;
-    overflow-x: hidden;
-}
-
-.profile-root {
-    min-height: calc(100vh - 64px);
-    padding: 28px 18px 72px;
-    position: relative;
-}
-
-.profile-glow {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background:
-        radial-gradient(circle at 18% 12%, color-mix(in srgb, var(--warning) 10%, transparent), transparent 26%),
-        radial-gradient(circle at 82% 14%, color-mix(in srgb, var(--success) 7%, transparent), transparent 24%);
+.profile-page {
+    padding: 24px 20px 48px;
 }
 
 .profile-inner {
     position: relative;
     z-index: 1;
-    max-width: 1080px;
-    margin: 0 auto;
 }
 
 .profile-hero,
@@ -219,7 +199,7 @@ body {
 .profile-layout {
     margin-top: 18px;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-columns: minmax(0, 1fr) 280px;
     gap: 18px;
     align-items: start;
 }
@@ -360,7 +340,7 @@ body {
 }
 
 @media (max-width: 620px) {
-    .profile-root {
+    .profile-page {
         padding-inline: 12px;
     }
 

@@ -86,14 +86,18 @@ function buildActiveState(code, remaining) {
 }
 
 function renderEmpty() {
-    document.getElementById('inviteBody').innerHTML = buildEmptyState();
+    const el = document.getElementById('inviteBody');
+    if (!el) { return; }
+    el.innerHTML = buildEmptyState();
     document.getElementById('createCodeBtn').addEventListener('click', createCode);
 }
 
 function renderActive(code, expiresAtMs) {
+    const el = document.getElementById('inviteBody');
+    if (!el) { return; }
     codeExpiresAt = expiresAtMs;
     const remaining = remainingSeconds();
-    document.getElementById('inviteBody').innerHTML = buildActiveState(code, remaining);
+    el.innerHTML = buildActiveState(code, remaining);
     document.getElementById('copyBtn').addEventListener('click', () => copyCode(code));
     document.getElementById('qrBtn').addEventListener('click', () => showQrModal(code));
     document.getElementById('refreshBtn').addEventListener('click', createCode);
@@ -289,8 +293,8 @@ async function removeFriend(friendId) {
 
     if (data.success) {
         document.getElementById(`friend-${friendId}`)?.remove();
-        if (! document.querySelector('#friendsList .fl-item')) {
-            document.getElementById('friendsList').innerHTML = '<div class="fl-empty">Пока нет друзей</div>';
+        if (! document.querySelector('#friendsList .fr-row')) {
+            document.getElementById('friendsList').innerHTML = '<div class="fr-empty">Пока нет друзей</div>';
         }
     }
 }
@@ -342,31 +346,33 @@ function buildRequestItem(requestId, login) {
 }
 
 function bindEvents() {
-    // ── search code input formatting ─────────────────────────────────────────
+    // ── search code input formatting (friends page only) ─────────────────────
     const searchInput = document.getElementById('searchCode');
     const sendBtn     = document.getElementById('sendRequestBtn');
     const digitCount  = document.getElementById('digitCount');
 
-    searchInput.addEventListener('input', () => {
-        const raw     = searchInput.value.replace(/\D/g, '').slice(0, 10);
-        const pairs   = raw.match(/.{1,2}/g) ?? [];
-        searchInput.value = pairs.join(' ');
+    if (searchInput && sendBtn && digitCount) {
+        searchInput.addEventListener('input', () => {
+            const raw     = searchInput.value.replace(/\D/g, '').slice(0, 10);
+            const pairs   = raw.match(/.{1,2}/g) ?? [];
+            searchInput.value = pairs.join(' ');
 
-        const count = raw.length;
-        digitCount.textContent = count;
-        digitCount.className   = count === 10 ? 'fa-counter-valid' : '';
+            const count = raw.length;
+            digitCount.textContent = count;
+            digitCount.className   = count === 10 ? 'fa-counter-valid' : '';
 
-        sendBtn.disabled = count !== 10;
-        sendBtn.classList.toggle('fa-send-btn--ready', count === 10);
-    });
+            sendBtn.disabled = count !== 10;
+            sendBtn.classList.toggle('fa-send-btn--ready', count === 10);
+        });
 
-    searchInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !sendBtn.disabled) { sendFriendRequest(); }
-    });
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !sendBtn.disabled) { sendFriendRequest(); }
+        });
 
-    document.getElementById('sendRequestBtn').addEventListener('click', sendFriendRequest);
+        sendBtn.addEventListener('click', sendFriendRequest);
+    }
 
-    document.getElementById('requestsList').addEventListener('click', (e) => {
+    document.getElementById('requestsList')?.addEventListener('click', (e) => {
         const btn = e.target.closest('[data-action]');
         if (!btn) { return; }
         const requestId = parseInt(btn.dataset.requestId);
@@ -374,18 +380,85 @@ function bindEvents() {
         if (btn.dataset.action === 'decline') { declineRequest(requestId); }
     });
 
-    document.getElementById('friendsList').addEventListener('click', (e) => {
-        const btn = e.target.closest('.fl-delete-btn');
-        if (!btn) { return; }
-        removeFriend(parseInt(btn.dataset.friendId));
+    document.getElementById('friendsList')?.addEventListener('click', (e) => {
+        if (e.target.closest('.fr-menu-btn')) { return; }
+        const row = e.target.closest('.fr-row');
+        if (row?.dataset.userId) {
+            window.location.href = `/profile/${row.dataset.userId}`;
+        }
     });
 
-    document.getElementById('friendSearch').addEventListener('input', (e) => {
+    document.getElementById('friendsList')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.fr-menu-btn');
+        if (!btn) { return; }
+        e.stopPropagation();
+        const row = btn.closest('.fr-row');
+        if (row) { openFriendMenu(btn, row); }
+    });
+
+    document.getElementById('friendSearch')?.addEventListener('input', (e) => {
         const q = e.target.value.toLowerCase().trim();
-        document.querySelectorAll('#friendsList .fl-item').forEach(item => {
+        document.querySelectorAll('#friendsList .fr-row').forEach(item => {
             item.style.display = (!q || item.dataset.name.includes(q)) ? '' : 'none';
         });
     });
+}
+
+// ── Friend context menu ───────────────────────────────────────────────────────
+let activeFriendMenu = null;
+
+function closeFriendMenu() {
+    if (activeFriendMenu) { activeFriendMenu.remove(); activeFriendMenu = null; }
+    document.removeEventListener('click', onFriendMenuOutside);
+}
+
+function onFriendMenuOutside(e) {
+    if (activeFriendMenu && !activeFriendMenu.contains(e.target)) { closeFriendMenu(); }
+}
+
+function openFriendMenu(btn, row) {
+    closeFriendMenu();
+
+    const userId = row.dataset.userId;
+    const login  = row.dataset.login ?? '';
+
+    const menu = document.createElement('div');
+    menu.className = 'fr-menu';
+    menu.innerHTML = `
+        <button class="fr-menu-item" data-action="profile">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Профиль
+        </button>
+        <button class="fr-menu-item" data-action="message">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Написать
+        </button>
+        <button class="fr-menu-item fr-menu-item--danger" data-action="remove">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="8" x2="23" y2="14"/><line x1="23" y1="8" x2="17" y2="14"/></svg>
+            Удалить
+        </button>`;
+
+    const rect = btn.getBoundingClientRect();
+    menu.style.top  = (rect.bottom + 6) + 'px';
+    menu.style.left = Math.max(8, rect.right - 162) + 'px';
+    document.body.appendChild(menu);
+    activeFriendMenu = menu;
+
+    menu.addEventListener('click', (e) => {
+        const item = e.target.closest('.fr-menu-item');
+        if (!item) { return; }
+        const action = item.dataset.action;
+        closeFriendMenu();
+        if (action === 'profile') { window.location.href = `/profile/${userId}`; }
+        if (action === 'message') { startChatWith(parseInt(userId), login); }
+        if (action === 'remove')  { removeFriend(parseInt(userId)); }
+    });
+
+    setTimeout(() => document.addEventListener('click', onFriendMenuOutside), 0);
+}
+
+function startChatWith(userId, login) {
+    window.location.href = `/chats?with=${userId}&login=${encodeURIComponent(login)}`;
 }
 
 document.addEventListener('DOMContentLoaded', bindEvents);
