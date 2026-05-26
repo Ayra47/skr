@@ -22,6 +22,7 @@ export interface LaravelData {
     hasPublicKey: boolean;
     hasKeyBackup: boolean;
     avatars: Record<number, string | null>;
+    friendIds: number[];
 }
 
 export interface ChatParticipant {

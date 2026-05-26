@@ -15,6 +15,7 @@
                         ->unique('id')
                         ->mapWithKeys(fn($u) => [$u->id => $u->avatar ? '/storage/'.$u->avatar : null])
                 ),
+                friendIds: @json($allFriends->pluck('id')->all()),
             };
         </script>
     </x-slot:head>
@@ -231,7 +232,7 @@
                 <div class="upload-progress-bar" id="uploadProgressBar"></div>
                 <span class="upload-progress-label" id="uploadProgressLabel">загрузка…</span>
             </div>
-            <div class="composer-box composer">
+            <div class="composer-box composer" id="composerBox">
                 <div class="attach-wrap">
                     <div class="attach-menu" id="attachMenu">
                         <button class="attach-menu-item" id="attachPhotoBtn" type="button">
@@ -255,6 +256,7 @@
                 </div>
                 <input type="file" id="photoAttachInput" style="display:none" accept="image/*">
                 <input type="file" id="fileAttachInput" style="display:none" accept="*/*">
+                <div id="composerBlockedMsg" class="composer-blocked-msg">Вы не можете отправлять сообщения этому пользователю, так как не являетесь друзьями</div>
                 <textarea id="messageInput" class="composer-textarea" placeholder="сообщение…" rows="1"></textarea>
                 <button class="composer-btn" id="emojiBtn" type="button" title="эмодзи">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">

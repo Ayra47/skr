@@ -631,16 +631,6 @@ class ChatController extends Controller
             return response()->json(['success' => false, 'message' => 'Нет доступа'], 403);
         }
 
-        if (! $conversation->isGroup()) {
-            $recipientId = $conversation->user_a_id === $user->id
-                ? $conversation->user_b_id
-                : $conversation->user_a_id;
-
-            if (! $user->isFriendWith($recipientId)) {
-                return response()->json(['success' => false, 'message' => 'Вы больше не друзья'], 403);
-            }
-        }
-
         $hasMore = false;
         $hasMoreAfter = false;
 
@@ -1024,7 +1014,22 @@ class ChatController extends Controller
         $partnerId = (int) $request->user_id;
 
         if (! $user->isFriendWith($partnerId)) {
-            return response()->json(['success' => false, 'message' => 'Не является другом'], 403);
+            $a = min($user->id, $partnerId);
+            $b = max($user->id, $partnerId);
+            $existing = Conversation::where('type', Conversation::TYPE_DIRECT)
+                ->where('user_a_id', $a)
+                ->where('user_b_id', $b)
+                ->first();
+
+            if (! $existing) {
+                return response()->json(['success' => false, 'message' => 'Не является другом'], 403);
+            }
+
+            return response()->json([
+                'success' => true,
+                'conversation_id' => $existing->id,
+                'can_send' => false,
+            ]);
         }
 
         $conversation = Conversation::findOrCreateBetween($user->id, $partnerId);
