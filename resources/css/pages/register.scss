@@ -18,7 +18,7 @@ body {
     left: -100px;
     background: radial-gradient(
         circle,
-        color-mix(in srgb, var(--warning) 18%, transparent),
+        color-mix(in srgb, var(--accent) 18%, transparent),
         transparent 60%
     );
 }
@@ -112,7 +112,7 @@ h1 {
 .pseudo-refresh:hover {
     color: var(--accent);
     border-color: var(--accent);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--warning) 10%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 input[type="text"],
 input[type="password"] {
@@ -135,7 +135,7 @@ input::placeholder {
 input:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--warning) 10%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 .btn {
     width: 100%;
@@ -149,7 +149,7 @@ input:focus {
     font-family: var(--font);
     cursor: pointer;
     box-shadow:
-        0 10px 30px color-mix(in srgb, var(--warning) 25%, transparent),
+        0 10px 30px color-mix(in srgb, var(--accent) 25%, transparent),
         inset 0 1px 0 var(--overlay-12);
     transition: transform 0.1s ease;
 }

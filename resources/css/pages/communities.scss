@@ -4,7 +4,7 @@
 .communities-body {
     min-height: 100vh;
     background:
-        radial-gradient(circle at top left, color-mix(in srgb, var(--warning) 7%, transparent), transparent 28rem),
+        radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 7%, transparent), transparent 28rem),
         var(--bg);
     color: var(--text);
 }
@@ -140,8 +140,8 @@
     text-decoration: none;
 
     &:hover {
-        border-color: color-mix(in srgb, var(--warning) 32%, transparent);
-        background: color-mix(in srgb, var(--warning) 6%, transparent);
+        border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+        background: color-mix(in srgb, var(--accent) 6%, transparent);
     }
 }
 
@@ -178,8 +178,8 @@
     min-height: 24px;
     padding: 0 9px;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--warning) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--warning) 24%, transparent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
     color: var(--accent);
     font-size: 11px;
     white-space: nowrap;
@@ -355,7 +355,7 @@
     padding: 8px;
 
     &.is-active {
-        background: color-mix(in srgb, var(--warning) 9%, transparent);
+        background: color-mix(in srgb, var(--accent) 9%, transparent);
     }
 
     a {

@@ -287,8 +287,8 @@
 }
 
 .feed-composer:focus-within {
-    border-color: color-mix(in srgb, var(--warning) 34%, transparent);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--warning) 6%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
 .feed-composer-row,
@@ -488,10 +488,10 @@
     width: 42px;
     height: 52px;
     border-radius: 10px;
-    border: 1px solid color-mix(in srgb, var(--warning) 26%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
     background:
-        linear-gradient(135deg, transparent 0 26px, color-mix(in srgb, var(--warning) 12%, transparent) 26px) top right / 24px 24px no-repeat,
-        color-mix(in srgb, var(--warning) 8%, transparent);
+        linear-gradient(135deg, transparent 0 26px, color-mix(in srgb, var(--accent) 12%, transparent) 26px) top right / 24px 24px no-repeat,
+        color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .feed-attachment-preview button {
@@ -511,7 +511,7 @@
 }
 
 .feed-attachment-preview button:hover {
-    border-color: color-mix(in srgb, var(--warning) 34%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 34%, transparent);
     color: var(--accent);
 }
 
@@ -553,7 +553,7 @@
 
 .feed-file-button span:hover {
     color: var(--accent);
-    border-color: color-mix(in srgb, var(--warning) 36%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 36%, transparent);
 }
 
 .feed-visibility-toggle,
@@ -596,7 +596,7 @@
     border: 0;
     color: #1a1206;
     background: linear-gradient(180deg, var(--accent), var(--accent-deep));
-    box-shadow: 0 8px 18px color-mix(in srgb, var(--warning) 16%, transparent);
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 .feed-submit:disabled {
@@ -1070,7 +1070,7 @@
 
 .feed-post-open-area:focus-visible {
     border-radius: 12px;
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--warning) 14%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 .feed-author {
@@ -1149,13 +1149,13 @@
 
 .feed-privacy-badge {
     flex: 0 0 auto;
-    border: 1px solid color-mix(in srgb, var(--warning) 28%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
     color: var(--accent);
     border-radius: 999px;
     padding: 6px 10px;
     font-size: 0.78rem;
     font-weight: 700;
-    background: color-mix(in srgb, var(--warning) 8%, transparent);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .feed-privacy-badge.public {
@@ -1203,9 +1203,9 @@
     gap: 5px;
     margin-top: 14px;
     padding: 14px;
-    border: 1px dashed color-mix(in srgb, var(--warning) 28%, transparent);
+    border: 1px dashed color-mix(in srgb, var(--accent) 28%, transparent);
     border-radius: 12px;
-    background: color-mix(in srgb, var(--warning) 6%, transparent);
+    background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
 .community-feed-placeholder strong {
@@ -1250,14 +1250,14 @@
     transition: 0.15s;
 
     &:hover {
-        border-color: color-mix(in srgb, var(--warning) 40%, transparent);
-        background: color-mix(in srgb, var(--warning) 10%, transparent);
+        border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+        background: color-mix(in srgb, var(--accent) 10%, transparent);
         color: var(--accent);
     }
 
     &--active {
-        border-color: color-mix(in srgb, var(--warning) 40%, transparent);
-        background: color-mix(in srgb, var(--warning) 10%, transparent);
+        border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+        background: color-mix(in srgb, var(--accent) 10%, transparent);
         color: var(--accent);
     }
 
@@ -1317,8 +1317,8 @@
 
 .feed-comments-count.active {
     color: var(--accent);
-    border-color: color-mix(in srgb, var(--warning) 32%, transparent);
-    background: color-mix(in srgb, var(--warning) 8%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .feed-replies-panel {
@@ -1414,10 +1414,10 @@
     align-items: center;
     min-height: 20px;
     padding: 0 7px;
-    border: 1px solid color-mix(in srgb, var(--warning) 22%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
     border-radius: 999px;
     color: var(--accent);
-    background: color-mix(in srgb, var(--warning) 8%, transparent);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
     font-size: 0.72rem;
     font-weight: 700;
 }
@@ -1434,9 +1434,9 @@
 .feed-comment-history {
     margin-top: 9px;
     padding: 10px 11px;
-    border-left: 2px solid color-mix(in srgb, var(--warning) 28%, transparent);
+    border-left: 2px solid color-mix(in srgb, var(--accent) 28%, transparent);
     border-radius: 0 10px 10px 0;
-    background: color-mix(in srgb, var(--warning) 6%, transparent);
+    background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
 .feed-comment-history span {
@@ -1482,7 +1482,7 @@
 .feed-replies-toggle:hover,
 .feed-comment-vote:hover {
     color: var(--text);
-    border-color: color-mix(in srgb, var(--warning) 28%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .feed-comment-vote.active-up {
@@ -1542,7 +1542,7 @@
 }
 
 .feed-comment-form input:focus {
-    border-color: color-mix(in srgb, var(--warning) 36%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 36%, transparent);
 }
 
 .feed-comment-form button {
@@ -1616,7 +1616,7 @@
 
 .feed-modal-close:hover {
     color: var(--text);
-    border-color: color-mix(in srgb, var(--warning) 32%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 32%, transparent);
 }
 
 .feed-modal-comment-form {

@@ -18,7 +18,7 @@ body {
     left: -100px;
     background: radial-gradient(
         circle,
-        color-mix(in srgb, var(--warning) 18%, transparent),
+        color-mix(in srgb, var(--accent) 18%, transparent),
         transparent 60%
     );
 }
@@ -108,7 +108,7 @@ input::placeholder {
 input:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--warning) 10%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 .meta-row {
     margin: 0.7rem 0 1.15rem;
@@ -144,7 +144,7 @@ input:focus {
     font-family: var(--font);
     cursor: pointer;
     box-shadow:
-        0 10px 30px color-mix(in srgb, var(--warning) 25%, transparent),
+        0 10px 30px color-mix(in srgb, var(--accent) 25%, transparent),
         inset 0 1px 0 var(--overlay-12);
     transition: transform 0.1s ease;
 }
@@ -214,7 +214,7 @@ input:focus {
         &:focus {
             outline: none;
             border-color: var(--accent);
-            box-shadow: 0 0 0 4px color-mix(in srgb, var(--warning) 10%, transparent);
+            box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 10%, transparent);
         }
     }
 }
@@ -254,7 +254,7 @@ input:focus {
     transition: background 0.15s, color 0.15s;
 
     &.active {
-        background: color-mix(in srgb, var(--warning) 12%, transparent);
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
         color: var(--gold-primary);
     }
 
@@ -270,9 +270,9 @@ input:focus {
     gap: 10px;
     padding: 12px 14px;
     border-radius: 10px;
-    background: color-mix(in srgb, var(--warning) 8%, transparent);
-    border: 1px solid color-mix(in srgb, var(--warning) 20%, transparent);
-    color: color-mix(in srgb, var(--warning) 90%, transparent);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+    color: color-mix(in srgb, var(--accent) 90%, transparent);
     font-size: 12.5px;
     line-height: 1.55;
     margin-bottom: 18px;

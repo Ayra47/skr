@@ -120,8 +120,8 @@
 }
 
 .feed-gallery-thumb.active {
-    border-color: color-mix(in srgb, var(--warning) 42%, transparent);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--warning) 14%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 .feed-gallery-thumb img,
@@ -138,10 +138,10 @@
     height: 52px;
     margin: 24px auto 0;
     border-radius: 10px;
-    border: 1px solid color-mix(in srgb, var(--warning) 26%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
     background:
-        linear-gradient(135deg, transparent 0 26px, color-mix(in srgb, var(--warning) 12%, transparent) 26px) top right / 24px 24px no-repeat,
-        color-mix(in srgb, var(--warning) 8%, transparent);
+        linear-gradient(135deg, transparent 0 26px, color-mix(in srgb, var(--accent) 12%, transparent) 26px) top right / 24px 24px no-repeat,
+        color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .feed-post-file {
@@ -198,10 +198,10 @@
     align-items: center;
     justify-content: center;
     padding: 0 16px;
-    border: 1px solid color-mix(in srgb, var(--warning) 28%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
     border-radius: 999px;
     color: var(--accent);
-    background: color-mix(in srgb, var(--warning) 8%, transparent);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .feed-gallery-viewer {
@@ -268,8 +268,8 @@
     justify-content: center;
     border-radius: 10px;
     color: var(--accent);
-    border: 1px solid color-mix(in srgb, var(--warning) 26%, transparent);
-    background: color-mix(in srgb, var(--warning) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .feed-post-file span:nth-child(2) {

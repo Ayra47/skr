@@ -1212,7 +1212,7 @@ export function getStatusIcon(
     readAt: string | null,
 ): string {
     if (readAt) {
-        return '<span style="color:var(--warning)">✓✓</span>';
+        return '<span style="color:var(--accent)">✓✓</span>';
     }
     if (deliveredAt) {
         return '<span style="color:var(--text-muted)">✓✓</span>';

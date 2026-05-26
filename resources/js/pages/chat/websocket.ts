@@ -95,7 +95,7 @@ export function initWebSocket(): void {
             e.message_ids.forEach((id) => {
                 const status = document.getElementById("status-" + id);
                 if (status) {
-                    status.innerHTML = '<span style="color:var(--warning)">✓✓</span>';
+                    status.innerHTML = '<span style="color:var(--accent)">✓✓</span>';
                 }
             });
         })
