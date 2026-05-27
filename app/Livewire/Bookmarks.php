@@ -12,10 +12,12 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class Bookmarks extends Component
 {
+    #[Url]
     public string $tab = 'all';
 
     public string $search = '';
@@ -56,7 +58,7 @@ class Bookmarks extends Component
 
         $query = Bookmark::query()
             ->where('user_id', $userId)
-            ->with('attachments')
+            ->with(['attachments', 'author:id,avatar'])
             ->latest();
 
         match ($this->tab) {
@@ -80,6 +82,7 @@ class Bookmarks extends Component
 
         $total = $query->count();
         $bookmarks = $query->take($this->perPage)->get();
+        $this->hydrateFeedBookmarks($bookmarks);
         $this->hydrateCommunityBookmarks($bookmarks);
 
         $deletedCount = Bookmark::query()->where('user_id', $userId)->where('original_deleted', true)->count();
@@ -90,6 +93,32 @@ class Bookmarks extends Component
             'deletedCount' => $deletedCount,
             'hasMore' => $total > $this->perPage,
         ]);
+    }
+
+    /**
+     * @param  EloquentCollection<int, Bookmark>  $bookmarks
+     */
+    private function hydrateFeedBookmarks(EloquentCollection $bookmarks): void
+    {
+        $feedBookmarks = $bookmarks
+            ->filter(fn (Bookmark $bookmark): bool => $bookmark->bookmarkable_type === FeedPost::class);
+
+        if ($feedBookmarks->isEmpty()) {
+            return;
+        }
+
+        $posts = FeedPost::withTrashed()
+            ->whereIn('id', $feedBookmarks->pluck('bookmarkable_id')->filter()->values())
+            ->get()
+            ->keyBy('id');
+
+        $feedBookmarks->each(function (Bookmark $bookmark) use ($posts): void {
+            $post = $posts->get($bookmark->bookmarkable_id);
+
+            if (! $post || $post->trashed()) {
+                $bookmark->forceFill(['original_deleted' => true])->save();
+            }
+        });
     }
 
     /**
