@@ -40,4 +40,9 @@ class Bookmark extends Model
     {
         return $this->hasMany(BookmarkAttachment::class)->orderBy('position');
     }
+
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'snapshot_author_id');
+    }
 }

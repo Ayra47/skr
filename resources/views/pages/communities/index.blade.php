@@ -1,181 +1,138 @@
-<!DOCTYPE html>
-<html lang="ru">
+<x-app-shell title="Сообщества · skr" :vite="['resources/js/pages/communities.js']">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Сообщества — skr</title>
-    @include('partials.accent-style')
-    @vite(['resources/js/pages/communities.js'])
-    <script>
-        window.Laravel = { userId: @json(Auth::id()) };
-    </script>
-</head>
+    <x-slot:head>
+        @livewireStyles
+    </x-slot:head>
 
-<body class="communities-body">
-    @include('components.nav')
+    <x-slot:sidebar>
+        <x-app-sidebar>
+            <x-slot:header>
+                <a href="{{ route('communities.index') }}" wire:navigate class="app-brand" style="text-decoration:none">
+                    <div class="app-brand-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="4" y="10" width="16" height="11" rx="2.5" />
+                            <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                        </svg>
+                    </div>
+                    <div class="app-brand-info">
+                        <p class="app-brand-name">skr</p>
+                        <span class="app-brand-sub">приватные пространства</span>
+                    </div>
+                </a>
+            </x-slot:header>
 
-    <main class="communities-shell">
-        <aside class="communities-sidebar">
+            <x-slot:body>
+                {{-- Stats --}}
+                <section class="cm-stats">
+                    <h2 class="cm-stats-title">Сообщества</h2>
+                    <p class="cm-stats-sub">закрытые группы и приглашения</p>
+                    <div class="cm-stats-grid">
+                        <div class="cm-stat">
+                            <strong>{{ $memberships->count() }}</strong>
+                            <span>активных</span>
+                        </div>
+                        <div class="cm-stat">
+                            <strong>{{ $directInvites->count() }}</strong>
+                            <span>приглашений</span>
+                        </div>
+                    </div>
+                </section>
+
+                {{-- Actions --}}
+                <div class="cm-actions">
+                    <button class="cm-action is-primary" type="button" data-cm-open-create>
+                        <span class="cm-action-icon">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.9" stroke-linecap="round">
+                                <path d="M12 5v14M5 12h14" />
+                            </svg>
+                        </span>
+                        <span>Создать сообщество</span>
+                    </button>
+                    <button class="cm-action is-join" type="button" data-cm-toggle-join>
+                        <span class="cm-action-icon">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="8" cy="15" r="4" />
+                                <path d="M10.8 12.2L20 3" />
+                                <path d="M16 7l3 3" />
+                            </svg>
+                        </span>
+                        <span>Войти по коду</span>
+                    </button>
+                </div>
+
+                {{-- Join by invite code panel --}}
+                <section class="cm-join-panel" id="cm-join-panel" hidden>
+                    <label for="cm-join-input">Код приглашения</label>
+                    <div class="cm-join-row">
+                        <input id="cm-join-input" type="text" placeholder="ABCD1234"
+                            maxlength="20" autocomplete="off" spellcheck="false">
+                        <button type="button" data-cm-join-submit>Войти</button>
+                    </div>
+                    <p class="cm-join-error" id="cm-join-error" hidden></p>
+                </section>
+
+                {{-- Friend invites --}}
+                @if ($directInvites->isNotEmpty())
+                    @include('pages.communities._invites', ['invites' => $directInvites])
+                @endif
+            </x-slot:body>
+        </x-app-sidebar>
+    </x-slot:sidebar>
+
+    <div class="community-scroll">
+        <div class="community-content">
             @if (session('community_status'))
                 <div class="community-notice">{{ session('community_status') }}</div>
             @endif
 
-            @if ($errors->any())
-                <div class="community-error">{{ $errors->first() }}</div>
-            @endif
-
-            <section class="community-panel">
-                <div class="community-panel-head">
-                    <h2>Приглашения от друзей</h2>
-                    <span>{{ $directInvites->count() }}</span>
+            <header class="community-header">
+                <div class="community-header-row">
+                    <h1 class="community-title">Сообщества</h1>
+                    <span class="community-title-count">{{ $communities->count() }}</span>
                 </div>
+                <p class="community-header-sub">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="4" y="10" width="16" height="11" rx="2.5" />
+                        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                    </svg>
+                    По приглашению · сквозное шифрование внутри каждого
+                </p>
+            </header>
 
-                <div class="community-invite-list">
-                    @forelse ($directInvites as $invite)
-                        <article class="community-invite-card">
-                            <p>
-                                <strong>{{ $invite->inviter->pseudonym ?: $invite->inviter->login }}</strong>
-                                invited me to
-                                <a href="{{ route('communities.show', $invite->community) }}">{{ $invite->community->name }}</a>
-                            </p>
-                            @if ($invite->expires_at)
-                                <span>до {{ $invite->expires_at->format('d.m.Y H:i') }}</span>
-                            @endif
-                            <div class="community-actions">
-                                <form method="POST" action="{{ route('communities.direct-invites.accept', $invite) }}">
-                                    @csrf
-                                    <button type="submit" class="community-btn community-btn-primary">Принять</button>
-                                </form>
-                                <form method="POST" action="{{ route('communities.direct-invites.decline', $invite) }}">
-                                    @csrf
-                                    <button type="submit" class="community-btn community-btn-ghost">Отклонить</button>
-                                </form>
-                            </div>
-                        </article>
-                    @empty
-                        <p class="community-muted">Новых приглашений нет.</p>
-                    @endforelse
-                </div>
-            </section>
-
-            <section class="community-panel">
-                <h2>Создать сообщество</h2>
-                <form method="POST" action="{{ route('communities.store') }}" class="community-form">
-                    @csrf
-
-                    <label>
-                        <span>Название</span>
-                        <input name="name" type="text" value="{{ old('name') }}" required maxlength="100">
-                    </label>
-
-                    <label>
-                        <span>Описание</span>
-                        <textarea name="description" rows="3">{{ old('description') }}</textarea>
-                    </label>
-
-                    <div class="community-form-grid">
-                        <label>
-                            <span>Видимость</span>
-                            <select name="visibility">
-                                <option value="public">public</option>
-                                <option value="private">private</option>
-                                <option value="hidden">hidden</option>
-                            </select>
-                        </label>
-
-                        <label>
-                            <span>Вступление</span>
-                            <select name="join_mode">
-                                <option value="open">open</option>
-                                <option value="request">request</option>
-                                <option value="invite_only">invite_only</option>
-                            </select>
-                        </label>
-
-                        <label>
-                            <span>Лимит</span>
-                            <select name="member_limit">
-                                <option value="">none</option>
-                                @foreach ([5, 50, 100, 500, 1000, 5000] as $limit)
-                                    <option value="{{ $limit }}">{{ $limit }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-
-                        <label>
-                            <span>TTL</span>
-                            <select name="default_post_ttl_seconds">
-                                <option value="">none</option>
-                                <option value="3600">1h</option>
-                                <option value="86400">24h</option>
-                                <option value="604800">7d</option>
-                            </select>
-                        </label>
-
-                        <label>
-                            <span>Инвайты</span>
-                            <select name="invite_policy">
-                                <option value="all_members">all_members</option>
-                                <option value="moderators_only">moderators_only</option>
-                            </select>
-                        </label>
-
-                        <label>
-                            <span>Постинг</span>
-                            <select name="posting_policy">
-                                <option value="everyone">everyone</option>
-                                <option value="moderators_only">moderators_only</option>
-                            </select>
-                        </label>
-                    </div>
-
-                    <div class="community-checks">
-                        <label><input type="hidden" name="allow_posts_in_member_feed" value="0"><input type="checkbox" name="allow_posts_in_member_feed" value="1" checked> posts in member feed</label>
-                        <label><input type="hidden" name="hide_real_names" value="0"><input type="checkbox" name="hide_real_names" value="1"> hide real names</label>
-                        <label><input type="hidden" name="show_key_fingerprints" value="0"><input type="checkbox" name="show_key_fingerprints" value="1" checked> key fingerprints</label>
-                        <label><input type="hidden" name="anonymous_reactions_enabled" value="0"><input type="checkbox" name="anonymous_reactions_enabled" value="1"> anonymous reactions</label>
-                    </div>
-
-                    <button type="submit" class="community-btn community-btn-primary">Создать</button>
-                </form>
-            </section>
-        </aside>
-
-        <section class="communities-main">
-            <div class="communities-title">
-                <div>
-                    <p>Communities</p>
-                    <h1>Сообщества</h1>
-                </div>
-                <span>{{ $communities->count() }} visible</span>
-            </div>
-
-            <div class="community-list">
-                @forelse ($communities as $community)
-                    @php $membership = $memberships->get($community->id); @endphp
-                    <a class="community-row" href="{{ route('communities.show', $community) }}">
-                        <span class="community-avatar">{{ mb_strtoupper(mb_substr($community->name, 0, 1)) }}</span>
-                        <span class="community-row-body">
-                            <strong>{{ $community->name }}</strong>
-                            <small>{{ $community->visibility }} · {{ $community->join_mode }} · {{ $community->member_count }} members</small>
+            <section class="community-soon-panel" aria-labelledby="community-soon-title">
+                <div class="community-soon-glow" aria-hidden="true"></div>
+                <div class="community-soon-content">
+                    <div class="community-soon-head">
+                        <span class="community-soon-icon" aria-hidden="true">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M6 2h12" />
+                                <path d="M6 22h12" />
+                                <path d="M17 2v6.2a4 4 0 0 1-1.17 2.83L12 14.86l-3.83-3.83A4 4 0 0 1 7 8.2V2" />
+                                <path d="M7 22v-6.2a4 4 0 0 1 1.17-2.83L12 9.14l3.83 3.83A4 4 0 0 1 17 15.8V22" />
+                            </svg>
                         </span>
-                        @if ($membership)
-                            <span class="community-badge">{{ $membership->status }}</span>
-                        @else
-                            <span class="community-badge community-badge-soft">public</span>
-                        @endif
-                    </a>
-                @empty
-                    <div class="community-empty">
-                        <h2>Сообществ пока нет</h2>
-                        <p>Создайте первое или примите приглашение от друга.</p>
+                        <h2 id="community-soon-title">Эфемерные пространства</h2>
+                        <span class="community-soon-badge">Скоро</span>
                     </div>
-                @endforelse
-            </div>
-        </section>
-    </main>
-</body>
+                    <p>
+                        Временные обсуждения с автоудалением истории. Пространства откроются после настройки заявок,
+                        лимитов и правил доступа для администрации.
+                    </p>
+                </div>
+            </section>
 
-</html>
+            <livewire:communities.community-list />
+        </div>
+    </div>
+
+    <x-slot:after>
+        @include('pages.communities._create_modal')
+        @livewireScripts
+    </x-slot:after>
+
+</x-app-shell>

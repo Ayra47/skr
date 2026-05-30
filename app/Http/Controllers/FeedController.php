@@ -11,6 +11,7 @@ use App\Models\FeedVote;
 use App\Notifications\FeedCommentNotification;
 use App\Notifications\FeedVoteNotification;
 use App\Services\FeedAttachmentThumbnail;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -136,6 +137,15 @@ class FeedController extends Controller
         }
 
         return Storage::disk('local')->download($attachment->path, $attachment->downloadName());
+    }
+
+    public function destroy(FeedPost $post): JsonResponse
+    {
+        abort_unless($post->user_id === Auth::id(), 403);
+
+        $post->delete();
+
+        return response()->json(['success' => true]);
     }
 
     private function attachmentName(string $name): string

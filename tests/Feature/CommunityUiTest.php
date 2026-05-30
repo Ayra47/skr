@@ -2,15 +2,18 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Communities\CommunityList;
 use App\Models\Community;
 use App\Models\CommunityDirectInvite;
 use App\Models\CommunityKeyEpoch;
 use App\Models\CommunityMember;
 use App\Models\CommunityPost;
 use App\Models\CommunityTopic;
+use App\Models\CommunityUserState;
 use App\Models\Friend;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class CommunityUiTest extends TestCase
@@ -72,6 +75,105 @@ class CommunityUiTest extends TestCase
             ->assertSeeText('Приглашения от друзей')
             ->assertSeeText('Mila')
             ->assertSeeText('design · skr');
+    }
+
+    public function test_communities_index_renders_ephemeral_spaces_soon_placeholder(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('communities.index'))
+            ->assertOk()
+            ->assertSeeText('Эфемерные пространства')
+            ->assertSeeText('Скоро')
+            ->assertSeeText('Временные обсуждения с автоудалением истории')
+            ->assertSeeText('Все')
+            ->assertSeeText('Закреплённые')
+            ->assertSeeText('Непрочитанные')
+            ->assertSeeText('Где я админ')
+            ->assertDontSeeText('Войти в пространство')
+            ->assertDontSeeText('Отправить запрос');
+    }
+
+    public function test_communities_index_renders_create_community_identity_wizard(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('communities.index'))
+            ->assertOk()
+            ->assertSeeText('Новое сообщество')
+            ->assertSeeText('Идентичность')
+            ->assertSeeText('Иконка сообщества')
+            ->assertSeeText('Символ')
+            ->assertSeeText('Фото или SVG')
+            ->assertSeeText('Видно только участникам сообщества')
+            ->assertSeeText('Предпросмотр')
+            ->assertSeeText('без названия')
+            ->assertSeeText('приватное')
+            ->assertSeeText('описание появится здесь')
+            ->assertSeeText('1 участник · ваша роль: админ');
+    }
+
+    public function test_communities_index_renders_reference_create_wizard_privacy_and_done_steps(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('communities.index'))
+            ->assertOk()
+            ->assertSeeText('Видимость')
+            ->assertSeeText('Вход только по одобрению админа или по коду')
+            ->assertDontSeeText('Скрытое')
+            ->assertSeeText('Лимит участников ·')
+            ->assertSee('type="range"', false)
+            ->assertSeeText('Сообщество создано')
+            ->assertSee('aria-label="QR код приглашения"', false)
+            ->assertSeeText('Поделиться')
+            ->assertSeeText('Перейти к сообществу');
+    }
+
+    public function test_pinned_communities_tab_only_shows_pinned_user_state(): void
+    {
+        $user = User::factory()->create();
+        $pinned = Community::factory()->create(['name' => 'Pinned Protocol']);
+        $unpinned = Community::factory()->create(['name' => 'Regular Protocol']);
+        $hiddenWithoutMembership = Community::factory()->create([
+            'name' => 'Hidden Pinned Protocol',
+            'visibility' => Community::VISIBILITY_HIDDEN,
+        ]);
+
+        CommunityUserState::factory()->for($pinned)->for($user)->create(['pinned' => true]);
+        CommunityUserState::factory()->for($unpinned)->for($user)->create(['pinned' => false]);
+        CommunityUserState::factory()->for($hiddenWithoutMembership)->for($user)->create(['pinned' => true]);
+
+        Livewire::actingAs($user)
+            ->test(CommunityList::class)
+            ->set('tab', 'pinned')
+            ->assertSee('Pinned Protocol')
+            ->assertDontSee('Regular Protocol')
+            ->assertDontSee('Hidden Pinned Protocol');
+    }
+
+    public function test_unread_communities_tab_shows_only_unread_user_state(): void
+    {
+        $user = User::factory()->create();
+        $withUnreadCount = Community::factory()->create(['name' => 'Unread Count Space']);
+        $withUnreadSeq = Community::factory()->create(['name' => 'Unread Sequence Space', 'post_count' => 4]);
+        $read = Community::factory()->create(['name' => 'Read Space', 'post_count' => 2]);
+        $withoutState = Community::factory()->create(['name' => 'No State Space', 'post_count' => 5]);
+
+        CommunityUserState::factory()->for($withUnreadCount)->for($user)->create(['unread_posts_count' => 2]);
+        CommunityUserState::factory()->for($withUnreadSeq)->for($user)->create(['last_read_community_seq' => 1]);
+        CommunityUserState::factory()->for($read)->for($user)->create(['last_read_community_seq' => 2]);
+
+        Livewire::actingAs($user)
+            ->test(CommunityList::class)
+            ->set('tab', 'unread')
+            ->assertSee('Unread Count Space')
+            ->assertSee('Unread Sequence Space')
+            ->assertDontSee('Read Space')
+            ->assertDontSee('No State Space');
     }
 
     public function test_accept_direct_invite_works_from_ui_action(): void

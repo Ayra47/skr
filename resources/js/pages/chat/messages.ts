@@ -85,6 +85,7 @@ interface SendResponse {
 interface ConversationResponse {
     success: boolean;
     conversation_id: number;
+    can_send?: boolean;
 }
 
 interface ParticipantsResponse {
@@ -135,7 +136,9 @@ export async function openConversation(
     const chatHeaderEl = document.getElementById("chatHeader") as HTMLElement;
     chatHeaderEl.style.display = "flex";
     chatHeaderEl.classList.toggle("chat-header--linkable", conversationType === "direct");
+    const canSend = conversationType === "group" || (window.Laravel.friendIds ?? []).includes(partnerId);
     (document.getElementById("inputArea") as HTMLElement).style.display = "block";
+    document.getElementById("composerBox")?.classList.toggle("composer-box--blocked", !canSend);
     await window.emojiPanelOnChatOpen?.();
 
     if (conversationType === "group") {
@@ -1212,7 +1215,7 @@ export function getStatusIcon(
     readAt: string | null,
 ): string {
     if (readAt) {
-        return '<span style="color:var(--warning)">✓✓</span>';
+        return '<span style="color:var(--accent)">✓✓</span>';
     }
     if (deliveredAt) {
         return '<span style="color:var(--text-muted)">✓✓</span>';
@@ -2276,5 +2279,5 @@ export async function startChatWithFriend(
             <div class="conv-time" id="time-${convId}"></div>`;
         list.prepend(div);
     }
-    openConversation(convId, partnerId, partnerLogin);
+    openConversation(convId, partnerId, partnerLogin, "direct");
 }

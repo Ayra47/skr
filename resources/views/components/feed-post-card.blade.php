@@ -53,6 +53,23 @@
             <span class="feed-privacy-badge {{ $post->visibility === \App\Models\FeedPost::VISIBILITY_PUBLIC ? 'public' : '' }}">
                 {{ $post->visibility === \App\Models\FeedPost::VISIBILITY_PUBLIC ? 'для всех' : 'для друзей' }}
             </span>
+            <div class="feed-actions-menu">
+                <button class="feed-menu-btn" type="button" aria-label="Действия">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+                    </svg>
+                </button>
+                <div class="feed-menu-dropdown">
+                    <button class="feed-menu-item feed-menu-copy" type="button" data-post-id="{{ $post->id }}">
+                        Скопировать ссылку
+                    </button>
+                    @if($post->user_id === auth()->id())
+                        <button class="feed-menu-item feed-menu-delete" type="button" data-post-id="{{ $post->id }}">
+                            Удалить
+                        </button>
+                    @endif
+                </div>
+            </div>
         </header>
 
         @if($post->body)

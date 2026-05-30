@@ -110,6 +110,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/read-all', [NotificationsController::class, 'markAllRead'])->name('notifications.read-all');
     Route::get('/', [FeedController::class, 'index'])->name('feed.index');
     Route::post('/feed/posts', [FeedController::class, 'store'])->name('feed.posts.store');
+    Route::delete('/feed/posts/{post}', [FeedController::class, 'destroy'])->name('feed.posts.destroy');
     Route::post('/feed/posts/{post}/vote', [FeedController::class, 'vote'])->name('feed.posts.vote');
     Route::post('/feed/posts/{post}/poll/vote', [PollController::class, 'vote'])->name('feed.posts.poll.vote');
     Route::delete('/feed/posts/{post}/poll/vote', [PollController::class, 'cancelVote'])->name('feed.posts.poll.vote.cancel');

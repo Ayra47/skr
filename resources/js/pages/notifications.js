@@ -48,19 +48,19 @@ function actionsFor(item) {
         case 'key':
             return [
                 { label: 'Верифицировать', cls: 'primary', href: '/chats' },
-                { label: 'Позже', cls: 'default', action: () => markRead(item.id) },
+                { label: 'Позже', cls: 'ghost', action: () => markRead(item.id) },
             ];
         case 'friend':
             if (item.friend_request_id) {
                 return [
                     { label: 'Принять', cls: 'primary', action: () => respondToRequest(item, 'accept') },
-                    { label: 'Отклонить', cls: 'default', action: () => respondToRequest(item, 'decline') },
+                    { label: 'Отклонить', cls: 'ghost', action: () => respondToRequest(item, 'decline') },
                 ];
             }
             return [{ label: 'Перейти к заявкам', cls: 'primary', href: '/friends' }];
         case 'reply':
         case 'reaction':
-            return [{ label: 'Открыть пост', cls: 'default', href: item.post_id ? `/?post=${item.post_id}` : '/' }];
+            return [{ label: 'Открыть пост', cls: 'ghost', href: item.post_id ? `/?post=${item.post_id}` : '/' }];
         default:
             return [];
     }
@@ -106,34 +106,41 @@ function svg(paths, size = 16) {
     return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
 }
 
+function clsForBtn(cls) {
+    if (cls === 'primary') { return 'nt-btn-primary'; }
+    if (cls === 'danger')  { return 'nt-btn-danger'; }
+    return 'nt-btn-ghost';
+}
+
 function renderCard(item) {
     const cfg = typeCfg(item.type);
     const actions = actionsFor(item);
 
     const actionsHtml = actions.length ? `
-        <div class="notif-actions">
+        <div class="nt-actions">
             ${actions.map((a, i) => {
+                const btnCls = clsForBtn(a.cls);
                 if (a.href) {
-                    return `<a href="${a.href}" class="notif-action-btn ${a.cls}">${a.label}</a>`;
+                    return `<a href="${a.href}" class="${btnCls}">${a.label}</a>`;
                 }
-                return `<button class="notif-action-btn ${a.cls}" data-action-id="${item.id}" data-action-idx="${i}">${a.label}</button>`;
+                return `<button class="${btnCls}" data-action-id="${item.id}" data-action-idx="${i}">${a.label}</button>`;
             }).join('')}
         </div>
     ` : '';
 
     return `
-        <article class="notif-card" data-id="${item.id}">
-            ${item.unread ? '<span class="notif-card-accent"></span>' : ''}
-            <span class="notif-icon" style="background:${cfg.bg};border:1px solid ${cfg.border};color:${cfg.color};">
+        <article class="nt-card" data-id="${item.id}">
+            ${item.unread ? '<span class="nt-unread-bar"></span>' : ''}
+            <span class="nt-icon" style="background:${cfg.bg};border:1px solid ${cfg.border};color:${cfg.color};">
                 ${svg(cfg.icon)}
             </span>
-            <div class="notif-body">
-                <div class="notif-row">
-                    <span class="notif-card-title">${escHtml(item.title)}</span>
-                    ${item.subject ? `<span class="notif-subject">· ${escHtml(item.subject)}</span>` : ''}
-                    <span class="notif-when">${relativeTime(item.created_at)}</span>
+            <div class="nt-body">
+                <div class="nt-row">
+                    <span class="nt-card-title">${escHtml(item.title)}</span>
+                    ${item.subject ? `<span class="nt-subject">· ${escHtml(item.subject)}</span>` : ''}
+                    <span class="nt-when">${relativeTime(item.created_at)}</span>
                 </div>
-                ${item.body ? `<p class="notif-text">${escHtml(item.body)}</p>` : ''}
+                ${item.body ? `<p class="nt-text">${escHtml(item.body)}</p>` : ''}
                 ${item.friend_request_status ? renderRequestStatus(item.friend_request_status) : actionsHtml}
             </div>
         </article>
@@ -163,11 +170,18 @@ function escHtml(str) {
 function render() {
     const unreadCount = allItems.filter(n => n.unread).length;
 
-    // Badge in title
+    // Badge in topbar
     const badge = document.getElementById('notif-badge');
     if (badge) {
-        badge.textContent = unreadCount + ' новых';
+        badge.textContent = unreadCount;
         badge.style.display = unreadCount > 0 ? '' : 'none';
+    }
+
+    // Badge in sidebar (next to "Непрочитанные" shelf)
+    const sidebarBadge = document.getElementById('sidebar-unread-badge');
+    if (sidebarBadge) {
+        sidebarBadge.textContent = unreadCount;
+        sidebarBadge.style.display = unreadCount > 0 ? '' : 'none';
     }
 
     // "Mark all" button
@@ -176,12 +190,9 @@ function render() {
         markAllBtn.disabled = unreadCount === 0;
     }
 
-    // Filter buttons
-    document.querySelectorAll('.notif-filter-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.filter === activeFilter);
-        if (btn.dataset.filter === 'unread') {
-            btn.textContent = unreadCount > 0 ? `Непрочитанные · ${unreadCount}` : 'Непрочитанные';
-        }
+    // Shelf active state
+    document.querySelectorAll('.nt-shelf[data-filter]').forEach(shelf => {
+        shelf.classList.toggle('is-active', shelf.dataset.filter === activeFilter);
     });
 
     // Filter items
@@ -200,18 +211,18 @@ function render() {
     if (!container) { return; }
 
     if (filtered.length === 0) {
-        container.innerHTML = '<div class="notif-empty">Здесь пока тихо</div>';
+        container.innerHTML = '<div class="nt-empty">Здесь пока тихо</div>';
         return;
     }
 
     let html = '';
     if (today.length > 0) {
-        html += '<div class="notif-group-label">Сегодня</div>';
-        html += `<div class="notif-list">${today.map(renderCard).join('')}</div>`;
+        html += '<div class="nt-divider"><span>Сегодня</span></div>';
+        html += `<div class="nt-list">${today.map(renderCard).join('')}</div>`;
     }
     if (earlier.length > 0) {
-        html += '<div class="notif-group-label" style="margin-top:24px;">Ранее</div>';
-        html += `<div class="notif-list">${earlier.map(renderCard).join('')}</div>`;
+        html += '<div class="nt-divider"><span>Ранее</span></div>';
+        html += `<div class="nt-list">${earlier.map(renderCard).join('')}</div>`;
     }
     container.innerHTML = html;
 
@@ -229,10 +240,10 @@ function render() {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 function init() {
-    // Filter buttons
-    document.querySelectorAll('.notif-filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            activeFilter = btn.dataset.filter;
+    // Shelf filter buttons
+    document.querySelectorAll('.nt-shelf[data-filter]').forEach(shelf => {
+        shelf.addEventListener('click', () => {
+            activeFilter = shelf.dataset.filter;
             render();
         });
     });
@@ -249,7 +260,7 @@ function init() {
         })
         .catch(() => {
             const container = document.getElementById('notif-container');
-            if (container) { container.innerHTML = '<div class="notif-empty">Не удалось загрузить уведомления</div>'; }
+            if (container) { container.innerHTML = '<div class="nt-empty">Не удалось загрузить уведомления</div>'; }
         });
 }
 

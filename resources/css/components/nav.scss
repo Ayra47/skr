@@ -73,37 +73,6 @@
     border-color: color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
-.bell-btn {
-    position: relative;
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: var(--overlay-3);
-    color: var(--text-mute);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    padding: 0;
-    transition:
-        background 0.15s,
-        color 0.15s,
-        border-color 0.15s;
-    flex-shrink: 0;
-
-    &:hover {
-        background: var(--overlay-3);
-        color: #e8e8ec;
-    }
-
-    &--active {
-        background: var(--accent-soft);
-        border-color: color-mix(in srgb, var(--accent) 30%, transparent);
-        color: var(--accent);
-    }
-}
-
 .nav-bookmark-btn {
     width: 34px;
     height: 34px;
@@ -155,30 +124,6 @@
 
 .profile-menu-wrap {
     position: relative;
-}
-
-.profile-menu-toggle {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    border: 1px solid var(--overlay-6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    flex-shrink: 0;
-    color: #e8e8ec;
-    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 28%, transparent), color-mix(in srgb, var(--accent) 8%, transparent));
-    font: inherit;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-}
-
-.profile-menu-toggle img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
 }
 
 .profile-menu {

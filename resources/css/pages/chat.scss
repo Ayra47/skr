@@ -1164,6 +1164,31 @@
     background: var(--panel);
     border-top: 1px solid var(--border);
 }
+
+.composer-blocked-msg {
+    display: none;
+    flex: 1;
+    align-self: center;
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.5;
+}
+
+.composer-box--blocked {
+    pointer-events: none;
+
+    .attach-wrap,
+    #emojiBtn,
+    .send-btn,
+    #messageInput {
+        display: none;
+    }
+
+    .composer-blocked-msg {
+        display: block;
+    }
+}
+
 .composer-box {
     display: flex;
     align-items: flex-end;

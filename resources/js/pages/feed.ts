@@ -735,6 +735,87 @@ function resetAttachmentUploadProgress(): void {
     bar.style.width = "0%";
 }
 
+// Capture-phase listener for post action menu — fires before wire:click on feed-post-open-area
+document.addEventListener("click", (event) => {
+    if (!(event.target instanceof Element)) { return; }
+
+    const copyBtn = event.target.closest(".feed-menu-copy");
+    const deleteBtn = event.target.closest(".feed-menu-delete");
+    const menuBtn = event.target.closest(".feed-menu-btn");
+
+    if (!copyBtn && !deleteBtn && !menuBtn) { return; }
+
+    event.stopPropagation();
+
+    if (copyBtn instanceof HTMLButtonElement) {
+        handlePostCopy(copyBtn);
+    } else if (deleteBtn instanceof HTMLButtonElement) {
+        handlePostDelete(deleteBtn);
+    }
+}, true);
+
+function handlePostCopy(btn: HTMLButtonElement): void {
+    const postId = btn.getAttribute("data-post-id");
+    if (!postId) { return; }
+
+    const url = `${window.location.origin}/?post=${postId}`;
+    navigator.clipboard.writeText(url).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = "Скопировано ✓";
+        setTimeout(() => {
+            btn.textContent = orig;
+        }, 1500);
+    });
+}
+
+function handlePostDelete(btn: HTMLButtonElement): void {
+    const postId = btn.getAttribute("data-post-id");
+    if (!postId) { return; }
+
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.innerHTML = `
+        <div class="modal-box">
+            <div class="modal-title">Удалить пост?</div>
+            <p class="modal-subtitle">Пост будет удалён. Это действие необратимо.</p>
+            <div class="modal-actions">
+                <button class="modal-btn-secondary" id="deletePostCancel" type="button">Отмена</button>
+                <button class="modal-btn-danger" id="deletePostConfirm" type="button">Удалить</button>
+            </div>
+        </div>
+    `;
+
+    document.body.append(overlay);
+
+    const close = (): void => { overlay.remove(); };
+
+    overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) { close(); }
+    });
+
+    overlay.querySelector("#deletePostCancel")?.addEventListener("click", close);
+
+    const confirmBtn = overlay.querySelector<HTMLButtonElement>("#deletePostConfirm");
+    confirmBtn?.addEventListener("click", () => {
+        if (confirmBtn) { confirmBtn.disabled = true; }
+
+        fetch(`/feed/posts/${postId}`, {
+            method: "DELETE",
+            headers: {
+                "X-CSRF-TOKEN": (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? "",
+                "Content-Type": "application/json",
+            },
+        }).then((res) => {
+            close();
+            if (res.ok) {
+                window.location.reload();
+            } else {
+                alert("Ошибка при удалении поста");
+            }
+        });
+    });
+}
+
 type EchoPresenceMember = { id: number | string };
 
 type EchoPresenceChannel = {

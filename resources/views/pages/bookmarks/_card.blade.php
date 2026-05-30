@@ -42,6 +42,8 @@
         <div class="bm-card-avatar {{ $isWhisper ? 'bm-card-avatar--whisper' : '' }}">
             @if($isWhisper)
                 ?
+            @elseif($bookmark->author?->avatar)
+                <img src="/storage/{{ $bookmark->author->avatar }}" alt="" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
             @else
                 {{ $initial }}
             @endif

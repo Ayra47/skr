@@ -124,11 +124,20 @@
                     <div class="profile-actions">
                         @if($isSelf)
                             <a class="profile-primary-action" href="{{ route('settings.index') }}">Редактировать</a>
-                        @elseif($isFriend)
-                            <a class="profile-primary-action" href="{{ route('chats.index') }}?with={{ $profileUser->id }}&login={{ urlencode($profileName) }}">
-                                Написать
-                            </a>
-                            <button class="profile-disabled-action" type="button" disabled>Позвонить</button>
+                        @else
+                            @if($isFriend)
+                                <a class="profile-primary-action" href="{{ route('chats.index') }}?with={{ $profileUser->id }}&login={{ urlencode($profileName) }}">
+                                    Написать
+                                </a>
+                                <button class="profile-disabled-action" type="button" disabled>Позвонить</button>
+                                <div class="profile-actions-divider"></div>
+                                <button class="profile-disabled-action profile-share-btn" type="button">Поделиться</button>
+                                <button class="profile-disabled-action profile-remove-friend-btn" type="button" data-friend-id="{{ $profileUser->id }}">Удалить из друзей</button>
+                            @else
+                                <button class="profile-disabled-action profile-share-btn" type="button">Поделиться</button>
+                            @endif
+                            <button class="profile-disabled-action" type="button" disabled>Заблокировать</button>
+                            <button class="profile-disabled-action" type="button" disabled>Пожаловаться</button>
                         @endif
                     </div>
                 </div>
@@ -244,22 +253,23 @@
                         </div>
                     </section>
 
-                    <section class="profile-card">
-                        <div class="profile-section-head plain">
-                            <h2>Управление контактом</h2>
-                        </div>
-                        <div class="profile-contact-actions">
-                            <button type="button" disabled>Поделиться контактом</button>
-                            @if($isFriend && ! $isSelf)
-                                <button type="button" disabled>Удалить из друзей</button>
-                            @endif
-                            <button type="button" disabled>Заблокировать</button>
-                            <button type="button" disabled>Пожаловаться</button>
-                        </div>
-                    </section>
                 </aside>
             </div>
         </div>
     </div>
+
+    {{-- Remove friend confirmation modal --}}
+    @if($isFriend && ! $isSelf)
+        <div id="removeFriendModal" class="modal-overlay" style="display:none">
+            <div class="modal-box">
+                <div class="modal-title">Удалить из друзей?</div>
+                <p class="modal-subtitle">{{ $profileUser->feedName() }} будет удалён из вашего списка друзей. Это действие необратимо.</p>
+                <div class="modal-actions">
+                    <button class="modal-btn-secondary" id="removeFriendCancel" type="button">Отмена</button>
+                    <button class="modal-btn-danger" id="removeFriendConfirm" type="button">Удалить</button>
+                </div>
+            </div>
+        </div>
+    @endif
 
 </x-app-shell>
